@@ -3,6 +3,7 @@
 '''Instantaneous event coding'''
 
 import numpy as np
+import jams
 
 from .base import BaseTaskTransformer
 
@@ -18,46 +19,35 @@ class BeatTransformer(BaseTaskTransformer):
                                               sr=sr,
                                               hop_length=hop_length)
 
-        self.name = name
+    def empty(self, duration):
+        return jams.Annotation(namespace='beat')
 
-    def transform(self, jam):
+    def transform_annotation(self, ann, duration):
 
-        ann = self.find_annotation(jam)
-
-        mask_beat = False
         mask_downbeat = False
 
-        if ann:
-            mask_beat = True
-            intervals, values = ann.data.to_interval_values()
-            values = np.asarray(values)
+        intervals, values = ann.data.to_interval_values()
+        values = np.asarray(values)
 
-            beat_events = intervals[:, 0]
-            beat_labels = np.ones((len(beat_events), 1))
+        beat_events = intervals[:, 0]
+        beat_labels = np.ones((len(beat_events), 1))
 
-            idx = (values == 1)
-            if np.any(idx):
-                downbeat_events = beat_events[idx]
-                downbeat_labels = np.ones((len(downbeat_events), 1))
-                mask_downbeat = True
-            else:
-                downbeat_events = np.zeros(0)
-                downbeat_labels = np.zeros((0, 1))
+        idx = (values == 1)
+        if np.any(idx):
+            downbeat_events = beat_events[idx]
+            downbeat_labels = np.ones((len(downbeat_events), 1))
+            mask_downbeat = True
         else:
-            beat_events = np.zeros(0)
-            beat_labels = np.zeros((0, 1))
-            downbeat_events = beat_events
-            downbeat_labels = beat_labels
+            downbeat_events = np.zeros(0)
+            downbeat_labels = np.zeros((0, 1))
 
-        target_beat = self.encode_events(jam.file_metadata.duration,
+        target_beat = self.encode_events(duration,
                                          beat_events,
                                          beat_labels)
 
-        target_downbeat = self.encode_events(jam.file_metadata.duration,
+        target_downbeat = self.encode_events(duration,
                                              downbeat_events,
                                              downbeat_labels)
 
-        return {'{:s}_beat'.format(self.name): target_beat,
-                'mask_{:s}_beat'.format(self.name): mask_beat,
-                '{:s}_downbeat'.format(self.name): target_downbeat,
-                'mask_{:s}_downbeat'.format(self.name): mask_downbeat}
+        return {'beat': target_beat, 'downbeat': target_downbeat,
+                'mask_downbeat': mask_downbeat}

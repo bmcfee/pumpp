@@ -4,6 +4,7 @@
 
 import numpy as np
 from sklearn.preprocessing import MultiLabelBinarizer
+import jams
 
 from .base import BaseTaskTransformer
 
@@ -37,19 +38,14 @@ class DynamicLabelTransformer(BaseTaskTransformer):
         self.encoder.fit([labels])
         self._classes = set(self.encoder.classes_)
 
-    def transform(self, jam):
+    def empty(self, duration):
+        ann = jams.Annotation(namespace=self.namespace)
+        ann.append(time=0, duration=duration, value=None)
+        return ann
 
-        ann = self.find_annotation(jam)
+    def transform_annotation(self, ann, duration):
 
-        intervals = np.asarray([[0.0, jam.file_metadata.duration]])
-        values = [None]
-        mask = False
-
-        if ann:
-            ann_int, ann_val = ann.data.to_interval_values()
-            intervals = np.vstack([intervals, ann_int])
-            values.extend(ann_val)
-            mask = True
+        intervals, values = ann.data.to_interval_values()
 
         # Suppress all intervals not in the encoder
         tags = []
@@ -60,11 +56,9 @@ class DynamicLabelTransformer(BaseTaskTransformer):
                 tags.extend(self.encoder.transform([[]]))
 
         tags = np.asarray(tags)
-        target = self.encode_intervals(jam.file_metadata.duration,
-                                       intervals,
-                                       tags)
-        return {'output_{:s}'.format(self.name): target,
-                'mask_{:s}'.format(self.name): mask}
+        target = self.encode_intervals(duration, intervals, tags)
+
+        return {'tags': target}
 
 
 class StaticLabelTransformer(BaseTaskTransformer):
@@ -87,18 +81,15 @@ class StaticLabelTransformer(BaseTaskTransformer):
         self.encoder.fit([labels])
         self._classes = set(self.encoder.classes_)
 
-    def transform(self, jam):
+    def empty(self, duration):
+        ann = jams.Annotation(namespace=self.namespace)
+        return ann
 
-        ann = self.find_annotation(jam)
+    def transform_annotation(self, ann, duration):
 
         intervals = np.asarray([[0, 1]])
-        values = [None]
-        mask = False
-
-        if ann:
-            values = list(ann.data.value)
-            intervals = np.tile(intervals, [len(values), 1])
-            mask = True
+        values = list(ann.data.value)
+        intervals = np.tile(intervals, [len(values), 1])
 
         # Suppress all intervals not in the encoder
         tags = [v for v in values if v in self._classes]
@@ -107,5 +98,4 @@ class StaticLabelTransformer(BaseTaskTransformer):
         else:
             target = np.zeros(len(self._classes), dtype=np.int)
 
-        return {'output_{:s}'.format(self.name): target,
-                'mask_{:s}'.format(self.name): mask}
+        return {'tags': target}

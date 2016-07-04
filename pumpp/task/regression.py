@@ -3,6 +3,7 @@
 '''Regression task transformers'''
 
 import numpy as np
+import jams
 
 from .base import BaseTaskTransformer
 
@@ -18,22 +19,19 @@ class VectorTransformer(BaseTaskTransformer):
                                                 sr=1, hop_length=1)
 
         self.dimension = dimension
-        self.name = name
 
-    def transform(self, jam):
+    def empty(self, duration):
+        vector = np.zeros(self.dimension, dtype=np.float32)
+        ann = jams.Annotation(namespace=self.namespace)
+        ann.append(time=0, duration=duration, value=vector, confidence=0)
+        return ann
 
-        ann = self.find_annotation(jam)
+    def transform_annotation(self, ann, duration):
 
-        if ann:
-            vector = np.asarray(ann.data.value.iloc[0])
-            if len(vector) != self.dimension:
-                raise RuntimeError('vector dimension({:0}) '
-                                   '!= self.dimension({:1})'
-                                   .format(len(vector), self.dimension))
-            mask = True
-        else:
-            vector = np.zeros(self.dimension, dtype=np.float32)
-            mask = False
+        vector = np.asarray(ann.data.value.iloc[0])
+        if len(vector) != self.dimension:
+            raise RuntimeError('vector dimension({:0}) '
+                               '!= self.dimension({:1})'
+                               .format(len(vector), self.dimension))
 
-        return {'{:s}_vector'.format(self.name): vector,
-                'mask_{:s}'.format(self.name): mask}
+        return {'vector': vector}

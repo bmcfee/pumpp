@@ -30,12 +30,12 @@ def test_task_chord_present():
     jam.annotations.append(ann)
 
     # One second = one frame
-    T = pumpp.task.ChordTransformer()
+    T = pumpp.task.ChordTransformer(name='chord')
 
     output = T.transform(jam)
 
     # Make sure we have the mask
-    eq_(output['mask_chord'], True)
+    eq_(output['chord/mask'], True)
 
     # Ideal vectors:
     # pcp = Cmaj, Cmaj, N, Dmaj, N
@@ -59,32 +59,32 @@ def test_task_chord_present():
                             [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]])
 
-    assert np.allclose(output['chord_pitches'], np.repeat(pcp_true, N_REPEAT, axis=0))
-    assert np.allclose(output['chord_root'], np.repeat(root_true, N_REPEAT, axis=0))
-    assert np.allclose(output['chord_bass'], np.repeat(bass_true, N_REPEAT, axis=0))
+    assert np.allclose(output['chord/pitches'], np.repeat(pcp_true, N_REPEAT, axis=0))
+    assert np.allclose(output['chord/root'], np.repeat(root_true, N_REPEAT, axis=0))
+    assert np.allclose(output['chord/bass'], np.repeat(bass_true, N_REPEAT, axis=0))
 
 
 def test_task_chord_absent():
 
     jam = jams.JAMS(file_metadata=dict(duration=4.0))
-    T = pumpp.task.ChordTransformer()
+    T = pumpp.task.ChordTransformer(name='chord')
 
     output = T.transform(jam)
 
     # Mask should be false since we have no matching namespace
-    eq_(output['mask_chord'], False)
+    eq_(output['chord/mask'], False)
 
     # Check the shape
-    assert np.allclose(output['chord_pitches'].shape, [4 * N_REPEAT, 12])
-    assert np.allclose(output['chord_root'].shape, [4 * N_REPEAT, 13])
-    assert np.allclose(output['chord_bass'].shape, [4 * N_REPEAT, 13])
+    assert np.allclose(output['chord/pitches'].shape, [1, 4 * N_REPEAT, 12])
+    assert np.allclose(output['chord/root'].shape, [1, 4 * N_REPEAT, 13])
+    assert np.allclose(output['chord/bass'].shape, [1, 4 * N_REPEAT, 13])
 
     # Make sure it's empty
-    assert not np.any(output['chord_pitches'])
-    assert not np.any(output['chord_root'][:, :12])
-    assert not np.any(output['chord_bass'][:, :12])
-    assert np.all(output['chord_root'][:, 12])
-    assert np.all(output['chord_bass'][:, 12])
+    assert not np.any(output['chord/pitches'])
+    assert not np.any(output['chord/root'][:, :, :12])
+    assert not np.any(output['chord/bass'][:, :, :12])
+    assert np.all(output['chord/root'][:, :, 12])
+    assert np.all(output['chord/bass'][:, :, 12])
 
 
 def test_task_simple_chord_present():
@@ -102,12 +102,12 @@ def test_task_simple_chord_present():
     jam.annotations.append(ann)
 
     # One second = one frame
-    T = pumpp.task.SimpleChordTransformer()
+    T = pumpp.task.SimpleChordTransformer(name='chord_s')
 
     output = T.transform(jam)
 
     # Make sure we have the mask
-    eq_(output['mask_chord_simple'], True)
+    eq_(output['chord_s/mask'], True)
 
     # Ideal vectors:
     # pcp = Cmaj, Cmaj, N, Dmaj, N
@@ -117,23 +117,23 @@ def test_task_simple_chord_present():
                            [0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0],
                            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]])
 
-    assert np.allclose(output['chord_simple_pitches'], np.repeat(pcp_true, N_REPEAT, axis=0))
+    assert np.allclose(output['chord_s/pitches'], np.repeat(pcp_true, N_REPEAT, axis=0))
 
 def test_task_simple_chord_absent():
 
     jam = jams.JAMS(file_metadata=dict(duration=4.0))
-    T = pumpp.task.SimpleChordTransformer()
+    T = pumpp.task.SimpleChordTransformer(name='chord_s')
 
     output = T.transform(jam)
 
     # Mask should be false since we have no matching namespace
-    eq_(output['mask_chord_simple'], False)
+    eq_(output['chord_s/mask'], False)
 
     # Check the shape
-    assert np.allclose(output['chord_simple_pitches'].shape, [4 * N_REPEAT, 12])
+    assert np.allclose(output['chord_s/pitches'].shape, [1, 4 * N_REPEAT, 12])
 
     # Make sure it's empty
-    assert not np.any(output['chord_simple_pitches'])
+    assert not np.any(output['chord_s/pitches'])
 
 
 def test_task_tslabel_present():
@@ -156,15 +156,15 @@ def test_task_tslabel_present():
     output = T.transform(jam)
 
     # Mask should be true
-    eq_(output['mask_madeup'], True)
+    eq_(output['madeup/mask'], True)
 
-    y = output['output_madeup']
+    y = output['madeup/tags']
 
     # Check the shape
-    assert np.allclose(y.shape, [4 * N_REPEAT, len(labels)])
+    assert np.allclose(y.shape, [1, 4 * N_REPEAT, len(labels)])
 
     # Decode the labels
-    predictions = T.encoder.inverse_transform(y[::N_REPEAT])
+    predictions = T.encoder.inverse_transform(y[0, ::N_REPEAT])
 
     true_labels = [['alpha', 'beta'], [], [], ['disco']]
 
@@ -177,17 +177,17 @@ def test_task_tslabel_absent():
 
     jam = jams.JAMS(file_metadata=dict(duration=4.0))
     T = pumpp.task.DynamicLabelTransformer(namespace='tag_open',
-                                              name='madeup',
-                                              labels=labels)
+                                           name='madeup',
+                                           labels=labels)
 
     output = T.transform(jam)
 
     # Mask should be false since we have no matching namespace
-    eq_(output['mask_madeup'], False)
-    y = output['output_madeup']
+    eq_(output['madeup/mask'], False)
+    y = output['madeup/tags']
 
     # Check the shape
-    assert np.allclose(y.shape, [4 * N_REPEAT, len(labels)])
+    assert np.allclose(y.shape, [1, 4 * N_REPEAT, len(labels)])
 
     # Make sure it's empty
     assert not np.any(y)
@@ -204,14 +204,14 @@ def test_task_glabel_absent():
     output = T.transform(jam)
 
     # Mask should be false since we have no matching namespace
-    eq_(output['mask_madeup'], False)
+    eq_(output['madeup/mask'], False)
 
     # Check the shape
-    eq_(output['output_madeup'].ndim, 1)
-    eq_(output['output_madeup'].shape[0], len(labels))
+    eq_(output['madeup/tags'].ndim, 2)
+    eq_(output['madeup/tags'].shape[1], len(labels))
 
     # Make sure it's empty
-    assert not np.any(output['output_madeup'])
+    assert not np.any(output['madeup/tags'])
 
 
 def test_task_glabel_present():
@@ -234,14 +234,14 @@ def test_task_glabel_present():
     output = T.transform(jam)
 
     # Mask should be true
-    eq_(output['mask_madeup'], True)
+    eq_(output['madeup/mask'], True)
 
     # Check the shape
-    eq_(output['output_madeup'].ndim, 1)
-    eq_(output['output_madeup'].shape[0], len(labels))
+    eq_(output['madeup/tags'].ndim, 2)
+    eq_(output['madeup/tags'].shape[1], len(labels))
 
     # Decode the labels
-    predictions = T.encoder.inverse_transform(output['output_madeup'].reshape((1, -1)))[0]
+    predictions = T.encoder.inverse_transform(output['madeup/tags'][0].reshape((1, -1)))[0]
 
     true_labels = ['alpha', 'beta', 'disco']
 
@@ -252,8 +252,8 @@ def test_task_vector_absent():
 
     def __test(dimension, name):
 
-        var_name = '{:s}_vector'.format(name)
-        mask_name = 'mask_{:s}'.format(name)
+        var_name = '{:s}/vector'.format(name)
+        mask_name = '{:s}/mask'.format(name)
 
         jam = jams.JAMS(file_metadata=dict(duration=4.0))
         T = pumpp.task.VectorTransformer(namespace='vector',
@@ -266,8 +266,8 @@ def test_task_vector_absent():
         eq_(output[mask_name], False)
 
         # Check the shape
-        eq_(output[var_name].ndim, 1)
-        eq_(output[var_name].shape[0], dimension)
+        eq_(output[var_name].ndim, 2)
+        eq_(output[var_name].shape[1], dimension)
 
         # Make sure it's empty
         assert not np.any(output[var_name])
@@ -280,8 +280,8 @@ def test_task_vector_absent():
 def test_task_vector_present():
 
     def __test(target_dimension, data_dimension, name):
-        var_name = '{:s}_vector'.format(name)
-        mask_name = 'mask_{:s}'.format(name)
+        var_name = '{:s}/vector'.format(name)
+        mask_name = '{:s}/mask'.format(name)
 
         jam = jams.JAMS(file_metadata=dict(duration=4.0))
         T = pumpp.task.VectorTransformer(namespace='vector',
@@ -300,8 +300,8 @@ def test_task_vector_present():
         eq_(output[mask_name], True)
 
         # Check the shape
-        eq_(output[var_name].ndim, 1)
-        eq_(output[var_name].shape[0], target_dimension)
+        eq_(output[var_name].ndim, 2)
+        eq_(output[var_name].shape[1], target_dimension)
 
         # Make sure it's empty
         assert np.allclose(output[var_name], ann.data.loc[0].value)
@@ -330,18 +330,18 @@ def test_task_beat_present():
 
     jam.annotations.append(ann)
 
-    T = pumpp.task.BeatTransformer()
+    T = pumpp.task.BeatTransformer(name='beat')
 
     output = T.transform(jam)
 
     # Make sure we have the masks
-    eq_(output['mask_beat_beat'], True)
-    eq_(output['mask_beat_downbeat'], True)
+    eq_(output['beat/mask'], True)
+    eq_(output['beat/mask_downbeat'], True)
 
     # The first channel measures beats
     # The second channel measures downbeats
-    assert np.allclose(output['beat_beat'].shape, [4 * N_REPEAT, 1])
-    assert np.allclose(output['beat_downbeat'].shape, [4 * N_REPEAT, 1])
+    assert np.allclose(output['beat/beat'].shape, [1, 4 * N_REPEAT, 1])
+    assert np.allclose(output['beat/downbeat'].shape, [1, 4 * N_REPEAT, 1])
 
     # Ideal vectors:
     #   a beat every second (two samples)
@@ -350,8 +350,8 @@ def test_task_beat_present():
     beat_true = np.asarray([[1, 1, 1, 1]]).T
     downbeat_true = np.asarray([[1, 0, 0, 1]]).T
 
-    assert np.allclose(output['beat_beat'][::N_REPEAT], beat_true)
-    assert np.allclose(output['beat_downbeat'][::N_REPEAT], downbeat_true)
+    assert np.allclose(output['beat/beat'][0, ::N_REPEAT], beat_true)
+    assert np.allclose(output['beat/downbeat'][0, ::N_REPEAT], downbeat_true)
 
 
 def test_task_beat_nometer():
@@ -369,17 +369,17 @@ def test_task_beat_nometer():
     jam.annotations.append(ann)
 
     # One second = one frame
-    T = pumpp.task.BeatTransformer()
+    T = pumpp.task.BeatTransformer(name='beat')
 
     output = T.transform(jam)
 
     # Make sure we have the mask
-    eq_(output['mask_beat_beat'], True)
-    eq_(output['mask_beat_downbeat'], False)
+    eq_(output['beat/mask'], True)
+    eq_(output['beat/mask_downbeat'], False)
 
     # Check the shape: 4 seconds at 2 samples per second
-    assert np.allclose(output['beat_beat'].shape, [4 * N_REPEAT, 1])
-    assert np.allclose(output['beat_downbeat'].shape, [4 * N_REPEAT, 1])
+    assert np.allclose(output['beat/beat'].shape, [1, 4 * N_REPEAT, 1])
+    assert np.allclose(output['beat/downbeat'].shape, [1, 4 * N_REPEAT, 1])
 
     # Ideal vectors:
     #   a beat every second (two samples)
@@ -388,8 +388,8 @@ def test_task_beat_nometer():
     beat_true = np.asarray([1, 1, 1, 1])
     downbeat_true = np.asarray([0, 0, 0, 0])
 
-    assert np.allclose(output['beat_beat'][::N_REPEAT], beat_true)
-    assert np.allclose(output['beat_downbeat'][::N_REPEAT], downbeat_true)
+    assert np.allclose(output['beat/beat'][0, ::N_REPEAT], beat_true)
+    assert np.allclose(output['beat/downbeat'][0, ::N_REPEAT], downbeat_true)
 
 
 def test_task_beat_absent():
@@ -398,16 +398,16 @@ def test_task_beat_absent():
     jam = jams.JAMS(file_metadata=dict(duration=4.0))
 
     # One second = one frame
-    T = pumpp.task.BeatTransformer()
+    T = pumpp.task.BeatTransformer(name='beat')
 
     output = T.transform(jam)
 
     # Make sure we have the mask
-    eq_(output['mask_beat_beat'], False)
-    eq_(output['mask_beat_downbeat'], False)
+    eq_(output['beat/mask'], False)
+    eq_(output['beat/mask_downbeat'], False)
 
     # Check the shape: 4 seconds at 2 samples per second
-    assert np.allclose(output['beat_beat'].shape, [4 * N_REPEAT, 1])
-    assert np.allclose(output['beat_downbeat'].shape, [4 * N_REPEAT, 1])
-    assert not np.any(output['beat_beat'])
-    assert not np.any(output['beat_downbeat'])
+    assert np.allclose(output['beat/beat'].shape, [1, 4 * N_REPEAT, 1])
+    assert np.allclose(output['beat/downbeat'].shape, [1, 4 * N_REPEAT, 1])
+    assert not np.any(output['beat/beat'])
+    assert not np.any(output['beat/downbeat'])

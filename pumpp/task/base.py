@@ -21,31 +21,40 @@ class BaseTaskTransformer(object):
         self.sr = sr
         self.hop_length = hop_length
         self.name = name
+        if name is not None:
+            self._prefix = '{:s}/'.format(self.name)
+        else:
+            self._prefix = ''
 
-    def find_annotation(self, jam):
-        '''Retrieve a random annotation matching the target namespace
-        
-        Parameters
-        ----------
-        jam : jams.JAMS
-            The JAMS object to query
+    def transform(self, jam):
 
-        Returns
-        -------
-        ann : jams.Annotation or None
-            If any annotations matching this task's namespace can be found,
-            a random one is selected.
-
-            Otherwise, `None` is returned.
-        '''
+        # Find annotations
         anns = jam.search(namespace=self.namespace)
+        mask = True
 
-        if anns:
-            i = np.random.choice(len(anns))
-            return anns[i]
+        duration = jam.file_metadata.duration
 
-        # FIXME: raise an exception instead of returning None
-        return None
+        # If none, make a fake one
+        if not anns:
+            anns = [self.empty(duration)]
+            mask = False
+
+        # Apply transformations
+        results = []
+        for ann in anns:
+            results.append(self.transform_annotation(ann, duration))
+            results[-1]['mask'] = mask
+
+        # Prefix and collect
+        return self.merge(results)
+
+    def merge(self, results):
+        output = dict()
+
+        for key in results[0]:
+            pkey = '{:s}{:s}'.format(self._prefix, key)
+            output[pkey] = np.stack([np.asarray(r[key]) for r in results], axis=0)
+        return output
 
     def encode_events(self, duration, events, values):
         '''Encode labeled events as a time-series matrix.
@@ -97,8 +106,7 @@ class BaseTaskTransformer(object):
                                          sr=self.sr,
                                          hop_length=self.hop_length)
 
-        target = np.empty((n_total, values.shape[-1]),
-                          dtype=values.dtype)
+        target = np.empty((n_total, values.shape[1]), dtype=values.dtype)
 
         target.fill(self.fill_na)
 

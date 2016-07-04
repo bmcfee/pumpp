@@ -5,6 +5,7 @@
 import numpy as np
 from sklearn.preprocessing import MultiLabelBinarizer
 import mir_eval
+import jams
 
 from .base import BaseTaskTransformer
 
@@ -33,21 +34,18 @@ class ChordTransformer(BaseTaskTransformer):
         self.encoder = MultiLabelBinarizer()
         self.encoder.fit([pitches])
         self._classes = set(self.encoder.classes_)
-        self.name = name
 
-    def transform(self, jam):
+    def empty(self, duration):
+        ann = jams.Annotation(namespace='chord')
+        ann.append(time=0,
+                   duration=duration,
+                   value='N', confidence=0)
+        return ann
 
-        ann = self.find_annotation(jam)
+    def transform_annotation(self, ann, duration):
 
         # Construct a blank annotation with mask = 0
-        intervals = np.asarray([[0.0, jam.file_metadata.duration]])
-        chords = ['N']
-        mask = False
-        if ann:
-            ann_ints, ann_chords = ann.data.to_interval_values()
-            intervals = np.vstack([intervals, ann_ints])
-            chords.extend(ann_chords)
-            mask = True
+        intervals, chords = ann.data.to_interval_values()
 
         # Suppress all intervals not in the encoder
         pitch = []
@@ -72,20 +70,16 @@ class ChordTransformer(BaseTaskTransformer):
         root = np.asarray(root)
         bass = np.asarray(bass)
 
-        target_pitch = self.encode_intervals(jam.file_metadata.duration,
-                                             intervals, pitch)
-        target_root = self.encode_intervals(jam.file_metadata.duration,
-                                            intervals, root)
-        target_bass = self.encode_intervals(jam.file_metadata.duration,
-                                            intervals, bass)
+        target_pitch = self.encode_intervals(duration, intervals, pitch)
+        target_root = self.encode_intervals(duration, intervals, root)
+        target_bass = self.encode_intervals(duration, intervals, bass)
 
-        return {'{:s}_pitches'.format(self.name): target_pitch,
-                '{:s}_root'.format(self.name): _pad_nochord(target_root),
-                '{:s}_bass'.format(self.name): _pad_nochord(target_bass),
-                'mask_{:s}'.format(self.name): mask}
+        return {'pitches': target_pitch,
+                'root': _pad_nochord(target_root),
+                'bass': _pad_nochord(target_bass)}
 
 
-class SimpleChordTransformer(BaseTaskTransformer):
+class SimpleChordTransformer(ChordTransformer):
 
     def __init__(self, name='chord_simple', sr=22050, hop_length=512):
         '''Initialize a chord task transformer.
@@ -93,48 +87,14 @@ class SimpleChordTransformer(BaseTaskTransformer):
         This version of the task includes only pitch classes, but not root or bass.
         '''
 
-        super(SimpleChordTransformer, self).__init__('chord|chord_harte',
-                                                     name=name,
-                                                     fill_na=0,
+        super(SimpleChordTransformer, self).__init__(name=name,
                                                      sr=sr,
                                                      hop_length=hop_length)
 
+    def transform_annotation(self, ann, duration):
 
-        pitches = list(range(12))
-        self.encoder = MultiLabelBinarizer()
-        self.encoder.fit([pitches])
-        self._classes = set(self.encoder.classes_)
-        self.name = name
+        data = super(SimpleChordTransformer, self).transform_annotation(ann, duration)
 
-    def transform(self, jam):
-
-        ann = self.find_annotation(jam)
-
-        # Construct a blank annotation with mask = 0
-        intervals = np.asarray([[0.0, jam.file_metadata.duration]])
-        chords = ['N']
-        mask = False
-        if ann:
-            ann_ints, ann_chords = ann.data.to_interval_values()
-            intervals = np.vstack([intervals, ann_ints])
-            chords.extend(ann_chords)
-            mask = True
-
-        # Suppress all intervals not in the encoder
-        pitch = []
-
-        for c in chords:
-            # Encode the pitches
-            r, s, b = mir_eval.chord.encode(c)
-            s = np.roll(s, r)
-
-            pitch.append(s)
-
-        pitch = np.asarray(pitch)
-
-        target_pitch = self.encode_intervals(jam.file_metadata.duration,
-                                             intervals, pitch)
-
-        return {'{:s}_pitches'.format(self.name): target_pitch,
-                'mask_{:s}'.format(self.name): mask}
-
+        data.pop('root', None)
+        data.pop('bass', None)
+        return data
