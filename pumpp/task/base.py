@@ -28,7 +28,8 @@ class BaseTaskTransformer(object):
 
     def transform(self, jam):
 
-        # Find annotations
+        # FIXME: this would be the part to insert filtering logic
+        # Find annotations that can be coerced to our target namespace
         anns = []
         for ann in jam.annotations:
             try:

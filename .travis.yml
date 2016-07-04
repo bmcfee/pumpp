@@ -38,7 +38,7 @@ install:
     - pip install -e .[docs,tests]
 
 script:
-    - py.test
+    - py.test -v --cov=pumpp
 
 after_success:
     - coveralls
