@@ -12,7 +12,11 @@ __all__ = ['BeatTransformer']
 class BeatTransformer(BaseTaskTransformer):
 
     def __init__(self, name='beat', sr=22050, hop_length=512):
-        super(BeatTransformer, self).__init__('beat', 0, sr, hop_length)
+        super(BeatTransformer, self).__init__('beat',
+                                              name=name,
+                                              fill_na=0,
+                                              sr=sr,
+                                              hop_length=hop_length)
 
         self.name = name
 
@@ -53,7 +57,7 @@ class BeatTransformer(BaseTaskTransformer):
                                              downbeat_events,
                                              downbeat_labels)
 
-        return {'output_beat': target_beat,
-                'mask_beat': mask_beat,
-                'output_downbeat': target_downbeat,
-                'mask_downbeat': mask_downbeat}
+        return {'{:s}_beat'.format(self.name): target_beat,
+                'mask_{:s}_beat'.format(self.name): mask_beat,
+                '{:s}_downbeat'.format(self.name): target_downbeat,
+                'mask_{:s}_downbeat'.format(self.name): mask_downbeat}

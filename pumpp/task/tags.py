@@ -3,16 +3,14 @@
 '''Tag task transformers'''
 
 import numpy as np
-
-from .base import BaseTaskTransformer
 from sklearn.preprocessing import MultiLabelBinarizer
 
-# FIXME: rename timeseries, global -> dynamic, static
+from .base import BaseTaskTransformer
 
-__all__ = ['TimeSeriesLabelTransformer', 'GlobalLabelTransformer']
+__all__ = ['DynamicLabelTransformer', 'StaticLabelTransformer']
 
 
-class TimeSeriesLabelTransformer(BaseTaskTransformer):
+class DynamicLabelTransformer(BaseTaskTransformer):
 
     def __init__(self, namespace, name, labels, sr=22050, hop_length=512):
         '''Initialize a time-series label transformer
@@ -29,14 +27,15 @@ class TimeSeriesLabelTransformer(BaseTaskTransformer):
             The (pre-constructed) label encoder
         '''
 
-        super(TimeSeriesLabelTransformer, self).__init__(namespace, 0,
-                                                         sr=sr,
-                                                         hop_length=hop_length)
+        super(DynamicLabelTransformer, self).__init__(namespace,
+                                                      name=name,
+                                                      fill_na=0,
+                                                      sr=sr,
+                                                      hop_length=hop_length)
 
         self.encoder = MultiLabelBinarizer()
         self.encoder.fit([labels])
         self._classes = set(self.encoder.classes_)
-        self.name = name
 
     def transform(self, jam):
 
@@ -68,7 +67,7 @@ class TimeSeriesLabelTransformer(BaseTaskTransformer):
                 'mask_{:s}'.format(self.name): mask}
 
 
-class GlobalLabelTransformer(BaseTaskTransformer):
+class StaticLabelTransformer(BaseTaskTransformer):
 
     def __init__(self, namespace, name, labels):
         '''Initialize a global label transformer
@@ -79,12 +78,14 @@ class GlobalLabelTransformer(BaseTaskTransformer):
             The JAMS object container
         '''
 
-        super(GlobalLabelTransformer, self).__init__(namespace, 0, sr=1, hop_length=1)
+        super(StaticLabelTransformer, self).__init__(namespace,
+                                                     name=name,
+                                                     fill_na=0,
+                                                     sr=1, hop_length=1)
 
         self.encoder = MultiLabelBinarizer()
         self.encoder.fit([labels])
         self._classes = set(self.encoder.classes_)
-        self.name = name
 
     def transform(self, jam):
 

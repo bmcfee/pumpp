@@ -11,7 +11,7 @@ __all__ = ['BaseTaskTransformer']
 class BaseTaskTransformer(object):
     '''Base class for task transformer objects'''
 
-    def __init__(self, namespace, fill_na, sr, hop_length):
+    def __init__(self, namespace, name, fill_na, sr, hop_length):
         self.namespace = namespace
 
         if fill_na is None:
@@ -20,6 +20,7 @@ class BaseTaskTransformer(object):
         self.fill_na = fill_na
         self.sr = sr
         self.hop_length = hop_length
+        self.name = name
 
     def find_annotation(self, jam):
         '''Retrieve a random annotation matching the target namespace

@@ -11,9 +11,11 @@ __all__ = ['VectorTransformer']
 
 class VectorTransformer(BaseTaskTransformer):
 
-    def __init__(self, namespace, dimension, name='vector', sr=22050, hop_length=512):
+    def __init__(self, namespace, dimension, name='vector'):
 
-        super(VectorTransformer, self).__init__(namespace, 0, sr, hop_length)
+        super(VectorTransformer, self).__init__(namespace, name=name,
+                                                fill_na=0,
+                                                sr=1, hop_length=1)
 
         self.dimension = dimension
         self.name = name
@@ -33,5 +35,5 @@ class VectorTransformer(BaseTaskTransformer):
             vector = np.zeros(self.dimension, dtype=np.float32)
             mask = False
 
-        return {'output_{:s}'.format(self.name): vector,
+        return {'{:s}_vector'.format(self.name): vector,
                 'mask_{:s}'.format(self.name): mask}

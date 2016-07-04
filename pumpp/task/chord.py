@@ -23,9 +23,11 @@ class ChordTransformer(BaseTaskTransformer):
     def __init__(self, name='chord', sr=22050, hop_length=512):
         '''Initialize a chord task transformer'''
 
-        super(ChordTransformer, self).__init__('chord|chord_harte', 0,
-                                               sr,
-                                               hop_length)
+        super(ChordTransformer, self).__init__('chord|chord_harte',
+                                               name=name,
+                                               fill_na=0,
+                                               sr=sr,
+                                               hop_length=hop_length)
 
         pitches = list(range(12))
         self.encoder = MultiLabelBinarizer()
@@ -77,10 +79,10 @@ class ChordTransformer(BaseTaskTransformer):
         target_bass = self.encode_intervals(jam.file_metadata.duration,
                                             intervals, bass)
 
-        return {'output_pitches': target_pitch,
-                'output_root': _pad_nochord(target_root),
-                'output_bass': _pad_nochord(target_bass),
-                'mask_chord': mask}
+        return {'{:s}_pitches'.format(self.name): target_pitch,
+                '{:s}_root'.format(self.name): _pad_nochord(target_root),
+                '{:s}_bass'.format(self.name): _pad_nochord(target_bass),
+                'mask_{:s}'.format(self.name): mask}
 
 
 class SimpleChordTransformer(BaseTaskTransformer):
@@ -91,8 +93,11 @@ class SimpleChordTransformer(BaseTaskTransformer):
         This version of the task includes only pitch classes, but not root or bass.
         '''
 
-        super(SimpleChordTransformer, self).__init__('chord|chord_harte', 0,
-                                                     sr, hop_length)
+        super(SimpleChordTransformer, self).__init__('chord|chord_harte',
+                                                     name=name,
+                                                     fill_na=0,
+                                                     sr=sr,
+                                                     hop_length=hop_length)
 
 
         pitches = list(range(12))
@@ -130,6 +135,6 @@ class SimpleChordTransformer(BaseTaskTransformer):
         target_pitch = self.encode_intervals(jam.file_metadata.duration,
                                              intervals, pitch)
 
-        return {'output_pitches': target_pitch,
-                'mask_chord': mask}
+        return {'{:s}_pitches'.format(self.name): target_pitch,
+                'mask_{:s}'.format(self.name): mask}
 
