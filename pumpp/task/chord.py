@@ -24,7 +24,7 @@ class ChordTransformer(BaseTaskTransformer):
     def __init__(self, name='chord', sr=22050, hop_length=512):
         '''Initialize a chord task transformer'''
 
-        super(ChordTransformer, self).__init__('chord|chord_harte',
+        super(ChordTransformer, self).__init__('chord',
                                                name=name,
                                                fill_na=0,
                                                sr=sr,

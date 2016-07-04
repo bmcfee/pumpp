@@ -4,7 +4,7 @@
 
 import numpy as np
 import librosa
-
+import jams
 
 __all__ = ['BaseTaskTransformer']
 
@@ -29,7 +29,13 @@ class BaseTaskTransformer(object):
     def transform(self, jam):
 
         # Find annotations
-        anns = jam.search(namespace=self.namespace)
+        anns = []
+        for ann in jam.annotations:
+            try:
+                anns.append(jams.nsconvert.convert(ann, self.namespace))
+            except jams.NamespaceError:
+                pass
+
         mask = True
 
         duration = jam.file_metadata.duration
