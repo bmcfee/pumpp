@@ -19,3 +19,35 @@ be easily consumed by statistical algorithms.  Some desired features:
 - Aligning and storing the results in a simple data structure (npz, hdf5)
 - Converting between annotation spaces for a given task
 - Helper variables for semi-supervised learning
+
+## Example usage
+
+```python
+
+>>> import jams
+>>> import pumpp
+
+>>> audio_f = '/path/to/audio/myfile.ogg'
+>>> jams_f = '/path/to/annotations/myfile.jamz'
+
+>>> # Set up sampling and frame rate parameters
+>>> sr, hop_length = 44100, 512
+
+>>> # Create a feature extraction object
+>>> p_cqt = pumpp.feature.ConstantQ(name='cqt', sr=sr, hop_length=hop_length)
+
+>>> # Create some annotation extractors
+>>> p_beat = pumpp.task.BeatTransformer(sr=sr, hop_length=hop_length)
+>>> p_chord = pumpp.task.SimpleChordTransformer(sr=sr, hop_length=hop_length)
+
+>>> # Apply the extractors
+>>> data = pumpp.apply(audio_f, jams_f, p_cqt, p_beat, b_chord)
+
+>>> # Add a new task
+>>> p_vox = pumpp.task.DynamicLabelTransformer(name='vox',
+...                                            namespace='tag_medleydb_instruments',
+...                                            labels=['vocals_male', 'vocals_female'])
+
+>>> # Update the `data` dict with the new task
+>>> pumpp.update(data, audio_f, jams_f, p_vox)
+```
