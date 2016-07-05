@@ -36,10 +36,12 @@ class ChordTransformer(BaseTaskTransformer):
         self._classes = set(self.encoder.classes_)
 
     def empty(self, duration):
-        ann = jams.Annotation(namespace='chord')
+        ann = super(ChordTransformer, self).empty(duration)
+
         ann.append(time=0,
                    duration=duration,
                    value='N', confidence=0)
+
         return ann
 
     def transform_annotation(self, ann, duration):
@@ -80,16 +82,6 @@ class ChordTransformer(BaseTaskTransformer):
 
 
 class SimpleChordTransformer(ChordTransformer):
-
-    def __init__(self, name='chord_simple', sr=22050, hop_length=512):
-        '''Initialize a chord task transformer.
-
-        This version of the task includes only pitch classes, but not root or bass.
-        '''
-
-        super(SimpleChordTransformer, self).__init__(name=name,
-                                                     sr=sr,
-                                                     hop_length=hop_length)
 
     def transform_annotation(self, ann, duration):
 

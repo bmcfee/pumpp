@@ -3,7 +3,6 @@
 '''Regression task transformers'''
 
 import numpy as np
-import jams
 
 from .base import BaseTaskTransformer
 
@@ -21,9 +20,10 @@ class VectorTransformer(BaseTaskTransformer):
         self.dimension = dimension
 
     def empty(self, duration):
-        vector = np.zeros(self.dimension, dtype=np.float32)
-        ann = jams.Annotation(namespace=self.namespace)
-        ann.append(time=0, duration=duration, value=vector, confidence=0)
+        ann = super(VectorTransformer, self).empty(duration)
+
+        ann.append(time=0, duration=duration, confidence=0,
+                   value=np.zeros(self.dimension, dtype=np.float32))
         return ann
 
     def transform_annotation(self, ann, duration):

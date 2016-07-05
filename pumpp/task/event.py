@@ -19,9 +19,6 @@ class BeatTransformer(BaseTaskTransformer):
                                               sr=sr,
                                               hop_length=hop_length)
 
-    def empty(self, duration):
-        return jams.Annotation(namespace='beat')
-
     def transform_annotation(self, ann, duration):
 
         mask_downbeat = False

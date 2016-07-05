@@ -33,7 +33,7 @@ def test_task_chord_present():
     output = T.transform(jam)
 
     # Make sure we have the mask
-    assert output['chord/mask']
+    assert np.all(output['chord/_valid'] == [0, 5 * T.sr // T.hop_length])
 
     # Ideal vectors:
     # pcp = Cmaj, Cmaj, N, Dmaj, N
@@ -69,8 +69,8 @@ def test_task_chord_absent():
 
     output = T.transform(jam)
 
-    # Mask should be false since we have no matching namespace
-    assert not output['chord/mask']
+    # Valid range is 0 since we have no matching namespace
+    assert not np.any(output['chord/_valid'])
 
     # Check the shape
     assert output['chord/pitches'].shape == (1, 4 * N_REPEAT, 12)
@@ -105,7 +105,7 @@ def test_task_simple_chord_present():
     output = T.transform(jam)
 
     # Make sure we have the mask
-    assert output['chord_s/mask']
+    assert np.all(output['chord_s/_valid'] == [0, 5 * T.sr // T.hop_length])
 
     # Ideal vectors:
     # pcp = Cmaj, Cmaj, N, Dmaj, N
@@ -125,7 +125,7 @@ def test_task_simple_chord_absent():
     output = T.transform(jam)
 
     # Mask should be false since we have no matching namespace
-    assert not output['chord_s/mask']
+    assert not np.any(output['chord_s/_valid'])
 
     # Check the shape
     assert output['chord_s/pitches'].shape == (1, 4 * N_REPEAT, 12)
@@ -134,7 +134,7 @@ def test_task_simple_chord_absent():
     assert not np.any(output['chord_s/pitches'])
 
 
-def test_task_tslabel_present():
+def test_task_dlabel_present():
     labels = ['alpha', 'beta', 'psycho', 'aqua', 'disco']
 
     jam = jams.JAMS(file_metadata=dict(duration=4.0))
@@ -154,7 +154,7 @@ def test_task_tslabel_present():
     output = T.transform(jam)
 
     # Mask should be true
-    assert output['madeup/mask']
+    assert np.all(output['madeup/_valid'] == [0, 4 * T.sr // T.hop_length])
 
     y = output['madeup/tags']
 
@@ -170,7 +170,7 @@ def test_task_tslabel_present():
         assert set(t) == set(p)
 
 
-def test_task_tslabel_absent():
+def test_task_dlabel_absent():
     labels = ['alpha', 'beta', 'psycho', 'aqua', 'disco']
 
     jam = jams.JAMS(file_metadata=dict(duration=4.0))
@@ -181,7 +181,7 @@ def test_task_tslabel_absent():
     output = T.transform(jam)
 
     # Mask should be false since we have no matching namespace
-    assert not output['madeup/mask']
+    assert not np.any(output['madeup/_valid'])
 
     y = output['madeup/tags']
 
@@ -192,7 +192,7 @@ def test_task_tslabel_absent():
     assert not np.any(y)
 
 
-def test_task_glabel_absent():
+def test_task_slabel_absent():
     labels = ['alpha', 'beta', 'psycho', 'aqua', 'disco']
 
     jam = jams.JAMS(file_metadata=dict(duration=4.0))
@@ -203,7 +203,7 @@ def test_task_glabel_absent():
     output = T.transform(jam)
 
     # Mask should be false since we have no matching namespace
-    assert not output['madeup/mask']
+    assert not np.any(output['madeup/_valid'])
 
     # Check the shape
     assert output['madeup/tags'].ndim == 2
@@ -213,7 +213,7 @@ def test_task_glabel_absent():
     assert not np.any(output['madeup/tags'])
 
 
-def test_task_glabel_present():
+def test_task_slabel_present():
     labels = ['alpha', 'beta', 'psycho', 'aqua', 'disco']
 
     jam = jams.JAMS(file_metadata=dict(duration=4.0))
@@ -233,7 +233,7 @@ def test_task_glabel_present():
     output = T.transform(jam)
 
     # Mask should be true
-    assert output['madeup/mask'] == True
+    assert np.all(output['madeup/_valid'] == [0, 4 * T.sr // T.hop_length])
 
     # Check the shape
     assert output['madeup/tags'].ndim == 2
@@ -252,7 +252,7 @@ def test_task_glabel_present():
 def test_task_vector_absent(dimension, name):
 
     var_name = '{:s}/vector'.format(name)
-    mask_name = '{:s}/mask'.format(name)
+    mask_name = '{:s}/_valid'.format(name)
 
     jam = jams.JAMS(file_metadata=dict(duration=4.0))
     T = pumpp.task.VectorTransformer(namespace='vector',
@@ -262,7 +262,7 @@ def test_task_vector_absent(dimension, name):
     output = T.transform(jam)
 
     # Mask should be false since we have no matching namespace
-    output[mask_name] == False
+    assert not np.any(output[mask_name])
 
     # Check the shape
     assert output[var_name].ndim == 2
@@ -278,7 +278,7 @@ def test_task_vector_absent(dimension, name):
                           pytest.mark.xfail((2, 3), raises=RuntimeError)])
 def test_task_vector_present(target_dimension, data_dimension, name):
     var_name = '{:s}/vector'.format(name)
-    mask_name = '{:s}/mask'.format(name)
+    mask_name = '{:s}/_valid'.format(name)
 
     jam = jams.JAMS(file_metadata=dict(duration=4.0))
     T = pumpp.task.VectorTransformer(namespace='vector',
@@ -293,8 +293,7 @@ def test_task_vector_present(target_dimension, data_dimension, name):
 
     output = T.transform(jam)
 
-    # Mask should be false since we have no matching namespace
-    assert output[mask_name]
+    assert np.all(output[mask_name] == [0, 4 * T.sr // T.hop_length])
 
     # Check the shape
     assert output[var_name].ndim == 2
@@ -323,7 +322,7 @@ def test_task_beat_present():
     output = T.transform(jam)
 
     # Make sure we have the masks
-    assert output['beat/mask']
+    assert np.all(output['beat/_valid'] == [0, 4 * T.sr // T.hop_length])
     assert output['beat/mask_downbeat']
 
     # The first channel measures beats
@@ -362,7 +361,7 @@ def test_task_beat_nometer():
     output = T.transform(jam)
 
     # Make sure we have the mask
-    assert output['beat/mask']
+    assert np.all(output['beat/_valid'] == [0, 4 * T.sr // T.hop_length])
     assert not output['beat/mask_downbeat']
 
     # Check the shape: 4 seconds at 2 samples per second
@@ -391,7 +390,7 @@ def test_task_beat_absent():
     output = T.transform(jam)
 
     # Make sure we have the mask
-    assert not output['beat/mask']
+    assert not np.any(output['beat/_valid'])
     assert not output['beat/mask_downbeat']
 
     # Check the shape: 4 seconds at 2 samples per second

@@ -39,7 +39,7 @@ class DynamicLabelTransformer(BaseTaskTransformer):
         self._classes = set(self.encoder.classes_)
 
     def empty(self, duration):
-        ann = jams.Annotation(namespace=self.namespace)
+        ann = super(DynamicLabelTransformer, self).empty(duration)
         ann.append(time=0, duration=duration, value=None)
         return ann
 
@@ -80,10 +80,6 @@ class StaticLabelTransformer(BaseTaskTransformer):
         self.encoder = MultiLabelBinarizer()
         self.encoder.fit([labels])
         self._classes = set(self.encoder.classes_)
-
-    def empty(self, duration):
-        ann = jams.Annotation(namespace=self.namespace)
-        return ann
 
     def transform_annotation(self, ann, duration):
 
