@@ -33,6 +33,7 @@ setup(
                       'scikit-learn>=0.17',
                       'mir_eval>=0.2'],
     extras_require={
-        'docs': ['numpydoc']
+        'docs': ['numpydoc'],
+        'tests': ['pytest', 'pytest-cov']
     }
 )
