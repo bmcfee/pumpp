@@ -2,16 +2,16 @@
 # -*- encoding: utf-8 -*-
 '''Tests for first-level audio feature extraction'''
 
-import pytest
 import numpy as np
+import pytest
 import jams
+
 import pumpp
 
 
 SR = 22050
 HOP_LENGTH = 512
 N_REPEAT = SR // HOP_LENGTH
-
 
 def test_task_chord_present():
 
