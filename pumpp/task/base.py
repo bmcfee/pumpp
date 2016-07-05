@@ -89,12 +89,10 @@ class BaseTaskTransformer(object):
                                         sr=self.sr,
                                         hop_length=self.hop_length)
 
-        n_total = librosa.time_to_frames(duration,
-                                         sr=self.sr,
-                                         hop_length=self.hop_length)
+        n_total = int(librosa.time_to_frames(duration, sr=self.sr,
+                                             hop_length=self.hop_length))
 
-        target = np.empty((n_total, values.shape[1]),
-                          dtype=values.dtype)
+        target = np.empty((n_total, values.shape[1]), dtype=values.dtype)
 
         target.fill(self.fill_na)
 
@@ -109,9 +107,8 @@ class BaseTaskTransformer(object):
                                         sr=self.sr,
                                         hop_length=self.hop_length)
 
-        n_total = librosa.time_to_frames(duration,
-                                         sr=self.sr,
-                                         hop_length=self.hop_length)
+        n_total = int(librosa.time_to_frames(duration, sr=self.sr,
+                                             hop_length=self.hop_length))
 
         target = np.empty((n_total, values.shape[1]), dtype=values.dtype)
 
