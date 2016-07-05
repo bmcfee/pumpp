@@ -57,9 +57,9 @@ def test_task_chord_present():
                             [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]])
 
-    assert np.allclose(output['chord/pitches'], np.repeat(pcp_true, N_REPEAT, axis=0))
-    assert np.allclose(output['chord/root'], np.repeat(root_true, N_REPEAT, axis=0))
-    assert np.allclose(output['chord/bass'], np.repeat(bass_true, N_REPEAT, axis=0))
+    assert np.all(output['chord/pitches'] == np.repeat(pcp_true, N_REPEAT, axis=0))
+    assert np.all(output['chord/root'] == np.repeat(root_true, N_REPEAT, axis=0))
+    assert np.all(output['chord/bass'] == np.repeat(bass_true, N_REPEAT, axis=0))
 
 
 def test_task_chord_absent():
@@ -73,9 +73,9 @@ def test_task_chord_absent():
     assert not output['chord/mask']
 
     # Check the shape
-    assert np.allclose(output['chord/pitches'].shape, [1, 4 * N_REPEAT, 12])
-    assert np.allclose(output['chord/root'].shape, [1, 4 * N_REPEAT, 13])
-    assert np.allclose(output['chord/bass'].shape, [1, 4 * N_REPEAT, 13])
+    assert output['chord/pitches'].shape == (1, 4 * N_REPEAT, 12)
+    assert output['chord/root'].shape == (1, 4 * N_REPEAT, 13)
+    assert output['chord/bass'].shape == (1, 4 * N_REPEAT, 13)
 
     # Make sure it's empty
     assert not np.any(output['chord/pitches'])
@@ -115,7 +115,7 @@ def test_task_simple_chord_present():
                            [0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0],
                            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]])
 
-    assert np.allclose(output['chord_s/pitches'], np.repeat(pcp_true, N_REPEAT, axis=0))
+    assert np.all(output['chord_s/pitches'] == np.repeat(pcp_true, N_REPEAT, axis=0))
 
 def test_task_simple_chord_absent():
 
@@ -128,7 +128,7 @@ def test_task_simple_chord_absent():
     assert not output['chord_s/mask']
 
     # Check the shape
-    assert np.allclose(output['chord_s/pitches'].shape, [1, 4 * N_REPEAT, 12])
+    assert output['chord_s/pitches'].shape == (1, 4 * N_REPEAT, 12)
 
     # Make sure it's empty
     assert not np.any(output['chord_s/pitches'])
@@ -159,7 +159,7 @@ def test_task_tslabel_present():
     y = output['madeup/tags']
 
     # Check the shape
-    assert np.allclose(y.shape, [1, 4 * N_REPEAT, len(labels)])
+    assert y.shape == (1, 4 * N_REPEAT, len(labels))
 
     # Decode the labels
     predictions = T.encoder.inverse_transform(y[0, ::N_REPEAT])
@@ -186,7 +186,7 @@ def test_task_tslabel_absent():
     y = output['madeup/tags']
 
     # Check the shape
-    assert np.allclose(y.shape, [1, 4 * N_REPEAT, len(labels)])
+    assert y.shape == (1, 4 * N_REPEAT, len(labels))
 
     # Make sure it's empty
     assert not np.any(y)
@@ -301,7 +301,7 @@ def test_task_vector_present(target_dimension, data_dimension, name):
     assert output[var_name].shape[1] == target_dimension
 
     # Make sure it's empty
-    assert np.allclose(output[var_name], ann.data.loc[0].value)
+    assert np.all(output[var_name] == ann.data.loc[0].value)
 
 
 def test_task_beat_present():
@@ -328,8 +328,8 @@ def test_task_beat_present():
 
     # The first channel measures beats
     # The second channel measures downbeats
-    assert np.allclose(output['beat/beat'].shape, [1, 4 * N_REPEAT, 1])
-    assert np.allclose(output['beat/downbeat'].shape, [1, 4 * N_REPEAT, 1])
+    assert output['beat/beat'].shape == (1, 4 * N_REPEAT, 1)
+    assert output['beat/downbeat'].shape == (1, 4 * N_REPEAT, 1)
 
     # Ideal vectors:
     #   a beat every second (two samples)
@@ -338,8 +338,8 @@ def test_task_beat_present():
     beat_true = np.asarray([[1, 1, 1, 1]]).T
     downbeat_true = np.asarray([[1, 0, 0, 1]]).T
 
-    assert np.allclose(output['beat/beat'][0, ::N_REPEAT], beat_true)
-    assert np.allclose(output['beat/downbeat'][0, ::N_REPEAT], downbeat_true)
+    assert np.all(output['beat/beat'][0, ::N_REPEAT] == beat_true)
+    assert np.all(output['beat/downbeat'][0, ::N_REPEAT] == downbeat_true)
 
 
 def test_task_beat_nometer():
@@ -366,8 +366,8 @@ def test_task_beat_nometer():
     assert not output['beat/mask_downbeat']
 
     # Check the shape: 4 seconds at 2 samples per second
-    assert np.allclose(output['beat/beat'].shape, [1, 4 * N_REPEAT, 1])
-    assert np.allclose(output['beat/downbeat'].shape, [1, 4 * N_REPEAT, 1])
+    assert output['beat/beat'].shape == (1, 4 * N_REPEAT, 1)
+    assert output['beat/downbeat'].shape == (1, 4 * N_REPEAT, 1)
 
     # Ideal vectors:
     #   a beat every second (two samples)
@@ -376,8 +376,8 @@ def test_task_beat_nometer():
     beat_true = np.asarray([1, 1, 1, 1])
     downbeat_true = np.asarray([0, 0, 0, 0])
 
-    assert np.allclose(output['beat/beat'][0, ::N_REPEAT], beat_true)
-    assert np.allclose(output['beat/downbeat'][0, ::N_REPEAT], downbeat_true)
+    assert np.all(output['beat/beat'][0, ::N_REPEAT] == beat_true)
+    assert np.all(output['beat/downbeat'][0, ::N_REPEAT] == downbeat_true)
 
 
 def test_task_beat_absent():
@@ -395,7 +395,7 @@ def test_task_beat_absent():
     assert not output['beat/mask_downbeat']
 
     # Check the shape: 4 seconds at 2 samples per second
-    assert np.allclose(output['beat/beat'].shape, [1, 4 * N_REPEAT, 1])
-    assert np.allclose(output['beat/downbeat'].shape, [1, 4 * N_REPEAT, 1])
+    assert output['beat/beat'].shape == (1, 4 * N_REPEAT, 1)
+    assert output['beat/downbeat'].shape == (1, 4 * N_REPEAT, 1)
     assert not np.any(output['beat/beat'])
     assert not np.any(output['beat/downbeat'])
