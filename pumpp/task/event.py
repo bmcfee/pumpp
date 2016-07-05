@@ -3,7 +3,6 @@
 '''Instantaneous event coding'''
 
 import numpy as np
-import jams
 
 from .base import BaseTaskTransformer
 

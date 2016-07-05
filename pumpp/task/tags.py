@@ -4,7 +4,6 @@
 
 import numpy as np
 from sklearn.preprocessing import MultiLabelBinarizer
-import jams
 
 from .base import BaseTaskTransformer
 

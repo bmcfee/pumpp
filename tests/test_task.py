@@ -57,7 +57,7 @@ def test_task_chord_present():
                             [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]])
 
-    assert np.all(output['chord/pitches'] == np.repeat(pcp_true, N_REPEAT, axis=0))
+    assert np.all(output['chord/pitch'] == np.repeat(pcp_true, N_REPEAT, axis=0))
     assert np.all(output['chord/root'] == np.repeat(root_true, N_REPEAT, axis=0))
     assert np.all(output['chord/bass'] == np.repeat(bass_true, N_REPEAT, axis=0))
 
@@ -73,12 +73,12 @@ def test_task_chord_absent():
     assert not np.any(output['chord/_valid'])
 
     # Check the shape
-    assert output['chord/pitches'].shape == (1, 4 * N_REPEAT, 12)
+    assert output['chord/pitch'].shape == (1, 4 * N_REPEAT, 12)
     assert output['chord/root'].shape == (1, 4 * N_REPEAT, 13)
     assert output['chord/bass'].shape == (1, 4 * N_REPEAT, 13)
 
     # Make sure it's empty
-    assert not np.any(output['chord/pitches'])
+    assert not np.any(output['chord/pitch'])
     assert not np.any(output['chord/root'][:, :, :12])
     assert not np.any(output['chord/bass'][:, :, :12])
     assert np.all(output['chord/root'][:, :, 12])
@@ -115,7 +115,7 @@ def test_task_simple_chord_present():
                            [0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0],
                            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]])
 
-    assert np.all(output['chord_s/pitches'] == np.repeat(pcp_true, N_REPEAT, axis=0))
+    assert np.all(output['chord_s/pitch'] == np.repeat(pcp_true, N_REPEAT, axis=0))
 
 def test_task_simple_chord_absent():
 
@@ -128,10 +128,10 @@ def test_task_simple_chord_absent():
     assert not np.any(output['chord_s/_valid'])
 
     # Check the shape
-    assert output['chord_s/pitches'].shape == (1, 4 * N_REPEAT, 12)
+    assert output['chord_s/pitch'].shape == (1, 4 * N_REPEAT, 12)
 
     # Make sure it's empty
-    assert not np.any(output['chord_s/pitches'])
+    assert not np.any(output['chord_s/pitch'])
 
 
 def test_task_dlabel_present():

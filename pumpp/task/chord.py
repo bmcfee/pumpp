@@ -5,7 +5,6 @@
 import numpy as np
 from sklearn.preprocessing import MultiLabelBinarizer
 import mir_eval
-import jams
 
 from .base import BaseTaskTransformer
 
@@ -50,33 +49,31 @@ class ChordTransformer(BaseTaskTransformer):
         intervals, chords = ann.data.to_interval_values()
 
         # Suppress all intervals not in the encoder
-        pitch = []
-        root = []
-        bass = []
+        pitches = []
+        roots = []
+        basses = []
 
-        for c in chords:
+        for chord in chords:
             # Encode the pitches
-            r, s, b = mir_eval.chord.encode(c)
-            s = np.roll(s, r)
+            root, semi, bass = mir_eval.chord.encode(chord)
+            pitches.append(np.roll(semi, root))
 
-            pitch.append(s)
-
-            if r in self._classes:
-                root.extend(self.encoder.transform([[r]]))
-                bass.extend(self.encoder.transform([[(r+b) % 12]]))
+            if root in self._classes:
+                roots.extend(self.encoder.transform([[root]]))
+                basses.extend(self.encoder.transform([[(root + bass) % 12]]))
             else:
-                root.extend(self.encoder.transform([[]]))
-                bass.extend(self.encoder.transform([[]]))
+                roots.extend(self.encoder.transform([[]]))
+                basses.extend(self.encoder.transform([[]]))
 
-        pitch = np.asarray(pitch)
-        root = np.asarray(root)
-        bass = np.asarray(bass)
+        pitches = np.asarray(pitches)
+        roots = np.asarray(roots)
+        basses = np.asarray(basses)
 
-        target_pitch = self.encode_intervals(duration, intervals, pitch)
-        target_root = self.encode_intervals(duration, intervals, root)
-        target_bass = self.encode_intervals(duration, intervals, bass)
+        target_pitch = self.encode_intervals(duration, intervals, pitches)
+        target_root = self.encode_intervals(duration, intervals, roots)
+        target_bass = self.encode_intervals(duration, intervals, basses)
 
-        return {'pitches': target_pitch,
+        return {'pitch': target_pitch,
                 'root': _pad_nochord(target_root),
                 'bass': _pad_nochord(target_bass)}
 
