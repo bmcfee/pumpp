@@ -49,6 +49,11 @@ class ChordTransformer(BaseTaskTransformer):
 
         # Construct a blank annotation with mask = 0
         intervals, chords = ann.data.to_interval_values()
+        
+        # If we don't have any labeled intervals, fill in a no-chord
+        if not chords:
+            intervals = np.asarray([[0, duration]])
+            chords = ['N']
 
         # Suppress all intervals not in the encoder
         pitches = []

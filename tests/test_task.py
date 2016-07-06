@@ -494,7 +494,7 @@ def test_task_beat_absent():
         assert type_match(output[key].dtype, trans.fields[key].dtype)
 
 
-def test_noprefix():
+def test_transform_noprefix():
 
     labels = ['foo', 'bar', 'baz']
 
@@ -519,7 +519,7 @@ def test_noprefix():
         assert type_match(output[key].dtype, trans.fields[key].dtype)
 
 
-def test_query_transform():
+def test_transform_query():
 
     labels = ['alpha', 'beta', 'psycho', 'aqua', 'disco']
 
@@ -552,3 +552,16 @@ def test_query_transform():
     output = trans.transform(jam, query=dict(namespace='chord'))
     assert output['multi/tags'].shape[0] == 1
     assert not np.any(output['multi/_valid'])
+
+
+def test_transform_coerce():
+
+    jam = jams.JAMS(file_metadata=dict(duration=4.0))
+    trans = pumpp.task.ChordTransformer(name='chord')
+    jam.annotations.append(jams.Annotation(namespace='chord'))
+    jam.annotations.append(jams.Annotation(namespace='chord_harte'))
+    jam.annotations.append(jams.Annotation(namespace='tag_gtzan'))
+
+    out = trans.transform(jam)
+
+    assert out['chord/pitch'].shape[0] == 2
