@@ -18,6 +18,10 @@ class BeatTransformer(BaseTaskTransformer):
                                               sr=sr,
                                               hop_length=hop_length)
 
+        self.register('beat', [None], np.bool)
+        self.register('downbeat', [None], np.bool)
+        self.register('mask_downbeat', [1], np.bool)
+
     def transform_annotation(self, ann, duration):
 
         mask_downbeat = False
@@ -45,5 +49,6 @@ class BeatTransformer(BaseTaskTransformer):
                                              downbeat_events,
                                              downbeat_labels)
 
-        return {'beat': target_beat, 'downbeat': target_downbeat,
+        return {'beat': target_beat,
+                'downbeat': target_downbeat,
                 'mask_downbeat': mask_downbeat}

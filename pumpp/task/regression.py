@@ -11,13 +11,16 @@ __all__ = ['VectorTransformer']
 
 class VectorTransformer(BaseTaskTransformer):
 
-    def __init__(self, namespace, dimension, name='vector'):
+    def __init__(self, namespace, dimension, name='vector', dtype=np.float32):
 
         super(VectorTransformer, self).__init__(namespace, name=name,
                                                 fill_na=0,
                                                 sr=1, hop_length=1)
 
         self.dimension = dimension
+        self.dtype = dtype
+
+        self.register('vector', [None, self.dimension], self.dtype)
 
     def empty(self, duration):
         ann = super(VectorTransformer, self).empty(duration)
@@ -28,7 +31,7 @@ class VectorTransformer(BaseTaskTransformer):
 
     def transform_annotation(self, ann, duration):
 
-        vector = np.asarray(ann.data.value.iloc[0])
+        vector = np.asarray(ann.data.value.iloc[0], dtype=self.dtype)
         if len(vector) != self.dimension:
             raise RuntimeError('vector dimension({:0}) '
                                '!= self.dimension({:1})'

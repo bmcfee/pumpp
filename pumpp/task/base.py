@@ -2,11 +2,16 @@
 # -*- encoding: utf-8 -*-
 '''The base class for task transformer objects'''
 
+from collections import namedtuple
+
 import numpy as np
 import librosa
 import jams
 
+
 __all__ = ['BaseTaskTransformer']
+
+Tensor = namedtuple('Tensor', ['shape', 'dtype'])
 
 class BaseTaskTransformer(object):
     '''Base class for task transformer objects'''
@@ -25,16 +30,22 @@ class BaseTaskTransformer(object):
             self._prefix = '{:s}/'.format(self.name)
         else:
             self._prefix = ''
+        self.fields = dict()
+
 
     def empty(self, duration):
         return jams.Annotation(namespace=self.namespace, time=0, duration=0)
 
-    def transform(self, jam):
+    def transform(self, jam, query=None):
 
-        # FIXME: this would be the part to insert filtering logic
-        # Find annotations that can be coerced to our target namespace
         anns = []
-        for ann in jam.annotations:
+        if query:
+            results = jam.search(query)
+        else:
+            results = jam.annotations
+
+        # Find annotations that can be coerced to our target namespace
+        for ann in results:
             try:
                 anns.append(jams.nsconvert.convert(ann, self.namespace))
             except jams.NamespaceError:
@@ -71,6 +82,10 @@ class BaseTaskTransformer(object):
             pkey = '{:s}{:s}'.format(self._prefix, key)
             output[pkey] = np.stack([np.asarray(r[key]) for r in results], axis=0)
         return output
+
+    def register(self, field, shape, dtype):
+        # TODO: validate shape and dtype here
+        self.fields['{:s}{:s}'.format(self._prefix, field)] = Tensor(tuple(shape), dtype)
 
     def encode_events(self, duration, events, values):
         '''Encode labeled events as a time-series matrix.

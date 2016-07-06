@@ -23,7 +23,7 @@ class ChordTransformer(BaseTaskTransformer):
     def __init__(self, name='chord', sr=22050, hop_length=512):
         '''Initialize a chord task transformer'''
 
-        super(ChordTransformer, self).__init__('chord',
+        super(ChordTransformer, self).__init__(namespace='chord',
                                                name=name,
                                                fill_na=0,
                                                sr=sr,
@@ -33,6 +33,9 @@ class ChordTransformer(BaseTaskTransformer):
         self.encoder = MultiLabelBinarizer()
         self.encoder.fit([pitches])
         self._classes = set(self.encoder.classes_)
+        self.register('pitch', [None, 12], np.bool)
+        self.register('root', [None, 13], np.bool)
+        self.register('bass', [None, 13], np.bool)
 
     def empty(self, duration):
         ann = super(ChordTransformer, self).empty(duration)
@@ -79,6 +82,14 @@ class ChordTransformer(BaseTaskTransformer):
 
 
 class SimpleChordTransformer(ChordTransformer):
+
+    def __init__(self, name='chord', sr=22050, hop_length=512):
+        super(SimpleChordTransformer, self).__init__(name=name,
+                                                     sr=sr,
+                                                     hop_length=hop_length)
+        # Remove the extraneous fields
+        self.fields.pop('{:s}root'.format(self._prefix), None)
+        self.fields.pop('{:s}bass'.format(self._prefix), None)
 
     def transform_annotation(self, ann, duration):
 

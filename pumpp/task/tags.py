@@ -37,6 +37,8 @@ class DynamicLabelTransformer(BaseTaskTransformer):
         self.encoder.fit([labels])
         self._classes = set(self.encoder.classes_)
 
+        self.register('tags', [None, len(self._classes)], np.bool)
+
     def empty(self, duration):
         ann = super(DynamicLabelTransformer, self).empty(duration)
         ann.append(time=0, duration=duration, value=None)
@@ -79,6 +81,7 @@ class StaticLabelTransformer(BaseTaskTransformer):
         self.encoder = MultiLabelBinarizer()
         self.encoder.fit([labels])
         self._classes = set(self.encoder.classes_)
+        self.register('tags', [len(self._classes)], np.bool)
 
     def transform_annotation(self, ann, duration):
 

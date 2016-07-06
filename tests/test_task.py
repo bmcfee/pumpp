@@ -13,6 +13,33 @@ SR = 22050
 HOP_LENGTH = 512
 N_REPEAT = SR // HOP_LENGTH
 
+
+def shape_match(sh1, sh2):
+
+    for i, j in zip(sh1, sh2):
+        if j is None:
+            continue
+        if i != j:
+            return False
+
+    return True
+
+
+def test_task_chord_fields():
+
+    trans = pumpp.task.ChordTransformer(name='mychord')
+
+    assert set(trans.fields.keys()) == set(['mychord/pitch',
+                                            'mychord/root',
+                                            'mychord/bass'])
+
+    assert trans.fields['mychord/pitch'].shape == (None, 12)
+    assert trans.fields['mychord/pitch'].dtype is np.bool
+    assert trans.fields['mychord/root'].shape == (None, 13)
+    assert trans.fields['mychord/root'].dtype is np.bool
+    assert trans.fields['mychord/bass'].shape == (None, 13)
+    assert trans.fields['mychord/bass'].dtype is np.bool
+
 def test_task_chord_present():
 
     # Construct a jam
@@ -61,6 +88,10 @@ def test_task_chord_present():
     assert np.all(output['chord/root'] == np.repeat(root_true, N_REPEAT, axis=0))
     assert np.all(output['chord/bass'] == np.repeat(bass_true, N_REPEAT, axis=0))
 
+    for key in trans.fields:
+        assert shape_match(output[key].shape[1:], trans.fields[key].shape)
+        assert np.issubdtype(output[key].dtype, trans.fields[key].dtype)
+
 
 def test_task_chord_absent():
 
@@ -83,6 +114,19 @@ def test_task_chord_absent():
     assert not np.any(output['chord/bass'][:, :, :12])
     assert np.all(output['chord/root'][:, :, 12])
     assert np.all(output['chord/bass'][:, :, 12])
+
+    for key in trans.fields:
+        assert shape_match(output[key].shape[1:], trans.fields[key].shape)
+        assert np.issubdtype(output[key].dtype, trans.fields[key].dtype)
+
+
+def test_task_simple_chord_fields():
+
+    trans = pumpp.task.SimpleChordTransformer(name='simple_chord')
+
+    assert set(trans.fields.keys()) == set(['simple_chord/pitch'])
+    assert trans.fields['simple_chord/pitch'].shape == (None, 12)
+    assert trans.fields['simple_chord/pitch'].dtype is np.bool
 
 
 def test_task_simple_chord_present():
@@ -116,6 +160,10 @@ def test_task_simple_chord_present():
                            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]])
 
     assert np.all(output['chord_s/pitch'] == np.repeat(pcp_true, N_REPEAT, axis=0))
+    for key in trans.fields:
+        assert shape_match(output[key].shape[1:], trans.fields[key].shape)
+        assert np.issubdtype(output[key].dtype, trans.fields[key].dtype)
+
 
 def test_task_simple_chord_absent():
 
@@ -132,6 +180,10 @@ def test_task_simple_chord_absent():
 
     # Make sure it's empty
     assert not np.any(output['chord_s/pitch'])
+
+    for key in trans.fields:
+        assert shape_match(output[key].shape[1:], trans.fields[key].shape)
+        assert np.issubdtype(output[key].dtype, trans.fields[key].dtype)
 
 
 def test_task_dlabel_present():
@@ -169,6 +221,11 @@ def test_task_dlabel_present():
     for truth, pred in zip(true_labels, predictions):
         assert set(truth) == set(pred)
 
+    for key in trans.fields:
+        assert shape_match(output[key].shape[1:], trans.fields[key].shape)
+        assert np.issubdtype(output[key].dtype, trans.fields[key].dtype)
+
+
 
 def test_task_dlabel_absent():
     labels = ['alpha', 'beta', 'psycho', 'aqua', 'disco']
@@ -190,6 +247,10 @@ def test_task_dlabel_absent():
 
     # Make sure it's empty
     assert not np.any(y)
+    for key in trans.fields:
+        assert shape_match(output[key].shape[1:], trans.fields[key].shape)
+        assert np.issubdtype(output[key].dtype, trans.fields[key].dtype)
+
 
 
 def test_task_slabel_absent():
@@ -211,6 +272,10 @@ def test_task_slabel_absent():
 
     # Make sure it's empty
     assert not np.any(output['madeup/tags'])
+
+    for key in trans.fields:
+        assert shape_match(output[key].shape[1:], trans.fields[key].shape)
+        assert np.issubdtype(output[key].dtype, trans.fields[key].dtype)
 
 
 def test_task_slabel_present():
@@ -246,6 +311,11 @@ def test_task_slabel_present():
 
     assert set(true_labels) == set(predictions)
 
+    for key in trans.fields:
+        assert shape_match(output[key].shape[1:], trans.fields[key].shape)
+        assert np.issubdtype(output[key].dtype, trans.fields[key].dtype)
+
+
 
 @pytest.mark.parametrize('dimension', [1, 2, 4])
 @pytest.mark.parametrize('name', ['collab', 'vec'])
@@ -270,6 +340,10 @@ def test_task_vector_absent(dimension, name):
 
     # Make sure it's empty
     assert not np.any(output[var_name])
+
+    for key in trans.fields:
+        assert shape_match(output[key].shape[1:], trans.fields[key].shape)
+        assert np.issubdtype(output[key].dtype, trans.fields[key].dtype)
 
 
 @pytest.mark.parametrize('name', ['collab', 'vector'])
@@ -300,7 +374,11 @@ def test_task_vector_present(target_dimension, data_dimension, name):
     assert output[var_name].shape[1] == target_dimension
 
     # Make sure it's empty
-    assert np.all(output[var_name] == ann.data.loc[0].value)
+    assert np.allclose(output[var_name], ann.data.loc[0].value)
+
+    for key in trans.fields:
+        assert shape_match(output[key].shape[1:], trans.fields[key].shape)
+        assert np.issubdtype(output[key].dtype, trans.fields[key].dtype)
 
 
 def test_task_beat_present():
@@ -340,6 +418,10 @@ def test_task_beat_present():
     assert np.all(output['beat/beat'][0, ::N_REPEAT] == beat_true)
     assert np.all(output['beat/downbeat'][0, ::N_REPEAT] == downbeat_true)
 
+    for key in trans.fields:
+        assert shape_match(output[key].shape[1:], trans.fields[key].shape)
+        assert np.issubdtype(output[key].dtype, trans.fields[key].dtype)
+
 
 def test_task_beat_nometer():
 
@@ -378,6 +460,10 @@ def test_task_beat_nometer():
     assert np.all(output['beat/beat'][0, ::N_REPEAT] == beat_true)
     assert np.all(output['beat/downbeat'][0, ::N_REPEAT] == downbeat_true)
 
+    for key in trans.fields:
+        assert shape_match(output[key].shape[1:], trans.fields[key].shape)
+        assert np.issubdtype(output[key].dtype, trans.fields[key].dtype)
+
 
 def test_task_beat_absent():
 
@@ -398,3 +484,9 @@ def test_task_beat_absent():
     assert output['beat/downbeat'].shape == (1, 4 * N_REPEAT, 1)
     assert not np.any(output['beat/beat'])
     assert not np.any(output['beat/downbeat'])
+
+    for key in trans.fields:
+        assert shape_match(output[key].shape[1:], trans.fields[key].shape)
+        assert np.issubdtype(output[key].dtype, trans.fields[key].dtype)
+
+
