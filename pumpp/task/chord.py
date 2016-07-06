@@ -23,14 +23,12 @@ class ChordTransformer(BaseTaskTransformer):
     def __init__(self, name='chord', sr=22050, hop_length=512):
         '''Initialize a chord task transformer'''
 
-        super(ChordTransformer, self).__init__(namespace='chord',
-                                               name=name,
-                                               sr=sr,
-                                               hop_length=hop_length)
+        super(ChordTransformer, self).__init__(name=name,
+                                               namespace='chord',
+                                               sr=sr, hop_length=hop_length)
 
-        pitches = list(range(12))
         self.encoder = MultiLabelBinarizer()
-        self.encoder.fit([pitches])
+        self.encoder.fit([list(range(12))])
         self._classes = set(self.encoder.classes_)
         self.register('pitch', [None, 12], np.bool)
         self.register('root', [None, 13], np.bool)
