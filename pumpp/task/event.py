@@ -14,7 +14,6 @@ class BeatTransformer(BaseTaskTransformer):
     def __init__(self, name='beat', sr=22050, hop_length=512):
         super(BeatTransformer, self).__init__('beat',
                                               name=name,
-                                              fill_na=0,
                                               sr=sr,
                                               hop_length=hop_length)
 

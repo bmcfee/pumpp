@@ -25,7 +25,6 @@ class ChordTransformer(BaseTaskTransformer):
 
         super(ChordTransformer, self).__init__(namespace='chord',
                                                name=name,
-                                               fill_na=False,
                                                sr=sr,
                                                hop_length=hop_length)
 

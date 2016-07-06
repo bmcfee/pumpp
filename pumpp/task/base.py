@@ -13,16 +13,31 @@ __all__ = ['BaseTaskTransformer']
 
 Tensor = namedtuple('Tensor', ['shape', 'dtype'])
 
+def fill_value(dtype):
+    '''Get a fill-value for a given dtype
+
+    Parameters
+    ----------
+    dtype : type
+
+    Returns
+    -------
+    `np.nan` if `dtype` is real or complex
+
+    0 otherwise
+    '''
+    if np.issubdtype(dtype, float) or np.issubdtype(dtype, complex):
+        return np.nan
+
+    return 0
+
+
 class BaseTaskTransformer(object):
     '''Base class for task transformer objects'''
 
-    def __init__(self, namespace, name, fill_na, sr, hop_length):
+    def __init__(self, namespace, name, sr, hop_length):
         self.namespace = namespace
 
-        if fill_na is None:
-            fill_na = np.nan
-
-        self.fill_na = fill_na
         self.sr = sr
         self.hop_length = hop_length
         self.name = name
@@ -118,7 +133,7 @@ class BaseTaskTransformer(object):
 
         target = np.empty((n_total, values.shape[1]), dtype=dtype)
 
-        target.fill(self.fill_na)
+        target.fill(fill_value(dtype))
         values = values.astype(dtype)
         for column, event in zip(values, frames):
             target[event] += column
@@ -138,7 +153,7 @@ class BaseTaskTransformer(object):
 
         target = np.empty((n_total, values.shape[1]), dtype=dtype)
 
-        target.fill(self.fill_na)
+        target.fill(fill_value(dtype))
 
         for column, interval in zip(values, frames):
             target[interval[0]:interval[1]] += column

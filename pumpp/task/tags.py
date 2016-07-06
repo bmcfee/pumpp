@@ -29,7 +29,6 @@ class DynamicLabelTransformer(BaseTaskTransformer):
 
         super(DynamicLabelTransformer, self).__init__(namespace,
                                                       name=name,
-                                                      fill_na=0,
                                                       sr=sr,
                                                       hop_length=hop_length)
 
@@ -75,7 +74,6 @@ class StaticLabelTransformer(BaseTaskTransformer):
 
         super(StaticLabelTransformer, self).__init__(namespace,
                                                      name=name,
-                                                     fill_na=0,
                                                      sr=1, hop_length=1)
 
         self.encoder = MultiLabelBinarizer()
