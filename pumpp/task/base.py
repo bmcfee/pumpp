@@ -2,16 +2,14 @@
 # -*- encoding: utf-8 -*-
 '''The base class for task transformer objects'''
 
-from collections import namedtuple
-
 import numpy as np
 import librosa
 import jams
 
+from ..core import Tensor
 
 __all__ = ['BaseTaskTransformer']
 
-Tensor = namedtuple('Tensor', ['shape', 'dtype'])
 
 def fill_value(dtype):
     '''Get a fill-value for a given dtype
