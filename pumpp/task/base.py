@@ -26,7 +26,7 @@ def fill_value(dtype):
 
     0 otherwise
     '''
-    if np.issubdtype(dtype, float) or np.issubdtype(dtype, complex):
+    if np.issubdtype(dtype, np.float) or np.issubdtype(dtype, np.complex):
         return np.nan
 
     return 0
