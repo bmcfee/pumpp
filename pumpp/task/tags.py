@@ -27,8 +27,8 @@ class DynamicLabelTransformer(BaseTaskTransformer):
             The (pre-constructed) label encoder
         '''
 
-        super(DynamicLabelTransformer, self).__init__(namespace,
-                                                      name=name,
+        super(DynamicLabelTransformer, self).__init__(name=name,
+                                                      namespace=namespace,
                                                       sr=sr,
                                                       hop_length=hop_length)
 
@@ -72,8 +72,8 @@ class StaticLabelTransformer(BaseTaskTransformer):
             The JAMS object container
         '''
 
-        super(StaticLabelTransformer, self).__init__(namespace,
-                                                     name=name,
+        super(StaticLabelTransformer, self).__init__(name=name,
+                                                     namespace=namespace,
                                                      sr=1, hop_length=1)
 
         self.encoder = MultiLabelBinarizer()

@@ -33,7 +33,7 @@ def fill_value(dtype):
 class BaseTaskTransformer(Scope):
     '''Base class for task transformer objects'''
 
-    def __init__(self, namespace, name, sr, hop_length):
+    def __init__(self, name, namespace, sr, hop_length):
         super(BaseTaskTransformer, self).__init__(name)
 
         self.namespace = namespace
