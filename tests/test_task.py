@@ -24,6 +24,10 @@ def shape_match(sh1, sh2):
 
     return True
 
+def type_match(x, y):
+
+    return np.issubdtype(x, y) and np.issubdtype(y, x)
+
 
 def test_task_chord_fields():
 
@@ -90,7 +94,7 @@ def test_task_chord_present():
 
     for key in trans.fields:
         assert shape_match(output[key].shape[1:], trans.fields[key].shape)
-        assert np.issubdtype(output[key].dtype, trans.fields[key].dtype)
+        assert type_match(output[key].dtype, trans.fields[key].dtype)
 
 
 def test_task_chord_absent():
@@ -117,7 +121,7 @@ def test_task_chord_absent():
 
     for key in trans.fields:
         assert shape_match(output[key].shape[1:], trans.fields[key].shape)
-        assert np.issubdtype(output[key].dtype, trans.fields[key].dtype)
+        assert type_match(output[key].dtype, trans.fields[key].dtype)
 
 
 def test_task_simple_chord_fields():
@@ -162,7 +166,7 @@ def test_task_simple_chord_present():
     assert np.all(output['chord_s/pitch'] == np.repeat(pcp_true, N_REPEAT, axis=0))
     for key in trans.fields:
         assert shape_match(output[key].shape[1:], trans.fields[key].shape)
-        assert np.issubdtype(output[key].dtype, trans.fields[key].dtype)
+        assert type_match(output[key].dtype, trans.fields[key].dtype)
 
 
 def test_task_simple_chord_absent():
@@ -183,7 +187,7 @@ def test_task_simple_chord_absent():
 
     for key in trans.fields:
         assert shape_match(output[key].shape[1:], trans.fields[key].shape)
-        assert np.issubdtype(output[key].dtype, trans.fields[key].dtype)
+        assert type_match(output[key].dtype, trans.fields[key].dtype)
 
 
 def test_task_dlabel_present():
@@ -223,7 +227,7 @@ def test_task_dlabel_present():
 
     for key in trans.fields:
         assert shape_match(output[key].shape[1:], trans.fields[key].shape)
-        assert np.issubdtype(output[key].dtype, trans.fields[key].dtype)
+        assert type_match(output[key].dtype, trans.fields[key].dtype)
 
 
 
@@ -249,7 +253,7 @@ def test_task_dlabel_absent():
     assert not np.any(y)
     for key in trans.fields:
         assert shape_match(output[key].shape[1:], trans.fields[key].shape)
-        assert np.issubdtype(output[key].dtype, trans.fields[key].dtype)
+        assert type_match(output[key].dtype, trans.fields[key].dtype)
 
 
 
@@ -275,7 +279,7 @@ def test_task_slabel_absent():
 
     for key in trans.fields:
         assert shape_match(output[key].shape[1:], trans.fields[key].shape)
-        assert np.issubdtype(output[key].dtype, trans.fields[key].dtype)
+        assert type_match(output[key].dtype, trans.fields[key].dtype)
 
 
 def test_task_slabel_present():
@@ -313,7 +317,7 @@ def test_task_slabel_present():
 
     for key in trans.fields:
         assert shape_match(output[key].shape[1:], trans.fields[key].shape)
-        assert np.issubdtype(output[key].dtype, trans.fields[key].dtype)
+        assert type_match(output[key].dtype, trans.fields[key].dtype)
 
 
 
@@ -343,7 +347,7 @@ def test_task_vector_absent(dimension, name):
 
     for key in trans.fields:
         assert shape_match(output[key].shape[1:], trans.fields[key].shape)
-        assert np.issubdtype(output[key].dtype, trans.fields[key].dtype)
+        assert type_match(output[key].dtype, trans.fields[key].dtype)
 
 
 @pytest.mark.parametrize('name', ['collab', 'vector'])
@@ -378,7 +382,7 @@ def test_task_vector_present(target_dimension, data_dimension, name):
 
     for key in trans.fields:
         assert shape_match(output[key].shape[1:], trans.fields[key].shape)
-        assert np.issubdtype(output[key].dtype, trans.fields[key].dtype)
+        assert type_match(output[key].dtype, trans.fields[key].dtype)
 
 
 def test_task_beat_present():
@@ -420,7 +424,7 @@ def test_task_beat_present():
 
     for key in trans.fields:
         assert shape_match(output[key].shape[1:], trans.fields[key].shape)
-        assert np.issubdtype(output[key].dtype, trans.fields[key].dtype)
+        assert type_match(output[key].dtype, trans.fields[key].dtype)
 
 
 def test_task_beat_nometer():
@@ -462,7 +466,7 @@ def test_task_beat_nometer():
 
     for key in trans.fields:
         assert shape_match(output[key].shape[1:], trans.fields[key].shape)
-        assert np.issubdtype(output[key].dtype, trans.fields[key].dtype)
+        assert type_match(output[key].dtype, trans.fields[key].dtype)
 
 
 def test_task_beat_absent():
@@ -487,6 +491,6 @@ def test_task_beat_absent():
 
     for key in trans.fields:
         assert shape_match(output[key].shape[1:], trans.fields[key].shape)
-        assert np.issubdtype(output[key].dtype, trans.fields[key].dtype)
+        assert type_match(output[key].dtype, trans.fields[key].dtype)
 
 
