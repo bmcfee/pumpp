@@ -27,9 +27,9 @@ def fill_value(dtype):
     0 otherwise
     '''
     if np.issubdtype(dtype, np.float) or np.issubdtype(dtype, np.complex):
-        return np.nan
+        return dtype(np.nan)
 
-    return 0
+    return dtype(0)
 
 
 class BaseTaskTransformer(object):

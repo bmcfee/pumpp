@@ -494,3 +494,27 @@ def test_task_beat_absent():
         assert type_match(output[key].dtype, trans.fields[key].dtype)
 
 
+def test_noprefix():
+
+    labels = ['foo', 'bar', 'baz']
+
+    jam = jams.JAMS(file_metadata=dict(duration=4.0))
+    trans = pumpp.task.StaticLabelTransformer(namespace='tag_open',
+                                              name=None, labels=labels) 
+
+    output = trans.transform(jam)
+
+    # Mask should be false since we have no matching namespace
+    assert not np.any(output['_valid'])
+
+    # Check the shape
+    assert output['tags'].ndim == 2
+    assert output['tags'].shape[1] == len(labels)
+
+    # Make sure it's empty
+    assert not np.any(output['tags'])
+
+    for key in trans.fields:
+        assert shape_match(output[key].shape[1:], trans.fields[key].shape)
+        assert type_match(output[key].dtype, trans.fields[key].dtype)
+
