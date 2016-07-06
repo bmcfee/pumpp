@@ -92,8 +92,8 @@ class SimpleChordTransformer(ChordTransformer):
                                                      sr=sr,
                                                      hop_length=hop_length)
         # Remove the extraneous fields
-        self.fields.pop('{:s}root'.format(self._prefix), None)
-        self.fields.pop('{:s}bass'.format(self._prefix), None)
+        self.fields.pop(self.scope('root'), None)
+        self.fields.pop(self.scope('bass'), None)
 
     def transform_annotation(self, ann, duration):
 

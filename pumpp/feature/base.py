@@ -4,8 +4,7 @@
 
 import numpy as np
 
-from ..core import Tensor
+from ..core import Scope
 
-class FeatureExtractor(object):
-    def __init__(self):
-        raise NotImplementedError
+class FeatureExtractor(Scope):
+    pass

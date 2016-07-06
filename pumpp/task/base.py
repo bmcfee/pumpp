@@ -6,7 +6,7 @@ import numpy as np
 import librosa
 import jams
 
-from ..core import Tensor
+from ..core import Tensor, Scope
 
 __all__ = ['BaseTaskTransformer']
 
@@ -30,21 +30,15 @@ def fill_value(dtype):
     return dtype(0)
 
 
-class BaseTaskTransformer(object):
+class BaseTaskTransformer(Scope):
     '''Base class for task transformer objects'''
 
     def __init__(self, namespace, name, sr, hop_length):
-        self.namespace = namespace
+        super(BaseTaskTransformer, self).__init__(name)
 
+        self.namespace = namespace
         self.sr = sr
         self.hop_length = hop_length
-        self.name = name
-        if name is not None:
-            self._prefix = '{:s}/'.format(self.name)
-        else:
-            self._prefix = ''
-        self.fields = dict()
-
 
     def empty(self, duration):
         return jams.Annotation(namespace=self.namespace, time=0, duration=0)
@@ -92,13 +86,9 @@ class BaseTaskTransformer(object):
         output = dict()
 
         for key in results[0]:
-            pkey = '{:s}{:s}'.format(self._prefix, key)
-            output[pkey] = np.stack([np.asarray(r[key]) for r in results], axis=0)
+            output[self.scope(key)] = np.stack([np.asarray(r[key]) for r in results],
+                                               axis=0)
         return output
-
-    def register(self, field, shape, dtype):
-        # TODO: validate shape and dtype here
-        self.fields['{:s}{:s}'.format(self._prefix, field)] = Tensor(tuple(shape), dtype)
 
     def encode_events(self, duration, events, values, dtype=np.bool):
         '''Encode labeled events as a time-series matrix.
