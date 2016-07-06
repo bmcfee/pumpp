@@ -500,7 +500,7 @@ def test_noprefix():
 
     jam = jams.JAMS(file_metadata=dict(duration=4.0))
     trans = pumpp.task.StaticLabelTransformer(namespace='tag_open',
-                                              name=None, labels=labels) 
+                                              name=None, labels=labels)
 
     output = trans.transform(jam)
 
@@ -518,3 +518,37 @@ def test_noprefix():
         assert shape_match(output[key].shape[1:], trans.fields[key].shape)
         assert type_match(output[key].dtype, trans.fields[key].dtype)
 
+
+def test_query_transform():
+
+    labels = ['alpha', 'beta', 'psycho', 'aqua', 'disco']
+
+    jam = jams.JAMS(file_metadata=dict(duration=4.0))
+
+    ann = jams.Annotation(namespace='tag_open')
+
+    ann.append(time=0, duration=1.0, value='alpha')
+    ann.append(time=0, duration=1.0, value='beta')
+    ann.append(time=1, duration=1.0, value='23')
+    ann.append(time=3, duration=1.0, value='disco')
+
+    jam.annotations.append(ann)
+
+    jam.annotations.append(jams.Annotation(namespace='tag_gtzan'))
+    jam.annotations.append(jams.Annotation(namespace='tag_cal500'))
+
+    trans = pumpp.task.StaticLabelTransformer(namespace='tag_open',
+                                              name='multi',
+                                              labels=labels)
+
+    # First test with no query
+    output = trans.transform(jam)
+    assert output['multi/tags'].shape[0] == 3
+
+    output = trans.transform(jam, query=dict(namespace='tag_open|tag_cal500'))
+    assert output['multi/tags'].shape[0] == 2
+
+    # This should make a null search, which produces a dummy (empty) annotation
+    output = trans.transform(jam, query=dict(namespace='chord'))
+    assert output['multi/tags'].shape[0] == 1
+    assert not np.any(output['multi/_valid'])

@@ -55,7 +55,7 @@ class BaseTaskTransformer(object):
 
         anns = []
         if query:
-            results = jam.search(query)
+            results = jam.search(**query)
         else:
             results = jam.annotations
 
