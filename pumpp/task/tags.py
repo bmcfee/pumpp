@@ -92,8 +92,8 @@ class StaticLabelTransformer(BaseTaskTransformer):
         # Suppress all intervals not in the encoder
         tags = [v for v in values if v in self._classes]
         if len(tags):
-            target = self.encoder.transform([tags]).max(axis=0)
+            target = self.encoder.transform([tags]).astype(np.bool).max(axis=0)
         else:
-            target = np.zeros(len(self._classes), dtype=np.int)
+            target = np.zeros(len(self._classes), dtype=np.bool)
 
         return {'tags': target}

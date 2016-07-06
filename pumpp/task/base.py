@@ -87,7 +87,7 @@ class BaseTaskTransformer(object):
         # TODO: validate shape and dtype here
         self.fields['{:s}{:s}'.format(self._prefix, field)] = Tensor(tuple(shape), dtype)
 
-    def encode_events(self, duration, events, values):
+    def encode_events(self, duration, events, values, dtype=np.bool):
         '''Encode labeled events as a time-series matrix.
 
         Parameters
@@ -101,14 +101,14 @@ class BaseTaskTransformer(object):
         values : ndarray, shape=(n, m)
             Values array.  Must have the same first index as `events`.
 
+        dtype : numpy data type
+
         Returns
         -------
         target : ndarray, shape=(n_frames, n_values)
         '''
 
         # FIXME: support sparse encoding
-        # FIXME: support non-bool dtypes
-        # FIXME: it's not clear what type `values` is here
         frames = librosa.time_to_frames(events,
                                         sr=self.sr,
                                         hop_length=self.hop_length)
@@ -116,16 +116,16 @@ class BaseTaskTransformer(object):
         n_total = int(librosa.time_to_frames(duration, sr=self.sr,
                                              hop_length=self.hop_length))
 
-        target = np.empty((n_total, values.shape[1]), dtype=values.dtype)
+        target = np.empty((n_total, values.shape[1]), dtype=dtype)
 
         target.fill(self.fill_na)
-
+        values = values.astype(dtype)
         for column, event in zip(values, frames):
-            target[event] = column
+            target[event] += column
 
-        return target.astype(np.bool)
+        return target
 
-    def encode_intervals(self, duration, intervals, values):
+    def encode_intervals(self, duration, intervals, values, dtype=np.bool):
 
         frames = librosa.time_to_frames(intervals,
                                         sr=self.sr,
@@ -134,11 +134,13 @@ class BaseTaskTransformer(object):
         n_total = int(librosa.time_to_frames(duration, sr=self.sr,
                                              hop_length=self.hop_length))
 
-        target = np.empty((n_total, values.shape[1]), dtype=values.dtype)
+        values = values.astype(dtype)
+
+        target = np.empty((n_total, values.shape[1]), dtype=dtype)
 
         target.fill(self.fill_na)
 
         for column, interval in zip(values, frames):
             target[interval[0]:interval[1]] += column
 
-        return target.astype(np.bool)
+        return target

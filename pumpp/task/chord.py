@@ -13,7 +13,7 @@ __all__ = ['ChordTransformer', 'SimpleChordTransformer']
 
 def _pad_nochord(target, axis=-1):
 
-    ncmask = 1 - np.sum(target, axis=axis, keepdims=True)
+    ncmask = ~np.max(target, axis=axis, keepdims=True)
 
     return np.concatenate([target, ncmask], axis=axis)
 
@@ -25,7 +25,7 @@ class ChordTransformer(BaseTaskTransformer):
 
         super(ChordTransformer, self).__init__(namespace='chord',
                                                name=name,
-                                               fill_na=0,
+                                               fill_na=False,
                                                sr=sr,
                                                hop_length=hop_length)
 
@@ -68,9 +68,9 @@ class ChordTransformer(BaseTaskTransformer):
                 roots.extend(self.encoder.transform([[]]))
                 basses.extend(self.encoder.transform([[]]))
 
-        pitches = np.asarray(pitches)
-        roots = np.asarray(roots)
-        basses = np.asarray(basses)
+        pitches = np.asarray(pitches, dtype=np.bool)
+        roots = np.asarray(roots, dtype=np.bool)
+        basses = np.asarray(basses, dtype=np.bool)
 
         target_pitch = self.encode_intervals(duration, intervals, pitches)
         target_root = self.encode_intervals(duration, intervals, roots)
