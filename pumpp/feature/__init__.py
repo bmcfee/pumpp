@@ -4,5 +4,5 @@
 
 from .base import *
 #from .cqt import *
-#from .stft import *
+from .fft import *
 #from .mel import *

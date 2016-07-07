@@ -82,14 +82,6 @@ class BaseTaskTransformer(Scope):
         # Prefix and collect
         return self.merge(results)
 
-    def merge(self, results):
-        output = dict()
-
-        for key in results[0]:
-            output[self.scope(key)] = np.stack([np.asarray(r[key]) for r in results],
-                                               axis=0)
-        return output
-
     def encode_events(self, duration, events, values, dtype=np.bool):
         '''Encode labeled events as a time-series matrix.
 
