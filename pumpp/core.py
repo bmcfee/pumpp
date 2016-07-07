@@ -1,45 +1,39 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
-'''Core class definitions'''
+'''Core functionality'''
 
-from collections import namedtuple, Iterable
-import six
-import numpy as np
+import librosa
+import jams
 
-__all__ = ['Tensor', 'Scope']
-
-Tensor = namedtuple('Tensor', ['shape', 'dtype'])
+from .task import BaseTaskTransformer
+from .feature import FeatureExtractor
 
 
-class Scope(object):
+def transform(audio_f, jams_f, *ops):
+    '''Apply a set of operations to a track
 
-    def __init__(self, name):
+    Parameters
+    ----------
+    audio_f : str
+        The path to the audio file
 
-        self.name = name
-        self.fields = dict()
+    jams_f : str
+        The path to the jams file
 
-    def scope(self, key):
+    ops : list of pumpp.task.BaseTaskTransform or pumpp.feature.FeatureExtractor
+    '''
 
-        if self.name is None:
-            return key
-        return '{:s}/{:s}'.format(self.name, key)
+    # Load the audio
+    y, sr = librosa.load(audio_f, sr=None, mono=True)
 
-    def register(self, field, shape, dtype):
-        if not isinstance(dtype, type):
-            raise TypeError('dtype={} must be a type'.format(dtype))
+    # Load the jams
+    jam = jams.load(jams_f)
 
-        if not (isinstance(shape, Iterable) and
-                all([s is None or isinstance(s, int) for s in shape])):
-            raise ValueError('shape={} must be an iterable of integers'.format(shape))
+    data = dict()
 
-        self.fields[self.scope(field)] = Tensor(tuple(shape), dtype)
-
-    def merge(self, data):
-        data_out = dict()
-
-        # Iterate over all keys in data
-        for key in set().union(*data):
-            data_out[self.scope(key)] = np.stack([np.asarray(d[key]) for d in data],
-                                                 axis=0)
-        return data_out
-
+    for op in ops:
+        if isinstance(op, BaseTaskTransformer):
+            data.update(op.transform(jam))
+        elif isinstance(op, FeatureExtractor):
+            data.update(op.transform(y, sr))
+    return data

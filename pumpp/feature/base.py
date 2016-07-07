@@ -5,7 +5,7 @@
 import numpy as np
 import librosa
 
-from ..core import Scope
+from ..base import Scope
 
 
 class FeatureExtractor(Scope):

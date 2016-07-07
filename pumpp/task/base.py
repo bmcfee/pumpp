@@ -6,7 +6,7 @@ import numpy as np
 import librosa
 import jams
 
-from ..core import Tensor, Scope
+from ..base import Tensor, Scope
 
 __all__ = ['BaseTaskTransformer']
 

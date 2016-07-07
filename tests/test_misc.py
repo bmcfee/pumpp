@@ -14,7 +14,7 @@ import pumpp
                                             raises=TypeError)])
 def test_scope_type(dtype):
 
-    scope = pumpp.core.Scope(None)
+    scope = pumpp.base.Scope(None)
     scope.register('foo', [None], dtype)
 
 
@@ -26,7 +26,7 @@ def test_scope_type(dtype):
                           pytest.mark.xfail('not a shape', raises=ValueError)])
 def test_scope_badshape(shape):
 
-    scope = pumpp.core.Scope(None)
+    scope = pumpp.base.Scope(None)
     scope.register('foo', shape, int)
 
 

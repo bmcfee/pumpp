@@ -3,6 +3,6 @@
 '''Practically universal music pre-processing'''
 
 from .version import version
-from . import core
+from .core import *
 from . import feature
 from . import task
