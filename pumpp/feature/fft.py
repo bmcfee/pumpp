@@ -3,7 +3,7 @@
 import numpy as np
 import librosa
 
-from .base import FeatureExtractor
+from .base import FeatureExtractor, phase_diff
 
 __all__ = ['STFT', 'STFTMag', 'STFTPhaseDiff']
 
@@ -29,32 +29,23 @@ class STFT(FeatureExtractor):
 
 class STFTPhaseDiff(STFT):
 
-    def __init__(self, name, sr, hop_length, n_fft):
+    def __init__(self, *args, **kwargs):
 
-        super(STFTPhaseDiff, self).__init__(name, sr, hop_length, n_fft)
+        super(STFTPhaseDiff, self).__init__(*args, **kwargs)
         phase_field = self.fields.pop(self.scope('phase'))
         self.register('dphase', phase_field.shape, phase_field.dtype)
 
     def transform_audio(self, y):
 
         data = super(STFTPhaseDiff, self).transform_audio(y)
-
-        phase = data.pop('phase')
-
-        # Compute the phase differential
-        dphase = np.empty(phase.shape, np.float32)
-        dphase[0] = 0.0
-        dphase[1:] = np.diff(np.unwrap(phase, axis=0), axis=0)
-
-        data['dphase'] = dphase
+        data['dphase'] = phase_diff(data.pop('phase'), axis=0)
         return data
-
 
 class STFTMag(STFT):
 
-    def __init__(self, name, sr, hop_length, n_fft):
+    def __init__(self, *args, **kwargs):
 
-        super(STFTMag, self).__init__(name, sr, hop_length, n_fft)
+        super(STFTMag, self).__init__(*args, **kwargs)
         self.fields.pop(self.scope('phase'))
 
     def transform_audio(self, y):
@@ -63,4 +54,3 @@ class STFTMag(STFT):
         data.pop('phase')
 
         return data
-    

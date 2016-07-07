@@ -19,13 +19,13 @@ class Mel(FeatureExtractor):
         self.n_mels = n_mels
         self.fmax = fmax
 
-        self.register('mel', [None, n_mels], np.float32)
+        self.register('mag', [None, n_mels], np.float32)
 
     def transform_audio(self, y):
 
-        mel = librosa.feature.melspectrogram(y=y, sr=self.sr, n_fft=self.n_fft,
-                                             hop_length=self.hop_length,
-                                             n_mels=self.n_mels,
-                                             fmax=self.fmax).astype(np.float32)
+        mel = np.sqrt(librosa.feature.melspectrogram(y=y, sr=self.sr, n_fft=self.n_fft,
+                                                     hop_length=self.hop_length,
+                                                     n_mels=self.n_mels,
+                                                     fmax=self.fmax)).astype(np.float32)
 
-        return {'mel': mel.T}
+        return {'mag': mel.T}
