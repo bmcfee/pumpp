@@ -9,10 +9,13 @@ import jams
 import pumpp
 
 
-SR = 22050
-HOP_LENGTH = 512
-N_REPEAT = SR // HOP_LENGTH
+@pytest.fixture()
+def SR():
+    return 22050
 
+@pytest.fixture()
+def HOP_LENGTH():
+    return 512
 
 def shape_match(sh1, sh2):
 
@@ -44,7 +47,7 @@ def test_task_chord_fields():
     assert trans.fields['mychord/bass'].shape == (None, 13)
     assert trans.fields['mychord/bass'].dtype is np.bool
 
-def test_task_chord_present():
+def test_task_chord_present(SR, HOP_LENGTH):
 
     # Construct a jam
     jam = jams.JAMS(file_metadata=dict(duration=5.0))
@@ -88,16 +91,16 @@ def test_task_chord_present():
                             [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]])
 
-    assert np.all(output['chord/pitch'] == np.repeat(pcp_true, N_REPEAT, axis=0))
-    assert np.all(output['chord/root'] == np.repeat(root_true, N_REPEAT, axis=0))
-    assert np.all(output['chord/bass'] == np.repeat(bass_true, N_REPEAT, axis=0))
+    assert np.all(output['chord/pitch'] == np.repeat(pcp_true, (SR // HOP_LENGTH), axis=0))
+    assert np.all(output['chord/root'] == np.repeat(root_true, (SR // HOP_LENGTH), axis=0))
+    assert np.all(output['chord/bass'] == np.repeat(bass_true, (SR // HOP_LENGTH), axis=0))
 
     for key in trans.fields:
         assert shape_match(output[key].shape[1:], trans.fields[key].shape)
         assert type_match(output[key].dtype, trans.fields[key].dtype)
 
 
-def test_task_chord_absent():
+def test_task_chord_absent(SR, HOP_LENGTH):
 
     jam = jams.JAMS(file_metadata=dict(duration=4.0))
     trans = pumpp.task.ChordTransformer(name='chord')
@@ -108,9 +111,9 @@ def test_task_chord_absent():
     assert not np.any(output['chord/_valid'])
 
     # Check the shape
-    assert output['chord/pitch'].shape == (1, 4 * N_REPEAT, 12)
-    assert output['chord/root'].shape == (1, 4 * N_REPEAT, 13)
-    assert output['chord/bass'].shape == (1, 4 * N_REPEAT, 13)
+    assert output['chord/pitch'].shape == (1, 4 * (SR // HOP_LENGTH), 12)
+    assert output['chord/root'].shape == (1, 4 * (SR // HOP_LENGTH), 13)
+    assert output['chord/bass'].shape == (1, 4 * (SR // HOP_LENGTH), 13)
 
     # Make sure it's empty
     assert not np.any(output['chord/pitch'])
@@ -133,7 +136,7 @@ def test_task_simple_chord_fields():
     assert trans.fields['simple_chord/pitch'].dtype is np.bool
 
 
-def test_task_simple_chord_present():
+def test_task_simple_chord_present(SR, HOP_LENGTH):
 
     # Construct a jam
     jam = jams.JAMS(file_metadata=dict(duration=5.0))
@@ -163,13 +166,13 @@ def test_task_simple_chord_present():
                            [0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0],
                            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]])
 
-    assert np.all(output['chord_s/pitch'] == np.repeat(pcp_true, N_REPEAT, axis=0))
+    assert np.all(output['chord_s/pitch'] == np.repeat(pcp_true, (SR // HOP_LENGTH), axis=0))
     for key in trans.fields:
         assert shape_match(output[key].shape[1:], trans.fields[key].shape)
         assert type_match(output[key].dtype, trans.fields[key].dtype)
 
 
-def test_task_simple_chord_absent():
+def test_task_simple_chord_absent(SR, HOP_LENGTH):
 
     jam = jams.JAMS(file_metadata=dict(duration=4.0))
     trans = pumpp.task.SimpleChordTransformer(name='chord_s')
@@ -180,7 +183,7 @@ def test_task_simple_chord_absent():
     assert not np.any(output['chord_s/_valid'])
 
     # Check the shape
-    assert output['chord_s/pitch'].shape == (1, 4 * N_REPEAT, 12)
+    assert output['chord_s/pitch'].shape == (1, 4 * (SR // HOP_LENGTH), 12)
 
     # Make sure it's empty
     assert not np.any(output['chord_s/pitch'])
@@ -190,7 +193,7 @@ def test_task_simple_chord_absent():
         assert type_match(output[key].dtype, trans.fields[key].dtype)
 
 
-def test_task_dlabel_present():
+def test_task_dlabel_present(SR, HOP_LENGTH):
     labels = ['alpha', 'beta', 'psycho', 'aqua', 'disco']
 
     jam = jams.JAMS(file_metadata=dict(duration=4.0))
@@ -215,10 +218,10 @@ def test_task_dlabel_present():
     y = output['madeup/tags']
 
     # Check the shape
-    assert y.shape == (1, 4 * N_REPEAT, len(labels))
+    assert y.shape == (1, 4 * (SR // HOP_LENGTH), len(labels))
 
     # Decode the labels
-    predictions = trans.encoder.inverse_transform(y[0, ::N_REPEAT])
+    predictions = trans.encoder.inverse_transform(y[0, ::(SR // HOP_LENGTH)])
 
     true_labels = [['alpha', 'beta'], [], [], ['disco']]
 
@@ -231,7 +234,7 @@ def test_task_dlabel_present():
 
 
 
-def test_task_dlabel_absent():
+def test_task_dlabel_absent(SR, HOP_LENGTH):
     labels = ['alpha', 'beta', 'psycho', 'aqua', 'disco']
 
     jam = jams.JAMS(file_metadata=dict(duration=4.0))
@@ -247,7 +250,7 @@ def test_task_dlabel_absent():
     y = output['madeup/tags']
 
     # Check the shape
-    assert y.shape == (1, 4 * N_REPEAT, len(labels))
+    assert y.shape == (1, 4 * (SR // HOP_LENGTH), len(labels))
 
     # Make sure it's empty
     assert not np.any(y)
@@ -385,7 +388,7 @@ def test_task_vector_present(target_dimension, data_dimension, name):
         assert type_match(output[key].dtype, trans.fields[key].dtype)
 
 
-def test_task_beat_present():
+def test_task_beat_present(SR, HOP_LENGTH):
 
     # Construct a jam
     jam = jams.JAMS(file_metadata=dict(duration=4.0))
@@ -409,8 +412,8 @@ def test_task_beat_present():
 
     # The first channel measures beats
     # The second channel measures downbeats
-    assert output['beat/beat'].shape == (1, 4 * N_REPEAT, 1)
-    assert output['beat/downbeat'].shape == (1, 4 * N_REPEAT, 1)
+    assert output['beat/beat'].shape == (1, 4 * (SR // HOP_LENGTH), 1)
+    assert output['beat/downbeat'].shape == (1, 4 * (SR // HOP_LENGTH), 1)
 
     # Ideal vectors:
     #   a beat every second (two samples)
@@ -419,15 +422,15 @@ def test_task_beat_present():
     beat_true = np.asarray([[1, 1, 1, 1]]).T
     downbeat_true = np.asarray([[1, 0, 0, 1]]).T
 
-    assert np.all(output['beat/beat'][0, ::N_REPEAT] == beat_true)
-    assert np.all(output['beat/downbeat'][0, ::N_REPEAT] == downbeat_true)
+    assert np.all(output['beat/beat'][0, ::(SR // HOP_LENGTH)] == beat_true)
+    assert np.all(output['beat/downbeat'][0, ::(SR // HOP_LENGTH)] == downbeat_true)
 
     for key in trans.fields:
         assert shape_match(output[key].shape[1:], trans.fields[key].shape)
         assert type_match(output[key].dtype, trans.fields[key].dtype)
 
 
-def test_task_beat_nometer():
+def test_task_beat_nometer(SR, HOP_LENGTH):
 
     # Construct a jam
     jam = jams.JAMS(file_metadata=dict(duration=4.0))
@@ -451,8 +454,8 @@ def test_task_beat_nometer():
     assert not output['beat/mask_downbeat']
 
     # Check the shape: 4 seconds at 2 samples per second
-    assert output['beat/beat'].shape == (1, 4 * N_REPEAT, 1)
-    assert output['beat/downbeat'].shape == (1, 4 * N_REPEAT, 1)
+    assert output['beat/beat'].shape == (1, 4 * (SR // HOP_LENGTH), 1)
+    assert output['beat/downbeat'].shape == (1, 4 * (SR // HOP_LENGTH), 1)
 
     # Ideal vectors:
     #   a beat every second (two samples)
@@ -461,15 +464,15 @@ def test_task_beat_nometer():
     beat_true = np.asarray([1, 1, 1, 1])
     downbeat_true = np.asarray([0, 0, 0, 0])
 
-    assert np.all(output['beat/beat'][0, ::N_REPEAT] == beat_true)
-    assert np.all(output['beat/downbeat'][0, ::N_REPEAT] == downbeat_true)
+    assert np.all(output['beat/beat'][0, ::(SR // HOP_LENGTH)] == beat_true)
+    assert np.all(output['beat/downbeat'][0, ::(SR // HOP_LENGTH)] == downbeat_true)
 
     for key in trans.fields:
         assert shape_match(output[key].shape[1:], trans.fields[key].shape)
         assert type_match(output[key].dtype, trans.fields[key].dtype)
 
 
-def test_task_beat_absent():
+def test_task_beat_absent(SR, HOP_LENGTH):
 
     # Construct a jam
     jam = jams.JAMS(file_metadata=dict(duration=4.0))
@@ -484,8 +487,8 @@ def test_task_beat_absent():
     assert not output['beat/mask_downbeat']
 
     # Check the shape: 4 seconds at 2 samples per second
-    assert output['beat/beat'].shape == (1, 4 * N_REPEAT, 1)
-    assert output['beat/downbeat'].shape == (1, 4 * N_REPEAT, 1)
+    assert output['beat/beat'].shape == (1, 4 * (SR // HOP_LENGTH), 1)
+    assert output['beat/downbeat'].shape == (1, 4 * (SR // HOP_LENGTH), 1)
     assert not np.any(output['beat/beat'])
     assert not np.any(output['beat/downbeat'])
 
