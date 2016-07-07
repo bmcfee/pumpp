@@ -42,12 +42,4 @@ be easily consumed by statistical algorithms.  Some desired features:
 
 >>> # Apply the extractors
 >>> data = pumpp.apply(audio_f, jams_f, p_cqt, p_beat, b_chord)
-
->>> # Add a new task
->>> p_vox = pumpp.task.DynamicLabelTransformer(name='vox',
-...                                            namespace='tag_medleydb_instruments',
-...                                            labels=['vocals_male', 'vocals_female'])
-
->>> # Update the `data` dict with the new task
->>> pumpp.update(data, audio_f, jams_f, p_vox)
 ```
