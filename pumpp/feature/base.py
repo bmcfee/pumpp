@@ -51,6 +51,6 @@ def phase_diff(phase, axis=0):
     zero_idx[axis] = slice(1)
     else_idx = [slice(None)] * phase.ndim
     else_idx[axis] = slice(1, None)
-    dphase[zero_idx] = 0.0
+    dphase[zero_idx] = phase[zero_idx]
     dphase[else_idx] = np.diff(np.unwrap(phase, axis=axis), axis=axis)
     return dphase

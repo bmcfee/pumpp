@@ -2,7 +2,8 @@
 # -*- encoding: utf-8 -*-
 '''Core class definitions'''
 
-from collections import namedtuple
+from collections import namedtuple, Iterable
+import six
 import numpy as np
 
 __all__ = ['Tensor', 'Scope']
@@ -27,7 +28,8 @@ class Scope(object):
         if not isinstance(dtype, type):
             raise TypeError('dtype={} must be a type'.format(dtype))
 
-        if not all([s is None or isinstance(s, int) for s in shape]):
+        if not (isinstance(shape, Iterable) and
+                all([s is None or isinstance(s, int) for s in shape])):
             raise ValueError('shape={} must be an iterable of integers'.format(shape))
 
         self.fields[self.scope(field)] = Tensor(tuple(shape), dtype)
