@@ -5,4 +5,4 @@
 from .base import *
 #from .cqt import *
 from .fft import *
-#from .mel import *
+from .mel import *

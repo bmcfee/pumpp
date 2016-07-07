@@ -23,6 +23,10 @@ def audio(request):
 def n_fft(request):
     return request.param
 
+@pytest.fixture(params=[32, 128])
+def n_mels(request):
+    return request.param
+
 
 @pytest.fixture()
 def SR():
@@ -113,6 +117,35 @@ def test_feature_stft_mag(audio, SR, HOP_LENGTH, n_fft):
     ext = pumpp.feature.STFTMag(name='stft',
                                 sr=SR, hop_length=HOP_LENGTH,
                                 n_fft=n_fft)
+
+    output = ext.transform(**audio)
+
+    # Check the fields
+    assert set(output.keys()) == set(ext.fields.keys())
+
+    for key in ext.fields:
+        assert shape_match(output[key].shape[1:], ext.fields[key].shape)
+        assert type_match(output[key].dtype, ext.fields[key].dtype)
+
+
+def test_feature_mel_fields(SR, HOP_LENGTH, n_fft, n_mels):
+
+    ext = pumpp.feature.Mel(name='mel',
+                            sr=SR, hop_length=HOP_LENGTH,
+                            n_fft=n_fft, n_mels=n_mels)
+
+    # Check the fields
+    assert set(ext.fields.keys()) == set(['mel/mel'])
+
+    assert ext.fields['mel/mel'].shape == (None, n_mels)
+    assert ext.fields['mel/mel'].dtype is np.float32
+
+
+def test_feature_mel(audio, SR, HOP_LENGTH, n_fft, n_mels):
+
+    ext = pumpp.feature.Mel(name='mel',
+                            sr=SR, hop_length=HOP_LENGTH,
+                            n_fft=n_fft, n_mels=n_mels)
 
     output = ext.transform(**audio)
 
