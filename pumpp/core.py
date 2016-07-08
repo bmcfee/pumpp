@@ -1,6 +1,13 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
-'''Core functionality'''
+'''
+Core functionality
+==================
+.. autosummary::
+    :toctree: generated/
+
+    transform
+'''
 
 import librosa
 import jams
