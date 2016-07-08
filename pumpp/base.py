@@ -16,10 +16,19 @@ Apparently you can document namedtuples here
 
 class Scope(object):
     '''
-    A class for managing named
+    A base class for managing named tensors
+
+    Attributes
+    ----------
+    name : str or None
+        The name of this object.  If not `None`,
+        all field keys are prefixed by `name/`.
+
+    fields : dict of str : Tensor
+        A dictionary of fields produced by this object.
+        Each value defines the shape and data type of the field.
     '''
     def __init__(self, name):
-
         self.name = name
         self.fields = dict()
 
@@ -29,7 +38,7 @@ class Scope(object):
         Parameters
         ----------
         key : string
-        
+
         Returns
         -------
         `name/key` if `name` is not `None`;
