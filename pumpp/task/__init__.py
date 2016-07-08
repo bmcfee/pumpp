@@ -1,6 +1,19 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
-'''Task transformations'''
+'''
+Task transformations
+====================
+.. autosummary::
+    :toctree: generated/
+
+    BaseTaskTransformer
+    BeatTransformer
+    ChordTransformer
+    SimpleChordTransformer
+    VectorTransformer
+    DynamicLabelTransformer
+    StaticLabelTransformer
+'''
 
 from .base import *
 from .chord import *
