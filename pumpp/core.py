@@ -21,6 +21,12 @@ def transform(audio_f, jams_f, *ops):
         The path to the jams file
 
     ops : list of pumpp.task.BaseTaskTransform or pumpp.feature.FeatureExtractor
+        The operators to apply to the input data
+
+    Returns
+    -------
+    data : dict
+        Extracted features and annotation encodings
     '''
 
     # Load the audio

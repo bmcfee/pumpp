@@ -9,21 +9,56 @@ __all__ = ['Tensor', 'Scope']
 
 # This type is used for storing shape information
 Tensor = namedtuple('Tensor', ['shape', 'dtype'])
+'''
+Apparently you can document namedtuples here
+'''
+
 
 class Scope(object):
-
+    '''
+    A class for managing named
+    '''
     def __init__(self, name):
 
         self.name = name
         self.fields = dict()
 
     def scope(self, key):
+        '''Apply the name scope to a key
 
+        Parameters
+        ----------
+        key : string
+        
+        Returns
+        -------
+        `name/key` if `name` is not `None`;
+        otherwise, `key`.
+        '''
         if self.name is None:
             return key
         return '{:s}/{:s}'.format(self.name, key)
 
     def register(self, field, shape, dtype):
+        '''Register a field as a tensor with specified shape and type.
+
+        A `Tensor` of the given shape and type will be registered in this
+        object's `fields` dict.
+
+        Parameters
+        ----------
+        field : str
+            The name of the field
+
+        shape : iterable of `int` or `None`
+            The shape of the output variable.
+            This does not include a dimension for multiple outputs.
+
+            `None` may be used to indicate variable-length outputs
+
+        dtype : type
+            The data type of the field
+        '''
         if not isinstance(dtype, type):
             raise TypeError('dtype={} must be a type'.format(dtype))
 
@@ -34,6 +69,21 @@ class Scope(object):
         self.fields[self.scope(field)] = Tensor(tuple(shape), dtype)
 
     def merge(self, data):
+        '''Merge an array of output dictionaries into a single dictionary
+        with properly scoped names.
+
+        Parameters
+        ----------
+        data : list of dict
+            Output dicts as produced by `pumpp.task.BaseTaskTransformer.transform`
+            or `pumpp.feature.FeatureExtractor.transform`.
+
+        Returns
+        -------
+        data_out : dict
+            All elements of the input dicts are stacked along the 0 axis,
+            and keys are re-mapped by `scope`.
+        '''
         data_out = dict()
 
         # Iterate over all keys in data
