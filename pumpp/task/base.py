@@ -36,6 +36,9 @@ class BaseTaskTransformer(Scope):
     def __init__(self, name, namespace, sr, hop_length):
         super(BaseTaskTransformer, self).__init__(name)
 
+        # This will trigger an exception if the namespace is not found
+        jams.schema.is_dense(namespace)
+
         self.namespace = namespace
         self.sr = sr
         self.hop_length = hop_length

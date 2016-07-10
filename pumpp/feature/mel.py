@@ -10,7 +10,29 @@ __all__ = ['Mel']
 
 
 class Mel(FeatureExtractor):
+    '''Mel spectra feature extraction
 
+    Attributes
+    ----------
+    name : str or None
+        naming scope for this feature extractor
+
+    sr : number > 0
+        Sampling rate of the audio (in Hz)
+
+    hop_length : int > 0
+        Number of samples to advance between frames
+
+    n_fft :  int > 0
+        Number of samples per frame
+
+    n_mels : int > 0
+        Number of Mel frequency bins
+
+    fmax : number > 0
+        The maximum frequency bin.
+        Defaults to `0.5 * sr`
+    '''
     def __init__(self, name, sr, hop_length, n_fft, n_mels, fmax=None):
 
         super(Mel, self).__init__(name, sr, hop_length)
@@ -22,7 +44,6 @@ class Mel(FeatureExtractor):
         self.register('mag', [None, n_mels], np.float32)
 
     def transform_audio(self, y):
-
         mel = np.sqrt(librosa.feature.melspectrogram(y=y, sr=self.sr, n_fft=self.n_fft,
                                                      hop_length=self.hop_length,
                                                      n_mels=self.n_mels,
