@@ -29,7 +29,7 @@ setup(
     license='ISC',
     install_requires=['six',
                       'librosa>=0.4.3',
-                      'jams>=0.2.2',
+                      'jams>=0.2.1',
                       'scikit-learn>=0.17',
                       'mir_eval>=0.2'],
     extras_require={
