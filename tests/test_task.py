@@ -202,7 +202,7 @@ def test_task_dlabel_present(SR, HOP_LENGTH):
 
     ann.append(time=0, duration=1.0, value='alpha')
     ann.append(time=0, duration=1.0, value='beta')
-    ann.append(time=1, duration=1.0, value='23')
+    ann.append(time=1, duration=1.0, value='some nonsense')
     ann.append(time=3, duration=1.0, value='disco')
 
     jam.annotations.append(ann)
@@ -259,6 +259,27 @@ def test_task_dlabel_absent(SR, HOP_LENGTH):
         assert type_match(output[key].dtype, trans.fields[key].dtype)
 
 
+def test_task_dlabel_auto(SR, HOP_LENGTH):
+    jam = jams.JAMS(file_metadata=dict(duration=4.0))
+    trans = pumpp.task.DynamicLabelTransformer(namespace='tag_gtzan',
+                                               name='genre')
+
+    output = trans.transform(jam)
+
+    # Mask should be false since we have no matching namespace
+    assert not np.any(output['genre/_valid'])
+
+    y = output['genre/tags']
+
+    # Check the shape
+    assert y.shape == (1, 4 * (SR // HOP_LENGTH), 10)
+
+    # Make sure it's empty
+    assert not np.any(y)
+    for key in trans.fields:
+        assert shape_match(output[key].shape[1:], trans.fields[key].shape)
+        assert type_match(output[key].dtype, trans.fields[key].dtype)
+
 
 def test_task_slabel_absent():
     labels = ['alpha', 'beta', 'psycho', 'aqua', 'disco']
@@ -294,7 +315,7 @@ def test_task_slabel_present():
 
     ann.append(time=0, duration=1.0, value='alpha')
     ann.append(time=0, duration=1.0, value='beta')
-    ann.append(time=1, duration=1.0, value='23')
+    ann.append(time=1, duration=1.0, value='some nonsense')
     ann.append(time=3, duration=1.0, value='disco')
 
     jam.annotations.append(ann)
@@ -322,6 +343,27 @@ def test_task_slabel_present():
         assert shape_match(output[key].shape[1:], trans.fields[key].shape)
         assert type_match(output[key].dtype, trans.fields[key].dtype)
 
+
+def test_task_slabel_auto():
+    jam = jams.JAMS(file_metadata=dict(duration=4.0))
+    trans = pumpp.task.StaticLabelTransformer(namespace='tag_gtzan',
+                                              name='genre')
+
+    output = trans.transform(jam)
+
+    # Mask should be false since we have no matching namespace
+    assert not np.any(output['genre/_valid'])
+
+    # Check the shape
+    assert output['genre/tags'].ndim == 2
+    assert output['genre/tags'].shape[1] == 10
+
+    # Make sure it's empty
+    assert not np.any(output['genre/tags'])
+
+    for key in trans.fields:
+        assert shape_match(output[key].shape[1:], trans.fields[key].shape)
+        assert type_match(output[key].dtype, trans.fields[key].dtype)
 
 
 @pytest.mark.parametrize('dimension', [1, 2, 4])
@@ -532,7 +574,7 @@ def test_transform_query():
 
     ann.append(time=0, duration=1.0, value='alpha')
     ann.append(time=0, duration=1.0, value='beta')
-    ann.append(time=1, duration=1.0, value='23')
+    ann.append(time=1, duration=1.0, value='some nonsense')
     ann.append(time=3, duration=1.0, value='disco')
 
     jam.annotations.append(ann)
