@@ -5,6 +5,8 @@
 import numpy as np
 from sklearn.preprocessing import MultiLabelBinarizer
 
+import jams
+
 from .base import BaseTaskTransformer
 
 __all__ = ['DynamicLabelTransformer', 'StaticLabelTransformer']
@@ -12,7 +14,7 @@ __all__ = ['DynamicLabelTransformer', 'StaticLabelTransformer']
 
 class DynamicLabelTransformer(BaseTaskTransformer):
 
-    def __init__(self, namespace, name, labels, sr=22050, hop_length=512):
+    def __init__(self, namespace, name, labels=None, sr=22050, hop_length=512):
         '''Initialize a time-series label transformer
 
         Parameters
@@ -31,6 +33,9 @@ class DynamicLabelTransformer(BaseTaskTransformer):
                                                       namespace=namespace,
                                                       sr=sr,
                                                       hop_length=hop_length)
+
+        if labels is None:
+            labels = jams.schema.values(namespace)
 
         self.encoder = MultiLabelBinarizer()
         self.encoder.fit([labels])
@@ -63,7 +68,7 @@ class DynamicLabelTransformer(BaseTaskTransformer):
 
 class StaticLabelTransformer(BaseTaskTransformer):
 
-    def __init__(self, namespace, name, labels):
+    def __init__(self, namespace, name, labels=None):
         '''Initialize a global label transformer
 
         Parameters
@@ -75,6 +80,9 @@ class StaticLabelTransformer(BaseTaskTransformer):
         super(StaticLabelTransformer, self).__init__(name=name,
                                                      namespace=namespace,
                                                      sr=1, hop_length=1)
+
+        if labels is None:
+            labels = jams.schema.values(namespace)
 
         self.encoder = MultiLabelBinarizer()
         self.encoder.fit([labels])
