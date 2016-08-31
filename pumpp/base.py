@@ -77,7 +77,7 @@ class Scope(object):
 
         self.fields[self.scope(field)] = Tensor(tuple(shape), dtype)
 
-    def __del__(self, field):
+    def __delete__(self, field):
         del self.fields[self.scope(field)]
 
     def merge(self, data):
