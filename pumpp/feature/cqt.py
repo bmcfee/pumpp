@@ -45,7 +45,7 @@ class CQTMag(CQT):
     def __init__(self, *args, **kwargs):
 
         super(CQTMag, self).__init__(*args, **kwargs)
-        self.fields.pop(self.scope('phase'))
+        self.pop('phase')
 
     def transform_audio(self, y):
 
@@ -59,7 +59,7 @@ class CQTPhaseDiff(CQT):
     def __init__(self, *args, **kwargs):
 
         super(CQTPhaseDiff, self).__init__(*args, **kwargs)
-        phase_field = self.fields.pop(self.scope('phase'))
+        phase_field = self.pop('phase')
         self.register('dphase', phase_field.shape, phase_field.dtype)
 
     def transform_audio(self, y):
