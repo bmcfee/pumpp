@@ -77,8 +77,8 @@ class Scope(object):
 
         self.fields[self.scope(field)] = Tensor(tuple(shape), dtype)
 
-    def __delete__(self, field):
-        del self.fields[self.scope(field)]
+    def pop(self, field):
+        return self.fields.pop(self.scope(field))
 
     def merge(self, data):
         '''Merge an array of output dictionaries into a single dictionary

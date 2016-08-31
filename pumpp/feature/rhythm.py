@@ -33,8 +33,8 @@ class TempoScale(Tempogram):
         super(TempoScale, self).__init__(name, sr, hop_length)
 
         self.n_fmt = n_fmt
-        del self['tempogram']
-        self.register('temposcale', [None, n_fmt], np.float32)
+        self.pop('tempogram')
+        self.register('temposcale', [None, 1 + n_fmt // 2], np.float32)
 
     def transform_audio(self, y):
 

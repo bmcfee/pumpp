@@ -33,8 +33,7 @@ class STFTPhaseDiff(STFT):
     def __init__(self, *args, **kwargs):
 
         super(STFTPhaseDiff, self).__init__(*args, **kwargs)
-        phase_field = self.fields.pop(self.scope('phase'))
-        del self['phase']
+        phase_field = self.pop('phase')
         self.register('dphase', phase_field.shape, phase_field.dtype)
 
     def transform_audio(self, y):
@@ -49,7 +48,7 @@ class STFTMag(STFT):
     def __init__(self, *args, **kwargs):
 
         super(STFTMag, self).__init__(*args, **kwargs)
-        del self['phase']
+        self.pop('phase')
 
     def transform_audio(self, y):
 
