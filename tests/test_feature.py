@@ -23,6 +23,7 @@ def audio(request):
 def n_fft(request):
     return request.param
 
+
 @pytest.fixture(params=[32, 128])
 def n_mels(request):
     return request.param
@@ -38,6 +39,16 @@ def HOP_LENGTH():
     return 512
 
 
+@pytest.fixture(params=[192, 384])
+def WIN_LENGTH(request):
+    return request.param
+
+
+@pytest.fixture(params=[16, 128])
+def N_FMT(request):
+    return request.param
+
+
 @pytest.fixture(params=[1, 3])
 def over_sample(request):
     return request.param
@@ -46,7 +57,6 @@ def over_sample(request):
 @pytest.fixture(params=[1, 4])
 def n_octaves(request):
     return request.param
-
 
 
 # STFT features
@@ -188,6 +198,7 @@ def test_feature_cqt_fields(SR, HOP_LENGTH, over_sample, n_octaves):
     assert ext.fields['cqt/mag'].dtype is np.float32
     assert ext.fields['cqt/phase'].dtype is np.float32
 
+
 def test_feature_cqtmag_fields(SR, HOP_LENGTH, over_sample, n_octaves):
 
     ext = pumpp.feature.CQTMag(name='cqt',
@@ -200,6 +211,7 @@ def test_feature_cqtmag_fields(SR, HOP_LENGTH, over_sample, n_octaves):
 
     assert ext.fields['cqt/mag'].shape == (None, over_sample * n_octaves * 12)
     assert ext.fields['cqt/mag'].dtype is np.float32
+
 
 def test_feature_cqtphasediff_fields(SR, HOP_LENGTH, over_sample, n_octaves):
 
@@ -216,6 +228,7 @@ def test_feature_cqtphasediff_fields(SR, HOP_LENGTH, over_sample, n_octaves):
     assert ext.fields['cqt/mag'].dtype is np.float32
     assert ext.fields['cqt/dphase'].dtype is np.float32
 
+
 def test_feature_cqt(audio, SR, HOP_LENGTH, over_sample, n_octaves):
 
     ext = pumpp.feature.CQT(name='cqt',
@@ -230,6 +243,7 @@ def test_feature_cqt(audio, SR, HOP_LENGTH, over_sample, n_octaves):
     for key in ext.fields:
         assert shape_match(output[key].shape[1:], ext.fields[key].shape)
         assert type_match(output[key].dtype, ext.fields[key].dtype)
+
 
 def test_feature_cqtmag(audio, SR, HOP_LENGTH, over_sample, n_octaves):
 
@@ -246,6 +260,7 @@ def test_feature_cqtmag(audio, SR, HOP_LENGTH, over_sample, n_octaves):
         assert shape_match(output[key].shape[1:], ext.fields[key].shape)
         assert type_match(output[key].dtype, ext.fields[key].dtype)
 
+
 def test_feature_cqtphasediff(audio, SR, HOP_LENGTH, over_sample, n_octaves):
 
     ext = pumpp.feature.CQTPhaseDiff(name='cqt',
@@ -261,3 +276,62 @@ def test_feature_cqtphasediff(audio, SR, HOP_LENGTH, over_sample, n_octaves):
         assert shape_match(output[key].shape[1:], ext.fields[key].shape)
         assert type_match(output[key].dtype, ext.fields[key].dtype)
 
+
+# Rhythm features
+def test_feature_tempogram_fields(SR, HOP_LENGTH, WIN_LENGTH):
+
+    ext = pumpp.feature.Tempogram(name='rhythm',
+                                  sr=SR, hop_length=HOP_LENGTH,
+                                  win_length=WIN_LENGTH)
+
+    # Check the fields
+    assert set(ext.fields.keys()) == set(['rhythm/tempogram'])
+
+    assert ext.fields['rhythm/tempogram'].shape == (None, WIN_LENGTH)
+    assert ext.fields['rhythm/tempogram'].dtype is np.float32
+
+
+def test_feature_tempogram(audio, SR, HOP_LENGTH, WIN_LENGTH):
+
+    ext = pumpp.feature.Tempogram(name='rhythm',
+                                  sr=SR, hop_length=HOP_LENGTH,
+                                  win_length=WIN_LENGTH)
+
+
+    output = ext.transform(**audio)
+
+    assert set(output.keys()) == set(ext.fields.keys())
+
+    for key in ext.fields:
+        assert shape_match(output[key].shape[1:], ext.fields[key].shape)
+        assert type_match(output[key].dtype, ext.fields[key].dtype)
+
+
+def test_feature_temposcale_fields(SR, HOP_LENGTH, WIN_LENGTH, N_FMT):
+
+    ext = pumpp.feature.TempoScale(name='rhythm',
+                                   sr=SR, hop_length=HOP_LENGTH,
+                                   win_length=WIN_LENGTH,
+                                   n_fmt=N_FMT)
+
+    # Check the fields
+    assert set(ext.fields.keys()) == set(['rhythm/temposcale'])
+
+    assert ext.fields['rhythm/temposcale'].shape == (None, 1 + N_FMT // 2)
+    assert ext.fields['rhythm/temposcale'].dtype is np.float32
+
+
+def test_feature_temposcale(audio, SR, HOP_LENGTH, WIN_LENGTH, N_FMT):
+
+    ext = pumpp.feature.TempoScale(name='rhythm',
+                                   sr=SR, hop_length=HOP_LENGTH,
+                                   win_length=WIN_LENGTH,
+                                   n_fmt=N_FMT)
+
+    output = ext.transform(**audio)
+
+    assert set(output.keys()) == set(ext.fields.keys())
+
+    for key in ext.fields:
+        assert shape_match(output[key].shape[1:], ext.fields[key].shape)
+        assert type_match(output[key].dtype, ext.fields[key].dtype)

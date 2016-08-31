@@ -21,7 +21,7 @@ class Tempogram(FeatureExtractor):
     def transform_audio(self, y):
         tgram = librosa.feature.tempogram(y=y, sr=self.sr,
                                           hop_length=self.hop_length,
-                                          win_length=self.win_length).astype(self.dtype)
+                                          win_length=self.win_length).astype(np.float32)
 
         return {'tempogram': tgram.T}
 
@@ -30,7 +30,7 @@ class TempoScale(Tempogram):
 
     def __init__(self, name, sr, hop_length, win_length, n_fmt=128):
 
-        super(TempoScale, self).__init__(name, sr, hop_length)
+        super(TempoScale, self).__init__(name, sr, hop_length, win_length)
 
         self.n_fmt = n_fmt
         self.pop('tempogram')
@@ -40,5 +40,6 @@ class TempoScale(Tempogram):
 
         data = super(TempoScale, self).transform_audio(y)
         data['temposcale'] = np.abs(librosa.fmt(data.pop('tempogram'),
-                                                axis=0, n_fmt=n_fmt)).astype(self.dtype)
+                                                axis=1,
+                                                n_fmt=self.n_fmt)).astype(np.float32)
         return data
