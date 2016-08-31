@@ -27,12 +27,14 @@ class STFT(FeatureExtractor):
                                                    dtype=np.float32))
         return {'mag': mag.T, 'phase': np.angle(phase.T)}
 
+
 class STFTPhaseDiff(STFT):
 
     def __init__(self, *args, **kwargs):
 
         super(STFTPhaseDiff, self).__init__(*args, **kwargs)
         phase_field = self.fields.pop(self.scope('phase'))
+        del self['phase']
         self.register('dphase', phase_field.shape, phase_field.dtype)
 
     def transform_audio(self, y):
@@ -41,12 +43,13 @@ class STFTPhaseDiff(STFT):
         data['dphase'] = phase_diff(data.pop('phase'), axis=0)
         return data
 
+
 class STFTMag(STFT):
 
     def __init__(self, *args, **kwargs):
 
         super(STFTMag, self).__init__(*args, **kwargs)
-        self.fields.pop(self.scope('phase'))
+        del self['phase']
 
     def transform_audio(self, y):
 

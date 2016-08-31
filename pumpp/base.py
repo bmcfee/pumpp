@@ -77,6 +77,9 @@ class Scope(object):
 
         self.fields[self.scope(field)] = Tensor(tuple(shape), dtype)
 
+    def __del__(self, field):
+        del self.fields[self.scope(field)]
+
     def merge(self, data):
         '''Merge an array of output dictionaries into a single dictionary
         with properly scoped names.
@@ -100,4 +103,3 @@ class Scope(object):
             data_out[self.scope(key)] = np.stack([np.asarray(d[key]) for d in data],
                                                  axis=0)
         return data_out
-
