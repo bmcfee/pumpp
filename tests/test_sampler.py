@@ -21,16 +21,25 @@ def hop_length(request):
 @pytest.fixture(scope='module')
 def ops(sr, hop_length):
 
-    ops = [pumpp.feature.STFT(name='stft', sr=sr,
-                              hop_length=hop_length,
-                              n_fft=hop_length)]
+    ops = []
+
+    # Let's put on two feature extractors
+    ops.append(pumpp.feature.STFT(name='stft', sr=sr,
+                                  hop_length=hop_length,
+                                  n_fft=hop_length))
 
     ops.append(pumpp.feature.Tempogram(name='rhythm', sr=sr,
                                        hop_length=hop_length,
                                        win_length=hop_length))
 
+    # A time-varying annotation
     ops.append(pumpp.task.BeatTransformer(name='beat', sr=sr,
                                           hop_length=hop_length))
+
+    # And a static annotation
+    ops.append(pumpp.task.VectorTransformer(namespace='vector',
+                                            dimension=32,
+                                            name='vec'))
 
     yield ops
 
@@ -59,6 +68,7 @@ def test_sampler(data, ops, n_samples, duration):
     MAX_SAMPLES = 30
     sampler = pumpp.Sampler(n_samples, duration, *ops)
 
+    print({k: data[k].shape for k in data}, sampler._time)
     # Build the set of reference keys that we want to track
     ref_keys = set()
     for op in ops:

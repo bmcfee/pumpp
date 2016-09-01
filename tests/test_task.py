@@ -391,7 +391,7 @@ def test_task_vector_absent(dimension, name):
     assert not np.any(output[var_name])
 
     for key in trans.fields:
-        assert shape_match(output[key].shape[1:], trans.fields[key].shape)
+        assert shape_match(output[key].shape, trans.fields[key].shape)
         assert type_match(output[key].dtype, trans.fields[key].dtype)
 
 
@@ -426,7 +426,7 @@ def test_task_vector_present(target_dimension, data_dimension, name):
     assert np.allclose(output[var_name], ann.data.loc[0].value)
 
     for key in trans.fields:
-        assert shape_match(output[key].shape[1:], trans.fields[key].shape)
+        assert shape_match(output[key].shape, trans.fields[key].shape)
         assert type_match(output[key].dtype, trans.fields[key].dtype)
 
 
