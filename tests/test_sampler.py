@@ -68,7 +68,6 @@ def test_sampler(data, ops, n_samples, duration):
     MAX_SAMPLES = 30
     sampler = pumpp.Sampler(n_samples, duration, *ops)
 
-    print({k: data[k].shape for k in data}, sampler._time)
     # Build the set of reference keys that we want to track
     ref_keys = set()
     for op in ops:
