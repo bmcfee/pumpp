@@ -6,3 +6,4 @@ from .version import version
 from .core import *
 from . import feature
 from . import task
+from .sampler import Sampler

@@ -2,17 +2,16 @@
 # -*- encoding: utf-8 -*-
 '''The sampler'''
 
-from itertools import counter
+from itertools import count
 
 import numpy as np
 
 
 class Sampler(object):
-    def __init__(self, n_samples, duration, min_valid=0.25, *ops):
+    def __init__(self, n_samples, duration, *ops):
 
         self.n_samples = n_samples
         self.duration = duration
-        self.min_valid = min_valid
 
         fields = dict()
         for op in ops:
@@ -22,7 +21,8 @@ class Sampler(object):
         self._time = {key: None for key in fields}
         for key in fields:
             if None in fields[key].shape:
-                self._time[key] = fields[key].shape.index(None)
+                # Add one for the batching index
+                self._time[key] = 1 + fields[key].shape.index(None)
 
     def sample(self, data, interval):
 
@@ -43,22 +43,17 @@ class Sampler(object):
 
         # Find all the time-like indices of the data
         lengths = []
-        for key in data:
+        for key in self._time:
             if self._time[key] is not None:
                 lengths.append(data[key].shape[self._time[key]])
 
-        lengths = np.unique(lengths)
-        if len(lengths) > 1:
-            raise ValueError('Unequal data lengths in time-like axes: '
-                             '{}'.format({k: data[k].shape for k in data}))
-
-        return lengths[0]
+        return min(lengths)
 
     def __call__(self, data):
 
         duration = self.data_duration(data)
 
-        for i in counter(0):
+        for i in count(0):
             # are we done?
             if self.n_samples and i >= self.n_samples:
                 break
