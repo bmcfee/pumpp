@@ -20,7 +20,7 @@ class VectorTransformer(BaseTaskTransformer):
         self.dimension = dimension
         self.dtype = dtype
 
-        self.register('vector', [None, self.dimension], self.dtype)
+        self.register('vector', [1, self.dimension], self.dtype)
 
     def empty(self, duration):
         ann = super(VectorTransformer, self).empty(duration)
