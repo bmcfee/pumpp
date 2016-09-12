@@ -3,10 +3,10 @@
 '''The base class for task transformer objects'''
 
 import numpy as np
-import librosa
+from librosa import time_to_frames
 import jams
 
-from ..base import Tensor, Scope
+from ..base import Scope
 
 __all__ = ['BaseTaskTransformer']
 
@@ -31,7 +31,22 @@ def fill_value(dtype):
 
 
 class BaseTaskTransformer(Scope):
-    '''Base class for task transformer objects'''
+    '''Base class for task transformer objects
+
+    Attributes
+    ----------
+    name : str
+        The name prefix for this transformer object
+
+    namespace : str
+        The JAMS namespace for annotations in this task
+
+    sr : number > 0
+        The sampling rate for audio
+
+    hop_length : int > 0
+        The number of samples between frames
+    '''
 
     def __init__(self, name, namespace, sr, hop_length):
         super(BaseTaskTransformer, self).__init__(name)
@@ -44,10 +59,38 @@ class BaseTaskTransformer(Scope):
         self.hop_length = hop_length
 
     def empty(self, duration):
+        '''Create an empty jams.Annotation for this task.
+
+        This method should be overridden by derived classes.
+
+        Parameters
+        ----------
+        duration : int >= 0
+            Duration of the annotation
+        '''
         return jams.Annotation(namespace=self.namespace, time=0, duration=0)
 
     def transform(self, jam, query=None):
+        '''Transform jam object to make data for this task
 
+        Parameters
+        ----------
+        jam : jams.JAMS
+            The jams container object
+
+        query : string, dict, or callable [optional]
+            An optional query to narrow the elements of `jam.annotations`
+            to be considered.
+
+            If not provided, all annotations are considered.
+
+        Returns
+        -------
+        data : dict
+            A dictionary of transformed annotations.
+            All annotations which can be converted to the target namespace
+            will be converted.
+        '''
         anns = []
         if query:
             results = jam.search(**query)
@@ -78,9 +121,8 @@ class BaseTaskTransformer(Scope):
             else:
                 valid = [ann.time, ann.time + ann.duration]
 
-            results[-1]['_valid'] = librosa.time_to_frames(valid,
-                                                           sr=self.sr,
-                                                           hop_length=self.hop_length)
+            results[-1]['_valid'] = time_to_frames(valid, sr=self.sr,
+                                                   hop_length=self.hop_length)
 
         # Prefix and collect
         return self.merge(results)
@@ -107,12 +149,11 @@ class BaseTaskTransformer(Scope):
         '''
 
         # FIXME: support sparse encoding
-        frames = librosa.time_to_frames(events,
-                                        sr=self.sr,
-                                        hop_length=self.hop_length)
+        frames = time_to_frames(events, sr=self.sr,
+                                hop_length=self.hop_length)
 
-        n_total = int(librosa.time_to_frames(duration, sr=self.sr,
-                                             hop_length=self.hop_length))
+        n_total = int(time_to_frames(duration, sr=self.sr,
+                                     hop_length=self.hop_length))
 
         target = np.empty((n_total, values.shape[1]), dtype=dtype)
 
@@ -124,13 +165,32 @@ class BaseTaskTransformer(Scope):
         return target
 
     def encode_intervals(self, duration, intervals, values, dtype=np.bool):
+        '''Encode labeled intervals as a time-series matrix.
 
-        frames = librosa.time_to_frames(intervals,
-                                        sr=self.sr,
-                                        hop_length=self.hop_length)
+        Parameters
+        ----------
+        duration : number
+            The duration (in frames) of the track
 
-        n_total = int(librosa.time_to_frames(duration, sr=self.sr,
-                                             hop_length=self.hop_length))
+        intervals : np.ndarray, shape=(n, 2)
+            The list of intervals
+
+        values : np.ndarray, shape=(n, m)
+            The (encoded) values corresponding to each interval
+
+        dtype : np.dtype
+            The desired output type
+
+        Returns
+        -------
+        target : np.ndarray, shape=(duration * sr / hop_length, m)
+            The labeled interval encoding, sampled at the desired frame rate
+        '''
+        frames = time_to_frames(intervals, sr=self.sr,
+                                hop_length=self.hop_length)
+
+        n_total = int(time_to_frames(duration, sr=self.sr,
+                                     hop_length=self.hop_length))
 
         values = values.astype(dtype)
 
