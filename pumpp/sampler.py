@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
-'''The sampler'''
+'''Data subsampling'''
 
 from itertools import count
 
@@ -8,6 +8,39 @@ import numpy as np
 
 
 class Sampler(object):
+    '''Generate samples from a pumpp data dict.
+
+    Attributes
+    ----------
+    n_samples : int or None
+        the number of samples to generate.
+        If `None`, generate indefinitely.
+
+    duration : int > 0
+        the duration (in frames) of each sample
+
+    *ops : one or more pumpp.feature.FeatureExtractor or pumpp.task.BaseTaskTransformer
+        The operators to include when sampling data.
+
+
+    Examples
+    --------
+
+    >>> # Set up the parameters
+    >>> sr, n_fft, hop_length = 22050, 512, 2048
+    >>> # Instantiate some transformers
+    >>> p_stft = pumpp.feature.STFTMag('stft', sr=sr, n_fft=n_fft,
+    ...                                hop_length=hop_length)
+    >>> p_beat = pumpp.task.BeatTransformer('beat', sr=sr,
+    ...                                     hop_length=hop_length)
+    >>> # Apply the transformers to the data
+    >>> data = pumpp.transform('test.ogg', 'test.jams', p_stft, p_beat)
+    >>> # We'll sample 10 patches of duration = 32 frames
+    >>> stream = pumpp.Sampler(10, 32, p_stft, p_beat)
+    >>> # Apply the streamer to the data dict
+    >>> for example in stream(data):
+    ...     process(data)
+    '''
     def __init__(self, n_samples, duration, *ops):
 
         self.n_samples = n_samples
@@ -25,7 +58,21 @@ class Sampler(object):
                 self._time[key] = 1 + fields[key].shape.index(None)
 
     def sample(self, data, interval):
+        '''Sample a patch from the data object
 
+        Parameters
+        ----------
+        data : dict
+            A data dict as produced by pumpp.transform
+
+        interval : slice
+            The time interval to sample
+
+        Returns
+        -------
+        data_slice : dict
+            `data` restricted to `interval`.
+        '''
         data_slice = dict()
 
         for key in data:
@@ -40,7 +87,18 @@ class Sampler(object):
         return data_slice
 
     def data_duration(self, data):
+        '''Compute the valid data duration of a dict
 
+        Parameters
+        ----------
+        data : dict
+            As produced by pumpp.transform
+
+        Returns
+        -------
+        length : int
+            The minimum temporal extent of a dynamic observation in data
+        '''
         # Find all the time-like indices of the data
         lengths = []
         for key in self._time:
@@ -50,7 +108,19 @@ class Sampler(object):
         return min(lengths)
 
     def __call__(self, data):
+        '''Generate samples from a data dict.
 
+        Parameters
+        ----------
+        data : dict
+            As produced by pumpp.transform
+
+        Generates
+        ---------
+        data_sample : dict
+            A sequence of patch samples from `data`,
+            as parameterized by the sampler object.
+        '''
         duration = self.data_duration(data)
 
         for i in count(0):
