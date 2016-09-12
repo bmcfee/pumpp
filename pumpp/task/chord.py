@@ -159,7 +159,23 @@ class ChordTransformer(BaseTaskTransformer):
 
 
 class SimpleChordTransformer(ChordTransformer):
+    '''Simplified chord transformations.  Only pitch class activity is encoded.
 
+    Attributes
+    ----------
+    name : str
+        name of the transformer
+
+    sr : number > 0
+        Sampling rate of audio
+
+    hop_length : int > 0
+        Hop length for annotation frames
+
+    See Also
+    --------
+    ChordTransformer
+    '''
     def __init__(self, name='chord', sr=22050, hop_length=512):
         super(SimpleChordTransformer, self).__init__(name=name,
                                                      sr=sr,
@@ -169,8 +185,26 @@ class SimpleChordTransformer(ChordTransformer):
         self.pop('bass')
 
     def transform_annotation(self, ann, duration):
+        '''Apply the chord transformation.
 
-        data = super(SimpleChordTransformer, self).transform_annotation(ann, duration)
+        Parameters
+        ----------
+        ann : jams.Annotation
+            The chord annotation
+
+        duration : number > 0
+            The target duration
+
+        Returns
+        -------
+        data : dict
+            data['pitch'] : np.ndarray, shape=(n, 12)
+
+            `pitch` is a binary matrix indicating pitch class
+            activation at each frame.
+        '''
+        data = super(SimpleChordTransformer,
+                     self).transform_annotation(ann, duration)
 
         data.pop('root', None)
         data.pop('bass', None)
