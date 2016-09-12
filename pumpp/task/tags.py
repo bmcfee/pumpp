@@ -13,22 +13,33 @@ __all__ = ['DynamicLabelTransformer', 'StaticLabelTransformer']
 
 
 class DynamicLabelTransformer(BaseTaskTransformer):
+    '''Time-series label transformer.
 
+    Attributes
+    ----------
+    namespace : str
+        The JAMS namespace for this task
+
+    name : str
+        The name of this transformer object
+
+    labels : list of str [optional]
+        The list of labels for this task.
+
+        If not provided, it will attempt to infer the label set from the
+        namespace definition.
+
+    sr : number > 0
+        The audio sampling rate
+
+    hop_length : int > 0
+        The hop length for annotation frames
+
+    See Also
+    --------
+    StaticLabelTransformer
+    '''
     def __init__(self, namespace, name, labels=None, sr=22050, hop_length=512):
-        '''Initialize a time-series label transformer
-
-        Parameters
-        ----------
-        jam : jams.JAMS
-            The JAMS object container
-
-        n_samples : int > 0
-            The number of samples in the audio frame
-
-        label_encoder : sklearn.preprocessing.MultiLabelBinarizer
-            The (pre-constructed) label encoder
-        '''
-
         super(DynamicLabelTransformer, self).__init__(name=name,
                                                       namespace=namespace,
                                                       sr=sr,
@@ -44,12 +55,36 @@ class DynamicLabelTransformer(BaseTaskTransformer):
         self.register('tags', [None, len(self._classes)], np.bool)
 
     def empty(self, duration):
+        '''Empty label annotations.
+
+        Constructs a single observation with an empty value (None).
+
+        Parameters
+        ----------
+        duration : number > 0
+            The duration of the annotation
+        '''
         ann = super(DynamicLabelTransformer, self).empty(duration)
         ann.append(time=0, duration=duration, value=None)
         return ann
 
     def transform_annotation(self, ann, duration):
+        '''Transform an annotation to dynamic label encoding.
 
+        Parameters
+        ----------
+        ann : jams.Annotation
+            The annotation to convert
+
+        duration : number > 0
+            The duration of the track
+
+        Returns
+        -------
+        data : dict
+            data['tags'] : np.ndarray, shape=(n, n_labels)
+                A time-varying binary encoding of the labels
+        '''
         intervals, values = ann.data.to_interval_values()
 
         # Suppress all intervals not in the encoder
@@ -67,16 +102,28 @@ class DynamicLabelTransformer(BaseTaskTransformer):
 
 
 class StaticLabelTransformer(BaseTaskTransformer):
+    '''Static label transformer.
+
+    Attributes
+    ----------
+    namespace : str
+        The JAMS namespace for this task
+
+    name : str
+        The name of this transformer object
+
+    labels : list of str [optional]
+        The list of labels for this task.
+
+        If not provided, it will attempt to infer the label set from the
+        namespace definition.
+
+    See Also
+    --------
+    DynamicLabelTransformer
+    '''
 
     def __init__(self, namespace, name, labels=None):
-        '''Initialize a global label transformer
-
-        Parameters
-        ----------
-        jam : jams.JAMS
-            The JAMS object container
-        '''
-
         super(StaticLabelTransformer, self).__init__(name=name,
                                                      namespace=namespace,
                                                      sr=1, hop_length=1)
@@ -90,7 +137,22 @@ class StaticLabelTransformer(BaseTaskTransformer):
         self.register('tags', [len(self._classes)], np.bool)
 
     def transform_annotation(self, ann, duration):
+        '''Transform an annotation to static label encoding.
 
+        Parameters
+        ----------
+        ann : jams.Annotation
+            The annotation to convert
+
+        duration : number > 0
+            The duration of the track
+
+        Returns
+        -------
+        data : dict
+            data['tags'] : np.ndarray, shape=(n_labels,)
+                A static binary encoding of the labels
+        '''
         intervals = np.asarray([[0, 1]])
         values = list(ann.data.value)
         intervals = np.tile(intervals, [len(values), 1])
