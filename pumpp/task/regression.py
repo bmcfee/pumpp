@@ -10,9 +10,23 @@ __all__ = ['VectorTransformer']
 
 
 class VectorTransformer(BaseTaskTransformer):
+    '''Vector regression transformer.
 
+    Attributes
+    ----------
+    name : str
+        The name of this transformer
+
+    namespace : str
+        The target namespace of this transformer
+
+    dimension : int > 0
+        The dimension of the vector data
+
+    dtype : np.dtype
+        The desired data type of the output
+    '''
     def __init__(self, name, namespace, dimension, dtype=np.float32):
-
         super(VectorTransformer, self).__init__(name=name,
                                                 namespace=namespace,
                                                 sr=1, hop_length=1)
@@ -23,6 +37,21 @@ class VectorTransformer(BaseTaskTransformer):
         self.register('vector', [1, self.dimension], self.dtype)
 
     def empty(self, duration):
+        '''Empty vector annotations.
+
+        This returns an annotation with a single observation
+        vector consisting of all-zeroes.
+
+        Parameters
+        ----------
+        duration : number >0
+            Length of the track
+
+        Returns
+        -------
+        ann : jams.Annotation
+            The empty annotation
+        '''
         ann = super(VectorTransformer, self).empty(duration)
 
         ann.append(time=0, duration=duration, confidence=0,
@@ -30,7 +59,26 @@ class VectorTransformer(BaseTaskTransformer):
         return ann
 
     def transform_annotation(self, ann, duration):
+        '''Apply the vector transformation.
 
+        Parameters
+        ----------
+        ann : jams.Annotation
+            The input annotation
+
+        duration : number > 0
+            The duration of the track
+
+        Returns
+        -------
+        data : dict
+            data['vector'] : np.ndarray, shape=(dimension,)
+
+        Raises
+        ------
+        RuntimeError
+            If the input dimension does not match
+        '''
         vector = np.asarray(ann.data.value.iloc[0], dtype=self.dtype)
         if len(vector) != self.dimension:
             raise RuntimeError('vector dimension({:0}) '

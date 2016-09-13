@@ -1,8 +1,8 @@
-
 #!/usr/bin/env python
+"""Mel spectrogram"""
 
 import numpy as np
-import librosa
+from librosa.feature import melspectrogram
 
 from .base import FeatureExtractor
 
@@ -34,7 +34,6 @@ class Mel(FeatureExtractor):
         Defaults to `0.5 * sr`
     '''
     def __init__(self, name, sr, hop_length, n_fft, n_mels, fmax=None):
-
         super(Mel, self).__init__(name, sr, hop_length)
 
         self.n_fft = n_fft
@@ -44,9 +43,23 @@ class Mel(FeatureExtractor):
         self.register('mag', [None, n_mels], np.float32)
 
     def transform_audio(self, y):
-        mel = np.sqrt(librosa.feature.melspectrogram(y=y, sr=self.sr, n_fft=self.n_fft,
-                                                     hop_length=self.hop_length,
-                                                     n_mels=self.n_mels,
-                                                     fmax=self.fmax)).astype(np.float32)
+        '''Compute the Mel spectrogram
+
+        Parameters
+        ----------
+        y : np.ndarray
+            The audio buffer
+
+        Returns
+        -------
+        data : dict
+            data['mag'] : np.ndarray, shape=(n_frames, n_mels)
+                The Mel spectrogram
+        '''
+        mel = np.sqrt(melspectrogram(y=y, sr=self.sr,
+                                     n_fft=self.n_fft,
+                                     hop_length=self.hop_length,
+                                     n_mels=self.n_mels,
+                                     fmax=self.fmax)).astype(np.float32)
 
         return {'mag': mel.T}

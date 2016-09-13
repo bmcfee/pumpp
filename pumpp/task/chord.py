@@ -12,14 +12,49 @@ __all__ = ['ChordTransformer', 'SimpleChordTransformer']
 
 
 def _pad_nochord(target, axis=-1):
+    '''Pad a chord annotation with no-chord flags.
 
+    Parameters
+    ----------
+    target : np.ndarray
+        the input data
+
+    axis : int
+        the axis along which to pad
+
+    Returns
+    -------
+    target_pad
+        `target` expanded by 1 along the specified `axis`.
+        The expanded dimension will be 0 when `target` is non-zero
+        before padding, and 1 otherwise.
+    '''
     ncmask = ~np.max(target, axis=axis, keepdims=True)
 
     return np.concatenate([target, ncmask], axis=axis)
 
 
 class ChordTransformer(BaseTaskTransformer):
+    '''Chord annotation transformers.
 
+    This transformer uses a (pitch, root, bass) decomposition of
+    chord annotations.
+
+    Attributes
+    ----------
+    name : str
+        The name of the chord transformer
+
+    sr : number > 0
+        The sampling rate of audio
+
+    hop_length : int > 0
+        The number of samples between each annotation frame
+
+    See Also
+    --------
+    SimpleTransformer
+    '''
     def __init__(self, name='chord', sr=22050, hop_length=512):
         '''Initialize a chord task transformer'''
 
@@ -35,6 +70,18 @@ class ChordTransformer(BaseTaskTransformer):
         self.register('bass', [None, 13], np.bool)
 
     def empty(self, duration):
+        '''Empty chord annotations
+
+        Parameters
+        ----------
+        duration : number
+            The length (in seconds) of the empty annotation
+
+        Returns
+        -------
+        ann : jams.Annotation
+            A chord annotation consisting of a single `no-chord` observation.
+        '''
         ann = super(ChordTransformer, self).empty(duration)
 
         ann.append(time=0,
@@ -44,10 +91,38 @@ class ChordTransformer(BaseTaskTransformer):
         return ann
 
     def transform_annotation(self, ann, duration):
+        '''Apply the chord transformation.
 
+        Parameters
+        ----------
+        ann : jams.Annotation
+            The chord annotation
+
+        duration : number > 0
+            The target duration
+
+        Returns
+        -------
+        data : dict
+            data['pitch'] : np.ndarray, shape=(n, 12)
+            data['root'] : np.ndarray, shape=(n, 13)
+            data['bass'] : np.ndarray, shape=(n, 13)
+
+            `pitch` is a binary matrix indicating pitch class
+            activation at each frame.
+
+            `root` is a one-hot matrix indicating the chord
+            root's pitch class at each frame.
+
+            `bass` is a one-hot matrix indicating the chord
+            bass (lowest note) pitch class at each frame.
+
+            `root` and `bass` have an extra final dimension
+            which is active when there is no chord sounding.
+        '''
         # Construct a blank annotation with mask = 0
         intervals, chords = ann.data.to_interval_values()
-        
+
         # If we don't have any labeled intervals, fill in a no-chord
         if not chords:
             intervals = np.asarray([[0, duration]])
@@ -84,7 +159,23 @@ class ChordTransformer(BaseTaskTransformer):
 
 
 class SimpleChordTransformer(ChordTransformer):
+    '''Simplified chord transformations.  Only pitch class activity is encoded.
 
+    Attributes
+    ----------
+    name : str
+        name of the transformer
+
+    sr : number > 0
+        Sampling rate of audio
+
+    hop_length : int > 0
+        Hop length for annotation frames
+
+    See Also
+    --------
+    ChordTransformer
+    '''
     def __init__(self, name='chord', sr=22050, hop_length=512):
         super(SimpleChordTransformer, self).__init__(name=name,
                                                      sr=sr,
@@ -94,8 +185,26 @@ class SimpleChordTransformer(ChordTransformer):
         self.pop('bass')
 
     def transform_annotation(self, ann, duration):
+        '''Apply the chord transformation.
 
-        data = super(SimpleChordTransformer, self).transform_annotation(ann, duration)
+        Parameters
+        ----------
+        ann : jams.Annotation
+            The chord annotation
+
+        duration : number > 0
+            The target duration
+
+        Returns
+        -------
+        data : dict
+            data['pitch'] : np.ndarray, shape=(n, 12)
+
+            `pitch` is a binary matrix indicating pitch class
+            activation at each frame.
+        '''
+        data = super(SimpleChordTransformer,
+                     self).transform_annotation(ann, duration)
 
         data.pop('root', None)
         data.pop('bass', None)

@@ -10,7 +10,19 @@ __all__ = ['BeatTransformer']
 
 
 class BeatTransformer(BaseTaskTransformer):
+    '''Task transformation for beat tracking
 
+    Attributes
+    ----------
+    name : str
+        The name of this transformer
+
+    sr : number > 0
+        The audio sampling rate
+
+    hop_length : int > 0
+        The hop length for annotation frames
+    '''
     def __init__(self, name='beat', sr=22050, hop_length=512):
         super(BeatTransformer, self).__init__(name=name,
                                               namespace='beat',
@@ -21,6 +33,28 @@ class BeatTransformer(BaseTaskTransformer):
         self.register('mask_downbeat', [1], np.bool)
 
     def transform_annotation(self, ann, duration):
+        '''Apply the beat transformer
+
+        Parameters
+        ----------
+        ann : jams.Annotation
+            The input annotation
+
+        duration : number > 0
+            The duration of the audio
+
+        Returns
+        -------
+        data : dict
+            data['beat'] : np.ndarray, shape=(n, 1)
+                Binary indicator of beat/non-beat
+
+            data['downbeat'] : np.ndarray, shape=(n, 1)
+                Binary indicator of downbeat/non-downbeat
+
+            mask_downbeat : bool
+                True if downbeat annotations are present
+        '''
 
         mask_downbeat = False
 
