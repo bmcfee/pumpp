@@ -9,7 +9,19 @@ from ..base import Scope
 
 
 class FeatureExtractor(Scope):
+    '''The base feature extractor class.
 
+    Attributes
+    ----------
+    name : str
+        The name for this feature extractor
+
+    sr : number > 0
+        The sampling rate of audio for analysis
+
+    hop_length : int > 0
+        The hop length between analysis frames
+    '''
     def __init__(self, name, sr, hop_length):
 
         super(FeatureExtractor, self).__init__(name)
@@ -18,7 +30,25 @@ class FeatureExtractor(Scope):
         self.hop_length = hop_length
 
     def transform(self, y, sr):
+        '''Transform an audio signal
 
+        Parameters
+        ----------
+        y : np.ndarray
+            The audio signal
+
+        sr : number > 0
+            The native sampling rate of y
+
+        Returns
+        -------
+        dict
+            Data dictionary containing features extracted from y
+
+        See Also
+        --------
+        transform_audio
+        '''
         if sr != self.sr:
             y = librosa.resample(y, sr, self.sr)
 
@@ -30,7 +60,7 @@ class FeatureExtractor(Scope):
 
 def phase_diff(phase, axis=0):
     '''Compute the phase differential along a given axis
-    
+
     Parameters
     ----------
     phase : np.ndarray
