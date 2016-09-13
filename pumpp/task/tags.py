@@ -17,11 +17,11 @@ class DynamicLabelTransformer(BaseTaskTransformer):
 
     Attributes
     ----------
-    namespace : str
-        The JAMS namespace for this task
-
     name : str
         The name of this transformer object
+
+    namespace : str
+        The JAMS namespace for this task
 
     labels : list of str [optional]
         The list of labels for this task.
@@ -39,7 +39,7 @@ class DynamicLabelTransformer(BaseTaskTransformer):
     --------
     StaticLabelTransformer
     '''
-    def __init__(self, namespace, name, labels=None, sr=22050, hop_length=512):
+    def __init__(self, name, namespace, labels=None, sr=22050, hop_length=512):
         super(DynamicLabelTransformer, self).__init__(name=name,
                                                       namespace=namespace,
                                                       sr=sr,
@@ -106,11 +106,11 @@ class StaticLabelTransformer(BaseTaskTransformer):
 
     Attributes
     ----------
-    namespace : str
-        The JAMS namespace for this task
-
     name : str
         The name of this transformer object
+
+    namespace : str
+        The JAMS namespace for this task
 
     labels : list of str [optional]
         The list of labels for this task.
@@ -123,7 +123,7 @@ class StaticLabelTransformer(BaseTaskTransformer):
     DynamicLabelTransformer
     '''
 
-    def __init__(self, namespace, name, labels=None):
+    def __init__(self, name, namespace, labels=None):
         super(StaticLabelTransformer, self).__init__(name=name,
                                                      namespace=namespace,
                                                      sr=1, hop_length=1)
