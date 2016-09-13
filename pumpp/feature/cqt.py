@@ -30,7 +30,7 @@ class CQT(FeatureExtractor):
         The amount of frequency oversampling (bins per semitone)
 
     fmin : float > 0
-        The minimium frequency of the CQT
+        The minimum frequency of the CQT
     '''
     def __init__(self, name, sr, hop_length, n_octaves=8, over_sample=3,
                  fmin=None):
