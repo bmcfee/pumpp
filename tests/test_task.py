@@ -398,7 +398,7 @@ def test_task_vector_absent(dimension, name):
 @pytest.mark.parametrize('name', ['collab', 'vector'])
 @pytest.mark.parametrize('target_dimension, data_dimension',
                          [(1, 1), (2, 2), (4, 4),
-                          pytest.mark.xfail((2, 3), raises=RuntimeError)])
+                          pytest.mark.xfail((2, 3), raises=pumpp.DataError)])
 def test_task_vector_present(target_dimension, data_dimension, name):
     var_name = '{:s}/vector'.format(name)
     mask_name = '{:s}/_valid'.format(name)

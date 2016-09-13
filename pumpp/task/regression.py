@@ -5,6 +5,7 @@
 import numpy as np
 
 from .base import BaseTaskTransformer
+from ..exceptions import *
 
 __all__ = ['VectorTransformer']
 
@@ -76,13 +77,13 @@ class VectorTransformer(BaseTaskTransformer):
 
         Raises
         ------
-        RuntimeError
+        DataError
             If the input dimension does not match
         '''
         vector = np.asarray(ann.data.value.iloc[0], dtype=self.dtype)
         if len(vector) != self.dimension:
-            raise RuntimeError('vector dimension({:0}) '
-                               '!= self.dimension({:1})'
-                               .format(len(vector), self.dimension))
+            raise DataError('vector dimension({:0}) '
+                            '!= self.dimension({:1})'
+                            .format(len(vector), self.dimension))
 
         return {'vector': vector}

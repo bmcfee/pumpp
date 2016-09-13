@@ -5,6 +5,7 @@
 from collections import namedtuple, Iterable
 import numpy as np
 
+from .exceptions import *
 __all__ = ['Tensor', 'Scope']
 
 # This type is used for storing shape information
@@ -67,13 +68,18 @@ class Scope(object):
 
         dtype : type
             The data type of the field
+
+        Raises
+        ------
+        ParameterError
+            If dtype or shape are improperly specified
         '''
         if not isinstance(dtype, type):
-            raise TypeError('dtype={} must be a type'.format(dtype))
+            raise ParameterError('dtype={} must be a type'.format(dtype))
 
         if not (isinstance(shape, Iterable) and
                 all([s is None or isinstance(s, int) for s in shape])):
-            raise ValueError('shape={} must be an iterable of integers'.format(shape))
+            raise ParameterError('shape={} must be an iterable of integers'.format(shape))
 
         self.fields[self.scope(field)] = Tensor(tuple(shape), dtype)
 

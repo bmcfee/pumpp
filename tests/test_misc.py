@@ -7,11 +7,12 @@ import numpy as np
 
 import pumpp
 
+from pumpp import ParameterError
 
 @pytest.mark.parametrize('dtype',
                          [int, np.int64,
                           pytest.mark.xfail('not a type',
-                                            raises=TypeError)])
+                                            raises=ParameterError)])
 def test_scope_type(dtype):
 
     scope = pumpp.base.Scope(None)
@@ -20,10 +21,10 @@ def test_scope_type(dtype):
 
 @pytest.mark.parametrize('shape',
                          [[None], [1], [1, None],
-                          pytest.mark.xfail(1, raises=ValueError),
-                          pytest.mark.xfail(None, raises=ValueError),
-                          pytest.mark.xfail(23.5, raises=ValueError),
-                          pytest.mark.xfail('not a shape', raises=ValueError)])
+                          pytest.mark.xfail(1, raises=ParameterError),
+                          pytest.mark.xfail(None, raises=ParameterError),
+                          pytest.mark.xfail(23.5, raises=ParameterError),
+                          pytest.mark.xfail('not a shape', raises=ParameterError)])
 def test_scope_badshape(shape):
 
     scope = pumpp.base.Scope(None)
