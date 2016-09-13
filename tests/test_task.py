@@ -206,8 +206,8 @@ def test_task_dlabel_present(SR, HOP_LENGTH):
     ann.append(time=3, duration=1.0, value='disco')
 
     jam.annotations.append(ann)
-    trans = pumpp.task.DynamicLabelTransformer(namespace='tag_open',
-                                               name='madeup',
+    trans = pumpp.task.DynamicLabelTransformer(name='madeup',
+                                               namespace='tag_open',
                                                labels=labels)
 
     output = trans.transform(jam)
@@ -238,8 +238,8 @@ def test_task_dlabel_absent(SR, HOP_LENGTH):
     labels = ['alpha', 'beta', 'psycho', 'aqua', 'disco']
 
     jam = jams.JAMS(file_metadata=dict(duration=4.0))
-    trans = pumpp.task.DynamicLabelTransformer(namespace='tag_open',
-                                               name='madeup',
+    trans = pumpp.task.DynamicLabelTransformer(name='madeup',
+                                               namespace='tag_open',
                                                labels=labels)
 
     output = trans.transform(jam)
@@ -261,8 +261,8 @@ def test_task_dlabel_absent(SR, HOP_LENGTH):
 
 def test_task_dlabel_auto(SR, HOP_LENGTH):
     jam = jams.JAMS(file_metadata=dict(duration=4.0))
-    trans = pumpp.task.DynamicLabelTransformer(namespace='tag_gtzan',
-                                               name='genre')
+    trans = pumpp.task.DynamicLabelTransformer(name='genre',
+                                               namespace='tag_gtzan')
 
     output = trans.transform(jam)
 
@@ -285,8 +285,8 @@ def test_task_slabel_absent():
     labels = ['alpha', 'beta', 'psycho', 'aqua', 'disco']
 
     jam = jams.JAMS(file_metadata=dict(duration=4.0))
-    trans = pumpp.task.StaticLabelTransformer(namespace='tag_open',
-                                              name='madeup',
+    trans = pumpp.task.StaticLabelTransformer(name='madeup',
+                                              namespace='tag_open',
                                               labels=labels)
 
     output = trans.transform(jam)
@@ -319,8 +319,8 @@ def test_task_slabel_present():
     ann.append(time=3, duration=1.0, value='disco')
 
     jam.annotations.append(ann)
-    trans = pumpp.task.StaticLabelTransformer(namespace='tag_open',
-                                              name='madeup',
+    trans = pumpp.task.StaticLabelTransformer(name='madeup',
+                                              namespace='tag_open',
                                               labels=labels)
 
     output = trans.transform(jam)
@@ -346,8 +346,8 @@ def test_task_slabel_present():
 
 def test_task_slabel_auto():
     jam = jams.JAMS(file_metadata=dict(duration=4.0))
-    trans = pumpp.task.StaticLabelTransformer(namespace='tag_gtzan',
-                                              name='genre')
+    trans = pumpp.task.StaticLabelTransformer(name='genre',
+                                              namespace='tag_gtzan')
 
     output = trans.transform(jam)
 
@@ -544,8 +544,9 @@ def test_transform_noprefix():
     labels = ['foo', 'bar', 'baz']
 
     jam = jams.JAMS(file_metadata=dict(duration=4.0))
-    trans = pumpp.task.StaticLabelTransformer(namespace='tag_open',
-                                              name=None, labels=labels)
+    trans = pumpp.task.StaticLabelTransformer(name=None,
+                                              namespace='tag_open',
+                                              labels=labels)
 
     output = trans.transform(jam)
 
@@ -582,8 +583,8 @@ def test_transform_query():
     jam.annotations.append(jams.Annotation(namespace='tag_gtzan'))
     jam.annotations.append(jams.Annotation(namespace='tag_cal500'))
 
-    trans = pumpp.task.StaticLabelTransformer(namespace='tag_open',
-                                              name='multi',
+    trans = pumpp.task.StaticLabelTransformer(name='multi',
+                                              namespace='tag_open',
                                               labels=labels)
 
     # First test with no query
