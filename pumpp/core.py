@@ -16,7 +16,7 @@ from .task import BaseTaskTransformer
 from .feature import FeatureExtractor
 
 
-def transform(audio_f, jams_f, *ops):
+def transform(audio_f, *ops, **kwargs):
     '''Apply a set of operations to a track
 
     Parameters
@@ -24,10 +24,12 @@ def transform(audio_f, jams_f, *ops):
     audio_f : str
         The path to the audio file
 
-    jams_f : str
-        The path to the jams file
+    jam : str, jams.JAMS, or file-like
+        A JAMS object, or path to a JAMS file.
 
-    ops : list of pumpp.task.BaseTaskTransform or pumpp.feature.FeatureExtractor
+        If not provided, an empty jams object will be created.
+
+    ops : list of task.BaseTaskTransform or feature.FeatureExtractor
         The operators to apply to the input data
 
     Returns
@@ -39,8 +41,15 @@ def transform(audio_f, jams_f, *ops):
     # Load the audio
     y, sr = librosa.load(audio_f, sr=None, mono=True)
 
+    jam = kwargs.pop('jam', None)
+
+    if jam is None:
+        jam = jams.JAMS()
+        jam.file_metadata.duration = librosa.get_duration(y=y, sr=sr)
+
     # Load the jams
-    jam = jams.load(jams_f)
+    if not isinstance(jam, jams.JAMS):
+        jam = jams.load(jam)
 
     data = dict()
 
