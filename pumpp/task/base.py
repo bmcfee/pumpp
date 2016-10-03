@@ -251,14 +251,15 @@ class BaseTaskTransformer(Scope):
                                       sr=self.sr,
                                       hop_length=self.hop_length)
 
-        times = frames_to_time(np.arange(duration),
+        # [0, duration] inclusive
+        times = frames_to_time(np.arange(duration+1),
                                sr=self.sr,
                                hop_length=self.hop_length)
 
         # Find the change-points of the rows
         idx = np.unique(np.append(np.where(np.max(encoded[1:] != encoded[:-1],
                                                   axis=-1)),
-                                  encoded.shape[0] - 1))
+                                  encoded.shape[0]))
         delta = np.diff(np.append(-1, idx))
 
         # Starting positions can be integrated from changes
