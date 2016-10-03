@@ -178,3 +178,13 @@ class StaticLabelTransformer(BaseTaskTransformer):
             target = np.zeros(len(self._classes), dtype=np.bool)
 
         return {'tags': target}
+
+    def inverse(self, encoded, duration=None):
+        '''Inverse static tag transformation'''
+
+        ann = jams.Annotation(namespace=self.namespace, duration=duration)
+
+        for vd in self.encoder.inverse_transform(np.atleast_2d(encoded))[0]:
+            ann.append(time=0, duration=duration, value=vd)
+
+        return ann
