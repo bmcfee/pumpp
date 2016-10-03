@@ -23,7 +23,7 @@ def hop_length():
 
 
 @pytest.fixture()
-def tag_gtzan():
+def ann_tag():
 
     ann = jams.Annotation(namespace='tag_gtzan', duration=10)
 
@@ -33,28 +33,49 @@ def tag_gtzan():
     return ann
 
 
-def test_decode_tags_dynamic(sr, hop_length, tag_gtzan):
+@pytest.fixture()
+def ann_beat():
+    ann = jams.Annotation(namespace='beat', duration=10)
+
+    for n, i in enumerate(np.arange(0, 8, 0.5)):
+        ann.append(time=i, duration=0, value=n % 4)
+
+    return ann
+
+
+def test_decode_tags_dynamic(sr, hop_length, ann_tag):
 
     # This test encodes an annotation, decodes it, and then re-encodes it
     # It passes if the re-encoded version matches the initial encoding
-    tc = pumpp.task.DynamicLabelTransformer('genre', 'tag_gtzan',
+    tc = pumpp.task.DynamicLabelTransformer('genre', 'ann_tag',
                                             hop_length=hop_length,
                                             sr=sr)
 
-    data = tc.transform_annotation(tag_gtzan, tag_gtzan.duration)
+    data = tc.transform_annotation(ann_tag, ann_tag.duration)
 
-    inverse = tc.inverse(data['tags'], duration=tag_gtzan.duration)
-    data2 = tc.transform_annotation(inverse, tag_gtzan.duration)
+    inverse = tc.inverse(data['tags'], duration=ann_tag.duration)
+    data2 = tc.transform_annotation(inverse, ann_tag.duration)
+
+    assert np.allclose(data['tags'], data2['tags'])
+
+
+def test_decode_tags_static(ann_tag):
+
+    tc = pumpp.task.StaticLabelTransformer('genre', 'ann_tag')
+
+    data = tc.transform_annotation(ann_tag, ann_tag.duration)
+    inverse = tc.inverse(data['tags'], ann_tag.duration)
+    data2 = tc.transform_annotation(inverse, ann_tag.duration)
 
     assert np.allclose(data['tags'], data2['tags'])
 
 
-def test_decode_tags_static(tag_gtzan):
+def test_decode_beat(sr, hop_length, ann_beat):
 
-    tc = pumpp.task.StaticLabelTransformer('genre', 'tag_gtzan')
+    tc = pumpp.task.BeatTransformer('beat', sr=sr, hop_length=hop_length)
 
-    data = tc.transform_annotation(tag_gtzan, tag_gtzan.duration)
-    inverse = tc.inverse(data['tags'], tag_gtzan.duration)
-    data2 = tc.transform_annotation(inverse, tag_gtzan.duration)
+    data = tc.transform_annotation(ann_beat, ann_beat.duration)
+    inverse = tc.inverse(data['beat'], ann_beat.duration)
+    data2 = tc.transform_annotation(inverse, ann_beat.duration)
 
-    assert np.allclose(data['tags'], data2['tags'])
+    assert np.allclose(data['beat'], data2['beat'])
