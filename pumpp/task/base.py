@@ -247,9 +247,9 @@ class BaseTaskTransformer(Scope):
             # 1+ is fair here, because encode_intervals already pads
             duration = 1 + encoded.shape[0]
         else:
-            duration = time_to_frames(duration,
-                                      sr=self.sr,
-                                      hop_length=self.hop_length)
+            duration = 1 + time_to_frames(duration,
+                                          sr=self.sr,
+                                          hop_length=self.hop_length)
 
         # [0, duration] inclusive
         times = frames_to_time(np.arange(duration+1),
