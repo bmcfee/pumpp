@@ -21,7 +21,7 @@ env:
   global:
     # Directory where tests are run from
     - CONDA_DEPS="pip numpy scipy scikit-learn"
-    - ENV_NAME="test-environment"
+    - ENV_NAME="test-environment-$TRAVIS_PYTHON"
 
 before_install:
     - export MINICONDA=$HOME/miniconda
@@ -33,7 +33,7 @@ before_install:
     - conda config --set always_yes yes --set changeps1 no
     - conda update -q conda
     - conda info -a
-    - conda create -q python=$TRAVIS_PYTHON_VERSION $CONDA_DEPS
+    - conda create -n $ENV_NAME -q python=$TRAVIS_PYTHON_VERSION $CONDA_DEPS
     - conda update --all
     - hash -r
     - source activate $ENV_NAME
