@@ -47,7 +47,7 @@ def test_decode_tags_dynamic(sr, hop_length, ann_tag):
 
     # This test encodes an annotation, decodes it, and then re-encodes it
     # It passes if the re-encoded version matches the initial encoding
-    tc = pumpp.task.DynamicLabelTransformer('genre', 'ann_tag',
+    tc = pumpp.task.DynamicLabelTransformer('genre', 'tag_gtzan',
                                             hop_length=hop_length,
                                             sr=sr)
 
@@ -61,7 +61,7 @@ def test_decode_tags_dynamic(sr, hop_length, ann_tag):
 
 def test_decode_tags_static(ann_tag):
 
-    tc = pumpp.task.StaticLabelTransformer('genre', 'ann_tag')
+    tc = pumpp.task.StaticLabelTransformer('genre', 'tag_gtzan')
 
     data = tc.transform_annotation(ann_tag, ann_tag.duration)
     inverse = tc.inverse(data['tags'], ann_tag.duration)
