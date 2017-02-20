@@ -40,7 +40,6 @@ before_install:
 
 install:
     - pip install python-coveralls pytest-faulthandler
-    - pip install git+https://github.com/marl/jams
     - pip install -e .[docs,tests]
 
 script:
