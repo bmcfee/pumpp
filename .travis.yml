@@ -3,11 +3,6 @@ language: python
 # sudo false implies containerized builds
 sudo: false
 
-addons:
-  apt:
-    packages:
-    - ffmpeg
-
 
 notifications:
     email: false
@@ -16,6 +11,7 @@ python:
   - 2.7
   - 3.4
   - 3.5
+  - 3.6
 
 cache:
     directories:
@@ -24,26 +20,27 @@ cache:
 env:
   global:
     # Directory where tests are run from
-    - CONDA_DEPS="pip nose numpy scipy scikit-learn"
+    - CONDA_DEPS="pip numpy scipy scikit-learn"
     - ENV_NAME="test-environment"
 
 before_install:
-- export MINICONDA=$HOME/miniconda
-- export PATH="$MINICONDA/bin:$PATH"
-- hash -r
-# Install conda only if necessary
-- command -v conda >/dev/null || { wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
-   bash miniconda.sh -b -f -p $MINICONDA; }
-- conda config --set always_yes yes --set changeps1 no
-- conda update -q conda
-- conda info -a
-- conda create -q -n $ENV_NAME python=$TRAVIS_PYTHON_VERSION $CONDA_DEPS
-- conda update --all
-- hash -r
-- source activate $ENV_NAME
+    - export MINICONDA=$HOME/miniconda
+    - export PATH="$MINICONDA/bin:$PATH"
+    - hash -r
+    # Install conda only if necessary
+    - command -v conda >/dev/null || { wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+        bash miniconda.sh -b -f -p $MINICONDA; }
+    - conda config --set always_yes yes --set changeps1 no
+    - conda update -q conda
+    - conda info -a
+    - conda create -q python=$TRAVIS_PYTHON_VERSION $CONDA_DEPS
+    - conda update --all
+    - hash -r
+    - source activate $ENV_NAME
+    - conda install -c conda-forge librosa
+    - pip install python-coveralls pytest-faulthandler
 
 install:
-    - pip install python-coveralls pytest-faulthandler
     - pip install -e .[docs,tests]
 
 script:
