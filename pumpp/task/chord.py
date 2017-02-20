@@ -157,6 +157,10 @@ class ChordTransformer(BaseTaskTransformer):
                 'root': _pad_nochord(target_root),
                 'bass': _pad_nochord(target_bass)}
 
+    def inverse(self, pitch, root, bass, duration=None):
+
+        raise NotImplementedError('Chord cannot be inverted')
+
 
 class SimpleChordTransformer(ChordTransformer):
     '''Simplified chord transformations.  Only pitch class activity is encoded.
@@ -209,3 +213,6 @@ class SimpleChordTransformer(ChordTransformer):
         data.pop('root', None)
         data.pop('bass', None)
         return data
+
+    def inverse(self, *args, **kwargs):
+        raise NotImplementedError('SimpleChord cannot be inverted')

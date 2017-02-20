@@ -60,6 +60,21 @@ def ann_beat():
     return ann
 
 
+@pytest.fixture()
+def ann_chord():
+
+    ann = jams.Annotation(namespace='chord', duration=5)
+
+    for t, c in [(0, 'C'),
+                 (1, 'C:maj'),
+                 (2, 'D:min/3'),
+                 (3, 'F#:7(*5)'),
+                 (4, 'G:sus2')]:
+        ann.append(time=t, duration=1, value=c)
+
+    return ann
+
+
 def test_decode_tags_dynamic(sr, hop_length, ann_tag):
 
     # This test encodes an annotation, decodes it, and then re-encodes it
@@ -121,3 +136,31 @@ def test_decode_vector(ann_vector):
     data2 = tc.transform_annotation(inverse, ann_vector.duration)
 
     assert np.allclose(data['vector'], data2['vector'])
+
+
+@pytest.mark.xfail(raises=NotImplementedError)
+def test_decode_chord(sr, hop_length, ann_chord):
+
+    tc = pumpp.task.ChordTransformer('chord', sr=sr, hop_length=hop_length)
+
+    data = tc.transform_annotation(ann_chord, ann_chord.duration)
+    inverse = tc.inverse(data['pitch'], data['root'], data['bass'],
+                         duration=ann_chord.duration)
+    data2 = tc.transform_annotation(inverse, ann_chord.duration)
+
+    assert np.allclose(data['pitch'], data2['pitch'])
+    assert np.allclose(data['root'], data2['root'])
+    assert np.allclose(data['bass'], data2['bass'])
+
+
+@pytest.mark.xfail(raises=NotImplementedError)
+def test_decode_simplechord(sr, hop_length, ann_chord):
+
+    tc = pumpp.task.SimpleChordTransformer('chord', sr=sr,
+                                           hop_length=hop_length)
+
+    data = tc.transform_annotation(ann_chord, ann_chord.duration)
+    inverse = tc.inverse(data['pitch'], duration=ann_chord.duration)
+    data2 = tc.transform_annotation(inverse, ann_chord.duration)
+
+    assert np.allclose(data['pitch'], data2['pitch'])
