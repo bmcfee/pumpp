@@ -34,6 +34,15 @@ def ann_tag():
 
 
 @pytest.fixture()
+def ann_vector():
+
+    ann = jams.Annotation(namespace='vector', duration=1)
+
+    ann.append(time=0, duration=0, value=np.arange(32))
+    return ann
+
+
+@pytest.fixture()
 def ann_beat():
     ann = jams.Annotation(namespace='beat', duration=10)
 
@@ -99,3 +108,16 @@ def test_decode_beat_downbeat(sr, hop_length, ann_beat):
     data2 = tc.transform_annotation(inverse, ann_beat.duration)
 
     assert np.allclose(data['beat'], data2['beat'])
+
+
+def test_decode_vector(ann_vector):
+
+    tc = pumpp.task.VectorTransformer('cf', 'vector', 32)
+
+    data = tc.transform_annotation(ann_vector, ann_vector.duration)
+
+    inverse = tc.inverse(data['vector'], duration=ann_vector.duration)
+
+    data2 = tc.transform_annotation(inverse, ann_vector.duration)
+
+    assert np.allclose(data['vector'], data2['vector'])
