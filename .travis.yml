@@ -25,6 +25,7 @@ env:
   global:
     # Directory where tests are run from
     - CONDA_DEPS="pip nose numpy scipy scikit-learn"
+    - ENV_NAME="test-environment"
 
 before_install:
 - export MINICONDA=$HOME/miniconda
@@ -33,10 +34,13 @@ before_install:
 # Install conda only if necessary
 - command -v conda >/dev/null || { wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh;
    bash miniconda.sh -b -f -p $MINICONDA; }
-- conda config --set always_yes yes
-- conda update conda
+- conda config --set always_yes yes --set changeps1 no
+- conda update -q conda
 - conda info -a
-- conda install python=$TRAVIS_PYTHON_VERSION $CONDA_DEPS
+- conda create -q -n $ENV_NAME python=$TRAVIS_PYTHON_VERSION $CONDA_DEPS
+- conda update --all
+- hash -r
+- source activate $ENV_NAME
 
 install:
     - pip install python-coveralls pytest-faulthandler
