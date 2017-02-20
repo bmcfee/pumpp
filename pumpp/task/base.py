@@ -3,7 +3,7 @@
 '''The base class for task transformer objects'''
 
 import numpy as np
-from librosa import time_to_frames
+from librosa import time_to_frames, frames_to_time
 import jams
 
 from ..base import Scope
@@ -202,3 +202,68 @@ class BaseTaskTransformer(Scope):
             target[interval[0]:interval[1]] += column
 
         return target
+
+    def decode_events(self, encoded):
+        '''Decode labeled events into (time, value) pairs
+
+        Parameters
+        ----------
+        encoded : np.ndarray, shape=(n_frames, m)
+            Frame-level annotation encodings as produced by ``encode_events``.
+
+        Returns
+        -------
+        [(time, value)] : iterable of tuples
+            where `time` is the event time and `value` is an
+            np.ndarray, shape=(m,) of the encoded value at that time
+        '''
+        times = frames_to_time(np.arange(encoded.shape[0]),
+                               sr=self.sr,
+                               hop_length=self.hop_length)
+
+        return zip(times, encoded)
+
+    def decode_intervals(self, encoded, duration=None):
+        '''Decode labeled intervals into (start, end, value) triples
+
+        Parameters
+        ----------
+        encoded : np.ndarray, shape=(n_frames, m)
+            Frame-level annotation encodings as produced by
+            ``encode_intervals``
+
+        duration : None or float > 0
+            The max duration of the annotation (in seconds)
+            Must be greater than the length of encoded array.
+
+        Returns
+        -------
+        [(start, end, value)] : iterable of tuples
+            where `start` and `end` are the interval boundaries (in seconds)
+            and `value` is an np.ndarray, shape=(m,) of the encoded value
+            for this interval.
+        '''
+        if duration is None:
+            # 1+ is fair here, because encode_intervals already pads
+            duration = 1 + encoded.shape[0]
+        else:
+            duration = 1 + time_to_frames(duration,
+                                          sr=self.sr,
+                                          hop_length=self.hop_length)
+
+        # [0, duration] inclusive
+        times = frames_to_time(np.arange(duration+1),
+                               sr=self.sr,
+                               hop_length=self.hop_length)
+
+        # Find the change-points of the rows
+        idx = np.unique(np.append(np.where(np.max(encoded[1:] != encoded[:-1],
+                                                  axis=-1)),
+                                  encoded.shape[0]))
+        delta = np.diff(np.append(-1, idx))
+
+        # Starting positions can be integrated from changes
+        position = np.cumsum(np.append(0, delta))
+
+        return [(times[p], times[p + d], encoded[p])
+                for (p, d) in zip(position, delta)]

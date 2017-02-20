@@ -4,6 +4,8 @@
 
 import numpy as np
 
+import jams
+
 from .base import BaseTaskTransformer
 
 __all__ = ['BeatTransformer']
@@ -84,3 +86,28 @@ class BeatTransformer(BaseTaskTransformer):
         return {'beat': target_beat,
                 'downbeat': target_downbeat,
                 'mask_downbeat': mask_downbeat}
+
+    def inverse(self, encoded, downbeat=None, duration=None):
+        '''Inverse transformation for beats and optional downbeats'''
+
+        ann = jams.Annotation(namespace=self.namespace, duration=duration)
+
+        beat_times = [t for t, _ in self.decode_events(encoded) if _]
+        if downbeat is not None:
+            downbeat_times = set([t for t, _ in self.decode_events(downbeat)
+                                  if _])
+            pickup_beats = len([t for t in beat_times
+                                if t < min(downbeat_times)])
+        else:
+            downbeat_times = set()
+            pickup_beats = 0
+
+        value = - pickup_beats - 1
+        for beat in beat_times:
+            if beat in downbeat_times:
+                value = 1
+            else:
+                value += 1
+            ann.append(time=beat, duration=0, value=value)
+
+        return ann

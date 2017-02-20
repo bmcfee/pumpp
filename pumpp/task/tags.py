@@ -51,7 +51,7 @@ class DynamicLabelTransformer(BaseTaskTransformer):
         self.encoder = MultiLabelBinarizer()
         self.encoder.fit([labels])
         self._classes = set(self.encoder.classes_)
-
+        
         self.register('tags', [None, len(self._classes)], np.bool)
 
     def empty(self, duration):
@@ -99,6 +99,19 @@ class DynamicLabelTransformer(BaseTaskTransformer):
         target = self.encode_intervals(duration, intervals, tags)
 
         return {'tags': target}
+
+    def inverse(self, encoded, duration=None):
+        '''Inverse transformation'''
+
+        ann = jams.Annotation(namespace=self.namespace, duration=duration)
+        for start, end, value in self.decode_intervals(encoded,
+                                                       duration=duration):
+            value_dec = self.encoder.inverse_transform(np.atleast_2d(value))[0]
+
+            for vd in value_dec:
+                ann.append(time=start, duration=end-start, value=vd)
+
+        return ann
 
 
 class StaticLabelTransformer(BaseTaskTransformer):
@@ -165,3 +178,13 @@ class StaticLabelTransformer(BaseTaskTransformer):
             target = np.zeros(len(self._classes), dtype=np.bool)
 
         return {'tags': target}
+
+    def inverse(self, encoded, duration=None):
+        '''Inverse static tag transformation'''
+
+        ann = jams.Annotation(namespace=self.namespace, duration=duration)
+
+        for vd in self.encoder.inverse_transform(np.atleast_2d(encoded))[0]:
+            ann.append(time=0, duration=duration, value=vd)
+
+        return ann

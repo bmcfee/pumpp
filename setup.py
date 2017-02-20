@@ -28,10 +28,10 @@ setup(
     keywords='audio music learning',
     license='ISC',
     install_requires=['six',
-                      'librosa>=0.4.3',
-                      'jams>=0.2.1',
+                      'librosa>=0.5.0',
+                      'jams>=0.2.2',
                       'scikit-learn>=0.17',
-                      'mir_eval>=0.2'],
+                      'mir_eval>=0.4'],
     extras_require={
         'docs': ['numpydoc'],
         'tests': ['pytest', 'pytest-cov']

@@ -4,8 +4,10 @@
 
 import numpy as np
 
+import jams
+
 from .base import BaseTaskTransformer
-from ..exceptions import *
+from ..exceptions import DataError
 
 __all__ = ['VectorTransformer']
 
@@ -87,3 +89,14 @@ class VectorTransformer(BaseTaskTransformer):
                             .format(len(vector), self.dimension))
 
         return {'vector': vector}
+
+    def inverse(self, vector, duration=None):
+        '''Inverse vector transformer'''
+
+        ann = jams.Annotation(namespace=self.namespace, duration=duration)
+
+        if duration is None:
+            duration = 0
+        ann.append(time=0, duration=duration, value=vector)
+
+        return ann
