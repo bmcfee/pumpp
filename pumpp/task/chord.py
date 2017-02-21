@@ -2,13 +2,18 @@
 # -*- encoding: utf-8 -*-
 '''Chord recognition task transformer'''
 
+import re
+from itertools import product
+
 import numpy as np
 from sklearn.preprocessing import MultiLabelBinarizer
+
 import mir_eval
+import jams
 
 from .base import BaseTaskTransformer
 
-__all__ = ['ChordTransformer', 'SimpleChordTransformer']
+__all__ = ['ChordTransformer', 'SimpleChordTransformer', 'ChordTagTransformer']
 
 
 def _pad_nochord(target, axis=-1):
@@ -216,3 +221,206 @@ class SimpleChordTransformer(ChordTransformer):
 
     def inverse(self, *args, **kwargs):
         raise NotImplementedError('SimpleChord cannot be inverted')
+
+
+'''A list of normalized pitch class names'''
+PITCHES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+
+
+'''A mapping of chord quality encodings to their names'''
+QUALITIES = {
+    0b000100000000: 'min',
+    0b000010000000: 'maj',
+    0b000100010000: 'min',
+    0b000010010000: 'maj',
+    0b000100100000: 'dim',
+    0b000010001000: 'aug',
+    0b000100010010: 'min7',
+    0b000010010001: 'maj7',
+    0b000010010010: 'dom7',
+    0b000100100100: 'dim7',
+    0b000100100010: 'hdim7',
+    0b000100010001: 'minmaj7',
+    0b000100010100: 'min6',
+    0b000010010100: 'maj6',
+    0b001000010000: 'sus2',
+    0b000001010000: 'sus4'
+}
+
+
+class ChordTagTransformer(BaseTaskTransformer):
+    '''Chord transformer that uses a tag-space encoding for chord labels.
+
+    Attributes
+    ----------
+    name : str
+        name of the transformer
+
+    vocab : str
+
+        A string of chord quality indicators to include:
+
+            - '3': maj/min
+            - '5': '3' + aug/dim
+            - '7': '3' + '5' + 7/min7/maj7/dim7/hdim7/minmaj7
+            - '6': '3' + '5' + maj6/min6
+            - 's': sus2/sus4
+
+    nochord : str
+        String to use for no-chord symbols
+
+    sr : number > 0
+        Sampling rate of audio
+
+    hop_length : int > 0
+        Hop length for annotation frames
+
+    See Also
+    --------
+    ChordTransformer
+    SimpleChordTransformer
+    '''
+    def __init__(self, name='chord', vocab='3567s', nochord='N',
+                 sr=22050, hop_length=512):
+
+        super(ChordTagTransformer, self).__init__(name=name,
+                                                  namespace='chord',
+                                                  sr=sr,
+                                                  hop_length=hop_length)
+
+        # Stringify and lowercase
+        self.vocab = vocab.lower()
+        self.nochord = nochord
+        labels = self.vocabulary()
+
+        self.encoder = MultiLabelBinarizer()
+        self.encoder.fit([labels])
+        self._classes = set(self.encoder.classes_)
+
+        # Construct the quality mask for chord encoding
+        self.mask_ = 0b000000000000
+        if '3' in self.vocab:
+            self.mask_ |= 0b000110000000
+        if '5' in self.vocab:
+            self.mask_ |= 0b000110111000
+        if '6' in self.vocab:
+            self.mask_ |= 0b000110110100
+        if '7' in self.vocab:
+            self.mask_ |= 0b000110110011
+        if 's' in self.vocab:
+            self.mask_ |= 0b001001010000
+
+        self.register('chords', [None, len(self._classes)], np.bool)
+
+    def empty(self, duration):
+        '''Empty chord annotations
+
+        Parameters
+        ----------
+        duration : number
+            The length (in seconds) of the empty annotation
+
+        Returns
+        -------
+        ann : jams.Annotation
+            A chord annotation consisting of a single `no-chord` observation.
+        '''
+        ann = super(ChordTagTransformer, self).empty(duration)
+
+        ann.append(time=0,
+                   duration=duration,
+                   value='N', confidence=0)
+
+        return ann
+
+    def vocabulary(self):
+        qualities = []
+
+        if '3' in self.vocab or '5' in self.vocab:
+            qualities.extend(['min', 'maj'])
+
+        if '5' in self.vocab:
+            qualities.extend(['dim', 'aug'])
+
+        if '6' in self.vocab:
+            qualities.extend(['min6', 'maj6'])
+
+        if '7' in self.vocab:
+            qualities.extend(['min7', 'maj7', '7', 'dim7', 'hdim7', 'minmaj7'])
+
+        if 's' in self.vocab:
+            qualities.extend(['sus2', 'sus4'])
+
+        labels = [self.nochord]
+
+        for chord in product(PITCHES, qualities):
+            labels.append('{}:{}'.format(*chord))
+
+        return labels
+
+    def simplify(self, chord):
+        '''Simplify a chord string down to the vocabulary space'''
+        # Drop inversions
+        chord = re.sub(r'/.*$', r'', chord)
+        # Drop any additional or suppressed tones
+        chord = re.sub(r'\(.*?\)', r'', chord)
+        # Drop dangling : indicators
+        chord = re.sub(r':$', r'', chord)
+
+        # Encode the chord
+        root, pitches, _ = mir_eval.chord.encode(chord)
+
+        # Build the query
+        # To map the binary vector pitches down to bit masked integer,
+        # we just dot against powers of 2
+        P = 2**np.arange(12, dtype=int)
+        query = self.mask_ & pitches[::-1].dot(P)
+
+        if query not in QUALITIES:
+            # TODO: check for non-zero pitches here
+            return self.nochord
+
+        return '{}:{}'.format(PITCHES[root], QUALITIES[query])
+
+    def transform_annotation(self, ann, duration):
+        '''Transform an annotation to chord-tag encoding
+
+        Parameters
+        ----------
+        ann : jams.Annotation
+            The annotation to convert
+
+        duration : number > 0
+            The duration of the track
+
+        Returns
+        -------
+        data : dict
+            data['chord'] : np.ndarray, shape=(n, n_labels)
+                A time-varying binary encoding of the chords
+        '''
+
+        intervals, values = ann.data.to_interval_values()
+
+        chords = []
+        for v in values:
+            chords.extend(self.encoder.transform([[self.simplify(v)]]))
+
+        chords = np.asarray(chords)
+        target = self.encode_intervals(duration, intervals, chords)
+
+        return {'chord': target}
+
+    def inverse(self, encoded, duration=None):
+        '''Inverse transformation'''
+
+        ann = jams.Annotation(self.namespace, duration=duration)
+
+        for start, end, value in self.decode_intervals(encoded,
+                                                       duration=duration):
+            value_dec = self.encoder.inverse_transform(np.atleast_2d(value))[0]
+
+            for vd in value_dec:
+                ann.append(time=start, duration=end-start, value=vd)
+
+        return ann
