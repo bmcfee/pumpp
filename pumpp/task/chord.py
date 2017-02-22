@@ -12,6 +12,7 @@ import mir_eval
 import jams
 
 from .base import BaseTaskTransformer
+from ..exceptions import ParameterError
 
 __all__ = ['ChordTransformer', 'SimpleChordTransformer', 'ChordTagTransformer']
 
@@ -237,7 +238,7 @@ QUALITIES = {
     0b000010001000: 'aug',
     0b000100010010: 'min7',
     0b000010010001: 'maj7',
-    0b000010010010: 'dom7',
+    0b000010010010: '7',
     0b000100100100: 'dim7',
     0b000100100010: 'hdim7',
     0b000100010001: 'minmaj7',
@@ -289,6 +290,9 @@ class ChordTagTransformer(BaseTaskTransformer):
                                                   hop_length=hop_length)
 
         # Stringify and lowercase
+        if set(vocab) - set('3567s'):
+            raise ParameterError('Invalid vocabulary string: {}'.format(vocab))
+
         self.vocab = vocab.lower()
         self.nochord = nochord
         labels = self.vocabulary()
@@ -306,11 +310,11 @@ class ChordTagTransformer(BaseTaskTransformer):
         if '6' in self.vocab:
             self.mask_ |= 0b000110110100
         if '7' in self.vocab:
-            self.mask_ |= 0b000110110011
+            self.mask_ |= 0b000110110111
         if 's' in self.vocab:
             self.mask_ |= 0b001001010000
 
-        self.register('chords', [None, len(self._classes)], np.bool)
+        self.register('chord', [None, len(self._classes)], np.bool)
 
     def empty(self, duration):
         '''Empty chord annotations
