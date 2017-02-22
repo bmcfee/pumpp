@@ -270,9 +270,6 @@ class ChordTagTransformer(BaseTaskTransformer):
 
         Note: 5 requires 3, 6 requires 5, 7 requires 6.
 
-    nochord : str
-        String to use for no-chord symbols
-
     sr : number > 0
         Sampling rate of audio
 
@@ -284,7 +281,7 @@ class ChordTagTransformer(BaseTaskTransformer):
     ChordTransformer
     SimpleChordTransformer
     '''
-    def __init__(self, name='chord', vocab='3567s', nochord='N',
+    def __init__(self, name='chord', vocab='3567s',
                  sr=22050, hop_length=512):
 
         super(ChordTagTransformer, self).__init__(name=name,
@@ -306,7 +303,6 @@ class ChordTagTransformer(BaseTaskTransformer):
             raise ParameterError('Invalid vocabulary string: {}'.format(vocab))
 
         self.vocab = vocab.lower()
-        self.nochord = nochord
         labels = self.vocabulary()
 
         self.encoder = LabelBinarizer()
@@ -345,7 +341,7 @@ class ChordTagTransformer(BaseTaskTransformer):
 
         ann.append(time=0,
                    duration=duration,
-                   value='N', confidence=0)
+                   value='X', confidence=0)
 
         return ann
 
@@ -367,7 +363,7 @@ class ChordTagTransformer(BaseTaskTransformer):
         if 's' in self.vocab:
             qualities.extend(['sus2', 'sus4'])
 
-        labels = [self.nochord]
+        labels = ['N', 'X']
 
         for chord in product(PITCHES, qualities):
             labels.append('{}:{}'.format(*chord))
@@ -392,9 +388,10 @@ class ChordTagTransformer(BaseTaskTransformer):
         P = 2**np.arange(12, dtype=int)
         query = self.mask_ & pitches[::-1].dot(P)
 
+        if root < 0 and chord[0].upper() == 'N':
+            return 'N'
         if query not in QUALITIES:
-            # TODO: check for non-zero pitches here
-            return self.nochord
+            return 'X'
 
         return '{}:{}'.format(PITCHES[root], QUALITIES[query])
 
