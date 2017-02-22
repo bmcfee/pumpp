@@ -164,7 +164,8 @@ class BaseTaskTransformer(Scope):
 
         return target
 
-    def encode_intervals(self, duration, intervals, values, dtype=np.bool):
+    def encode_intervals(self, duration, intervals, values, dtype=np.bool,
+                         multi=True):
         '''Encode labeled intervals as a time-series matrix.
 
         Parameters
@@ -180,6 +181,9 @@ class BaseTaskTransformer(Scope):
 
         dtype : np.dtype
             The desired output type
+
+        multi : bool
+            If `True`, allow multiple labels per interval.
 
         Returns
         -------
@@ -199,7 +203,10 @@ class BaseTaskTransformer(Scope):
         target.fill(fill_value(dtype))
 
         for column, interval in zip(values, frames):
-            target[interval[0]:interval[1]] += column
+            if multi:
+                target[interval[0]:interval[1]] += column
+            else:
+                target[interval[0]:interval[1]] = column
 
         return target
 

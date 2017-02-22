@@ -6,6 +6,7 @@ import re
 from itertools import product
 
 import numpy as np
+from sklearn.preprocessing import LabelBinarizer
 from sklearn.preprocessing import MultiLabelBinarizer
 
 import mir_eval
@@ -308,8 +309,8 @@ class ChordTagTransformer(BaseTaskTransformer):
         self.nochord = nochord
         labels = self.vocabulary()
 
-        self.encoder = MultiLabelBinarizer()
-        self.encoder.fit([labels])
+        self.encoder = LabelBinarizer()
+        self.encoder.fit(labels)
         self._classes = set(self.encoder.classes_)
 
         # Construct the quality mask for chord encoding
@@ -419,10 +420,11 @@ class ChordTagTransformer(BaseTaskTransformer):
 
         chords = []
         for v in values:
-            chords.extend(self.encoder.transform([[self.simplify(v)]]))
+            chords.extend(self.encoder.transform([self.simplify(v)]))
 
         chords = np.asarray(chords)
-        target = self.encode_intervals(duration, intervals, chords)
+        target = self.encode_intervals(duration, intervals, chords,
+                                       multi=False)
 
         return {'chord': target}
 

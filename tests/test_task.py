@@ -740,7 +740,6 @@ def test_task_chord_tag_present(SR, HOP_LENGTH, VOCAB):
 
     # Decode the label encoding
     Y_pred = trans.encoder.inverse_transform(output['chord/chord'][0])
-    Y_pred = [_[0] for _ in Y_pred]
     Y_expected = np.repeat(Y_true_out, (SR // HOP_LENGTH), axis=0)
 
     assert np.all(Y_pred == Y_expected)
@@ -760,7 +759,6 @@ def test_task_chord_tag_absent(SR, HOP_LENGTH, VOCAB, NOCHORD):
 
     # Make sure it's all no-chord
     Y_pred = trans.encoder.inverse_transform(output['chord/chord'][0])
-    Y_pred = [_[0] for _ in Y_pred]
 
     assert all([_ == NOCHORD for _ in Y_pred])
 
