@@ -24,11 +24,6 @@ def VOCAB(request):
     yield request.param
 
 
-@pytest.fixture(params=['N', 'X', 'no chord'])
-def NOCHORD(request):
-    yield request.param
-
-
 def shape_match(sh1, sh2):
 
     for i, j in zip(sh1, sh2):
@@ -644,14 +639,14 @@ def test_transform_coerce():
 
 
 @pytest.mark.parametrize('vocab, vocab_size',
-                         [('3', 25),
-                          ('3s', 49),
-                          ('35', 49),
-                          ('35s', 73),
-                          ('356', 73),
-                          ('356s', 97),
-                          ('3567', 145),
-                          ('3567s', 169),
+                         [('3', 26),
+                          ('3s', 50),
+                          ('35', 50),
+                          ('35s', 74),
+                          ('356', 74),
+                          ('356s', 98),
+                          ('3567', 146),
+                          ('3567s', 170),
                           pytest.mark.xfail(('bad vocab', 1),
                                             raises=pumpp.ParameterError),
                           pytest.mark.xfail(('5', 1),
@@ -706,8 +701,8 @@ def test_task_chord_tag_present(SR, HOP_LENGTH, VOCAB):
                   'G:sus4']
 
     if 's' not in VOCAB:
-        Y_true_out[11] = 'N'       # sus2 -> N
-        Y_true_out[12] = 'N'       # sus4 -> N
+        Y_true_out[11] = 'X'       # sus2 -> X
+        Y_true_out[12] = 'X'       # sus4 -> X
     if '6' not in VOCAB:
         Y_true_out[1] = 'C:min'    # min6 -> maj
         Y_true_out[2] = 'C:maj'    # maj6 -> maj
@@ -747,11 +742,11 @@ def test_task_chord_tag_present(SR, HOP_LENGTH, VOCAB):
     assert np.all(Y_pred == Y_expected)
 
 
-def test_task_chord_tag_absent(SR, HOP_LENGTH, VOCAB, NOCHORD):
+def test_task_chord_tag_absent(SR, HOP_LENGTH, VOCAB):
 
     jam = jams.JAMS(file_metadata=dict(duration=4.0))
     trans = pumpp.task.ChordTagTransformer(name='chord',
-                                           vocab=VOCAB, nochord=NOCHORD,
+                                           vocab=VOCAB,
                                            sr=SR, hop_length=HOP_LENGTH)
 
     output = trans.transform(jam)
@@ -762,7 +757,7 @@ def test_task_chord_tag_absent(SR, HOP_LENGTH, VOCAB, NOCHORD):
     # Make sure it's all no-chord
     Y_pred = trans.encoder.inverse_transform(output['chord/chord'][0])
 
-    assert all([_ == NOCHORD for _ in Y_pred])
+    assert all([_ == 'X' for _ in Y_pred])
 
     # Check the shape
     for key in trans.fields:
