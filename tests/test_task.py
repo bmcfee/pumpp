@@ -19,7 +19,7 @@ def HOP_LENGTH():
     return 512
 
 
-@pytest.fixture(params=['3', '35', '357', '3567', '3567s'])
+@pytest.fixture(params=['3', '35', '3567', '3567s'])
 def VOCAB(request):
     yield request.param
 
@@ -645,11 +645,18 @@ def test_transform_coerce():
 
 @pytest.mark.parametrize('vocab, vocab_size',
                          [('3', 25),
+                          ('3s', 49),
                           ('35', 49),
-                          ('357', 121),
+                          ('35s', 73),
+                          ('356', 73),
+                          ('356s', 97),
                           ('3567', 145),
                           ('3567s', 169),
-                          pytest.mark.xfail(('bad vocab', 1),
+                          pytest.mark.xfail(('5', 1),
+                                            raises=pumpp.ParameterError),
+                          pytest.mark.xfail(('36', 1),
+                                            raises=pumpp.ParameterError),
+                          pytest.mark.xfail(('357', 1),
                                             raises=pumpp.ParameterError)])
 def test_task_chord_tag_fields(vocab, vocab_size):
 

@@ -263,9 +263,11 @@ class ChordTagTransformer(BaseTaskTransformer):
 
             - '3': maj/min
             - '5': '3' + aug/dim
-            - '7': '3' + '5' + 7/min7/maj7/dim7/hdim7/minmaj7
             - '6': '3' + '5' + maj6/min6
+            - '7': '3' + '5' + '6' + 7/min7/maj7/dim7/hdim7/minmaj7
             - 's': sus2/sus4
+
+        Note: 5 requires 3, 6 requires 5, 7 requires 6.
 
     nochord : str
         String to use for no-chord symbols
@@ -291,6 +293,15 @@ class ChordTagTransformer(BaseTaskTransformer):
 
         # Stringify and lowercase
         if set(vocab) - set('3567s'):
+            raise ParameterError('Invalid vocabulary string: {}'.format(vocab))
+
+        if '5' in vocab and '3' not in vocab:
+            raise ParameterError('Invalid vocabulary string: {}'.format(vocab))
+
+        if '6' in vocab and '5' not in vocab:
+            raise ParameterError('Invalid vocabulary string: {}'.format(vocab))
+
+        if '7' in vocab and '6' not in vocab:
             raise ParameterError('Invalid vocabulary string: {}'.format(vocab))
 
         self.vocab = vocab.lower()
