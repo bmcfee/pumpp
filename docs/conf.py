@@ -33,7 +33,6 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
     'sphinx.ext.intersphinx',
-    'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
     'numpydoc',
 ]
@@ -57,14 +56,13 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'pumpp'
-copyright = '2016, Brian McFee'
+copyright = '2016-2017, Brian McFee'
 author = 'Brian McFee'
 
 import mock
 MOCK_MODULES = ['numpy', 'scipy', 'scipy.sparse',
                 'sklearn', 'sklearn.preprocessing',
-                'mir_eval',
-                'jams', 'librosa']
+                'mir_eval', 'jams', 'librosa', 'librosa.feature']
 sys.modules.update((mod_name, mock.Mock()) for mod_name in MOCK_MODULES)
 
 # The version info for the project you're documenting, acts as replacement for
@@ -307,8 +305,7 @@ texinfo_documents = [
 
 
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'python': ('http://docs.python.org/', None),
-                       'numpy': ('http://docs.scipy.org/doc/numpy/', None),
-                       'librosa': ('http://librosa.github.io/librosa/', None),
-                       'jams': ('http://jams.readthedocs.io/en/latest/', None)}
-
+intersphinx_mapping = {'python': ('https://docs.python.org/3', None),
+                       'numpy': ('https://docs.scipy.org/doc/numpy/', None),
+                       'librosa': ('https://librosa.github.io/librosa/', None),
+                       'jams': ('https://jams.readthedocs.io/en/latest/', None)}
