@@ -308,7 +308,7 @@ class ChordTagTransformer(BaseTaskTransformer):
         if '5' in self.vocab:
             self.mask_ |= 0b000110111000
         if '6' in self.vocab:
-            self.mask_ |= 0b000110110100
+            self.mask_ |= 0b000110010100
         if '7' in self.vocab:
             self.mask_ |= 0b000110110111
         if 's' in self.vocab:

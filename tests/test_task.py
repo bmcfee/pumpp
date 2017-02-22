@@ -24,6 +24,11 @@ def VOCAB(request):
     yield request.param
 
 
+@pytest.fixture(params=['N', 'X', 'no chord'])
+def NOCHORD(request):
+    yield request.param
+
+
 def shape_match(sh1, sh2):
 
     for i, j in zip(sh1, sh2):
@@ -717,7 +722,8 @@ def test_task_chord_tag_present(SR, HOP_LENGTH, VOCAB):
 
     jam.annotations.append(ann)
 
-    trans = pumpp.task.ChordTagTransformer(name='chord', vocab=VOCAB)
+    trans = pumpp.task.ChordTagTransformer(name='chord', vocab=VOCAB,
+                                           sr=SR, hop_length=HOP_LENGTH)
 
     output = trans.transform(jam)
 
@@ -730,8 +736,28 @@ def test_task_chord_tag_present(SR, HOP_LENGTH, VOCAB):
     Y_pred = [_[0] for _ in Y_pred]
     Y_expected = np.repeat(Y_true_out, (SR // HOP_LENGTH), axis=0)
 
-    print(VOCAB)
-    print(Y_true)
-    print(Y_true_out)
-    print(Y_pred[::(SR//HOP_LENGTH)])
     assert np.all(Y_pred == Y_expected)
+
+
+def test_task_chord_tag_absent(SR, HOP_LENGTH, VOCAB, NOCHORD):
+
+    jam = jams.JAMS(file_metadata=dict(duration=4.0))
+    trans = pumpp.task.ChordTagTransformer(name='chord',
+                                           vocab=VOCAB, nochord=NOCHORD,
+                                           sr=SR, hop_length=HOP_LENGTH)
+
+    output = trans.transform(jam)
+
+    # Valid range is 0 since we have no matching namespace
+    assert not np.any(output['chord/_valid'])
+
+    # Make sure it's all no-chord
+    Y_pred = trans.encoder.inverse_transform(output['chord/chord'][0])
+    Y_pred = [_[0] for _ in Y_pred]
+
+    assert all([_ == NOCHORD for _ in Y_pred])
+
+    # Check the shape
+    for key in trans.fields:
+        assert shape_match(output[key].shape[1:], trans.fields[key].shape)
+        assert type_match(output[key].dtype, trans.fields[key].dtype)
