@@ -16,7 +16,7 @@ from .task import BaseTaskTransformer
 from .feature import FeatureExtractor
 
 
-def transform(audio_f, *ops, **kwargs):
+def transform(audio_f, jam, *ops):
     '''Apply a set of operations to a track
 
     Parameters
@@ -40,8 +40,6 @@ def transform(audio_f, *ops, **kwargs):
 
     # Load the audio
     y, sr = librosa.load(audio_f, sr=None, mono=True)
-
-    jam = kwargs.pop('jam', None)
 
     if jam is None:
         jam = jams.JAMS()

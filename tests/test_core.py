@@ -43,7 +43,7 @@ def test_transform(audio_f, jam, sr, hop_length):
                                              namespace='tag_open',
                                              labels=['rock', 'jazz'])]
 
-    data = pumpp.transform(audio_f, jam=jam, *ops)
+    data = pumpp.transform(audio_f, jam, *ops)
 
     # Fields we should have:
     assert set(data.keys()) == set(['stft/mag', 'stft/phase',
