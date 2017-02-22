@@ -70,8 +70,7 @@ class CQT(FeatureExtractor):
                                    fmin=self.fmin,
                                    n_bins=(self.n_octaves *
                                            self.over_sample * 12),
-                                   bins_per_octave=(self.over_sample * 12),
-                                   real=False))
+                                   bins_per_octave=(self.over_sample * 12)))
 
         return {'mag': cqtm.T.astype(np.float32),
                 'phase': np.angle(phase).T.astype(np.float32)}
