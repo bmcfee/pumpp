@@ -35,7 +35,7 @@ be easily consumed by statistical algorithms.  Some desired features:
 >>> sr, hop_length = 44100, 512
 
 >>> # Create a feature extraction object
->>> p_cqt = pumpp.feature.ConstantQ(name='cqt', sr=sr, hop_length=hop_length)
+>>> p_cqt = pumpp.feature.CQT(name='cqt', sr=sr, hop_length=hop_length)
 
 >>> # Create some annotation extractors
 >>> p_beat = pumpp.task.BeatTransformer(sr=sr, hop_length=hop_length)
