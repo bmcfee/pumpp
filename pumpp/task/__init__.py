@@ -10,6 +10,7 @@ Task transformations
     BeatTransformer
     ChordTransformer
     SimpleChordTransformer
+    ChordTagTransformer
     VectorTransformer
     DynamicLabelTransformer
     StaticLabelTransformer

@@ -1,10 +1,19 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
-'''Data subsampling'''
+'''
+Data subsampling
+================
+.. autosummary::
+    :toctree: generated/
+
+    Sampler
+'''
 
 from itertools import count
 
 import numpy as np
+
+__all__ = ['Sampler']
 
 
 class Sampler(object):

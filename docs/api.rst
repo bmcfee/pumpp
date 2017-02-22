@@ -10,3 +10,7 @@
 
 .. automodule:: pumpp.task
     :members:
+
+.. automodule:: pumpp.sampler
+    :members:
+
