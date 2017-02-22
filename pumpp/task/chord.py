@@ -435,7 +435,7 @@ class ChordTagTransformer(BaseTaskTransformer):
 
         for start, end, value in self.decode_intervals(encoded,
                                                        duration=duration):
-            value_dec = self.encoder.inverse_transform(np.atleast_2d(value))[0]
+            value_dec = self.encoder.inverse_transform(np.atleast_2d(value))
 
             for vd in value_dec:
                 ann.append(time=start, duration=end-start, value=vd)

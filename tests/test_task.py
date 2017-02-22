@@ -652,6 +652,8 @@ def test_transform_coerce():
                           ('356s', 97),
                           ('3567', 145),
                           ('3567s', 169),
+                          pytest.mark.xfail(('bad vocab', 1),
+                                            raises=pumpp.ParameterError),
                           pytest.mark.xfail(('5', 1),
                                             raises=pumpp.ParameterError),
                           pytest.mark.xfail(('36', 1),
