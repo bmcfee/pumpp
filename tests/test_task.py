@@ -13,9 +13,21 @@ import pumpp
 def SR():
     return 22050
 
+
 @pytest.fixture()
 def HOP_LENGTH():
     return 512
+
+
+@pytest.fixture(params=['3', '35', '3567', '3567s'])
+def VOCAB(request):
+    yield request.param
+
+
+@pytest.fixture(params=['N', 'X', 'no chord'])
+def NOCHORD(request):
+    yield request.param
+
 
 def shape_match(sh1, sh2):
 
@@ -26,6 +38,7 @@ def shape_match(sh1, sh2):
             return False
 
     return True
+
 
 def type_match(x, y):
 
@@ -47,6 +60,7 @@ def test_task_chord_fields():
     assert trans.fields['mychord/bass'].shape == (None, 13)
     assert trans.fields['mychord/bass'].dtype is np.bool
 
+
 def test_task_chord_present(SR, HOP_LENGTH):
 
     # Construct a jam
@@ -67,7 +81,8 @@ def test_task_chord_present(SR, HOP_LENGTH):
     output = trans.transform(jam)
 
     # Make sure we have the mask
-    assert np.all(output['chord/_valid'] == [0, 5 * trans.sr // trans.hop_length])
+    assert np.all(output['chord/_valid'] == [0, 5 * trans.sr //
+                                             trans.hop_length])
 
     # Ideal vectors:
     # pcp = Cmaj, Cmaj, N, Dmaj, N
@@ -91,9 +106,15 @@ def test_task_chord_present(SR, HOP_LENGTH):
                             [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]])
 
-    assert np.all(output['chord/pitch'] == np.repeat(pcp_true, (SR // HOP_LENGTH), axis=0))
-    assert np.all(output['chord/root'] == np.repeat(root_true, (SR // HOP_LENGTH), axis=0))
-    assert np.all(output['chord/bass'] == np.repeat(bass_true, (SR // HOP_LENGTH), axis=0))
+    assert np.all(output['chord/pitch'] == np.repeat(pcp_true,
+                                                     (SR // HOP_LENGTH),
+                                                     axis=0))
+    assert np.all(output['chord/root'] == np.repeat(root_true,
+                                                    (SR // HOP_LENGTH),
+                                                    axis=0))
+    assert np.all(output['chord/bass'] == np.repeat(bass_true,
+                                                    (SR // HOP_LENGTH),
+                                                    axis=0))
 
     for key in trans.fields:
         assert shape_match(output[key].shape[1:], trans.fields[key].shape)
@@ -156,7 +177,8 @@ def test_task_simple_chord_present(SR, HOP_LENGTH):
     output = trans.transform(jam)
 
     # Make sure we have the mask
-    assert np.all(output['chord_s/_valid'] == [0, 5 * trans.sr // trans.hop_length])
+    assert np.all(output['chord_s/_valid'] == [0, 5 * trans.sr //
+                                               trans.hop_length])
 
     # Ideal vectors:
     # pcp = Cmaj, Cmaj, N, Dmaj, N
@@ -166,7 +188,9 @@ def test_task_simple_chord_present(SR, HOP_LENGTH):
                            [0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0],
                            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]])
 
-    assert np.all(output['chord_s/pitch'] == np.repeat(pcp_true, (SR // HOP_LENGTH), axis=0))
+    assert np.all(output['chord_s/pitch'] == np.repeat(pcp_true,
+                                                       (SR // HOP_LENGTH),
+                                                       axis=0))
     for key in trans.fields:
         assert shape_match(output[key].shape[1:], trans.fields[key].shape)
         assert type_match(output[key].dtype, trans.fields[key].dtype)
@@ -213,7 +237,8 @@ def test_task_dlabel_present(SR, HOP_LENGTH):
     output = trans.transform(jam)
 
     # Mask should be true
-    assert np.all(output['madeup/_valid'] == [0, 4 * trans.sr // trans.hop_length])
+    assert np.all(output['madeup/_valid'] == [0, 4 * trans.sr //
+                                              trans.hop_length])
 
     y = output['madeup/tags']
 
@@ -231,7 +256,6 @@ def test_task_dlabel_present(SR, HOP_LENGTH):
     for key in trans.fields:
         assert shape_match(output[key].shape[1:], trans.fields[key].shape)
         assert type_match(output[key].dtype, trans.fields[key].dtype)
-
 
 
 def test_task_dlabel_absent(SR, HOP_LENGTH):
@@ -326,14 +350,16 @@ def test_task_slabel_present():
     output = trans.transform(jam)
 
     # Mask should be true
-    assert np.all(output['madeup/_valid'] == [0, 4 * trans.sr // trans.hop_length])
+    assert np.all(output['madeup/_valid'] == [0, 4 * trans.sr //
+                                              trans.hop_length])
 
     # Check the shape
     assert output['madeup/tags'].ndim == 2
     assert output['madeup/tags'].shape[1] == len(labels)
 
     # Decode the labels
-    predictions = trans.encoder.inverse_transform(output['madeup/tags'][0].reshape((1, -1)))[0]
+    y_pred = output['madeup/tags'][0]
+    predictions = trans.encoder.inverse_transform(y_pred.reshape((1, -1)))[0]
 
     true_labels = ['alpha', 'beta', 'disco']
 
@@ -449,7 +475,8 @@ def test_task_beat_present(SR, HOP_LENGTH):
     output = trans.transform(jam)
 
     # Make sure we have the masks
-    assert np.all(output['beat/_valid'] == [0, 4 * trans.sr // trans.hop_length])
+    assert np.all(output['beat/_valid'] == [0, 4 * trans.sr //
+                                            trans.hop_length])
     assert output['beat/mask_downbeat']
 
     # The first channel measures beats
@@ -465,7 +492,8 @@ def test_task_beat_present(SR, HOP_LENGTH):
     downbeat_true = np.asarray([[1, 0, 0, 1]]).T
 
     assert np.all(output['beat/beat'][0, ::(SR // HOP_LENGTH)] == beat_true)
-    assert np.all(output['beat/downbeat'][0, ::(SR // HOP_LENGTH)] == downbeat_true)
+    assert np.all(output['beat/downbeat'][0, ::(SR // HOP_LENGTH)] ==
+                  downbeat_true)
 
     for key in trans.fields:
         assert shape_match(output[key].shape[1:], trans.fields[key].shape)
@@ -492,7 +520,8 @@ def test_task_beat_nometer(SR, HOP_LENGTH):
     output = trans.transform(jam)
 
     # Make sure we have the mask
-    assert np.all(output['beat/_valid'] == [0, 4 * trans.sr // trans.hop_length])
+    assert np.all(output['beat/_valid'] == [0, 4 * trans.sr //
+                                            trans.hop_length])
     assert not output['beat/mask_downbeat']
 
     # Check the shape: 4 seconds at 2 samples per second
@@ -507,7 +536,8 @@ def test_task_beat_nometer(SR, HOP_LENGTH):
     downbeat_true = np.asarray([0, 0, 0, 0])
 
     assert np.all(output['beat/beat'][0, ::(SR // HOP_LENGTH)] == beat_true)
-    assert np.all(output['beat/downbeat'][0, ::(SR // HOP_LENGTH)] == downbeat_true)
+    assert np.all(output['beat/downbeat'][0, ::(SR // HOP_LENGTH)] ==
+                  downbeat_true)
 
     for key in trans.fields:
         assert shape_match(output[key].shape[1:], trans.fields[key].shape)
@@ -611,3 +641,130 @@ def test_transform_coerce():
     out = trans.transform(jam)
 
     assert out['chord/pitch'].shape[0] == 2
+
+
+@pytest.mark.parametrize('vocab, vocab_size',
+                         [('3', 25),
+                          ('3s', 49),
+                          ('35', 49),
+                          ('35s', 73),
+                          ('356', 73),
+                          ('356s', 97),
+                          ('3567', 145),
+                          ('3567s', 169),
+                          pytest.mark.xfail(('bad vocab', 1),
+                                            raises=pumpp.ParameterError),
+                          pytest.mark.xfail(('5', 1),
+                                            raises=pumpp.ParameterError),
+                          pytest.mark.xfail(('36', 1),
+                                            raises=pumpp.ParameterError),
+                          pytest.mark.xfail(('357', 1),
+                                            raises=pumpp.ParameterError)])
+def test_task_chord_tag_fields(vocab, vocab_size):
+
+    trans = pumpp.task.ChordTagTransformer(name='mychord', vocab=vocab)
+
+    assert set(trans.fields.keys()) == set(['mychord/chord'])
+
+    assert trans.fields['mychord/chord'].shape == (None, vocab_size)
+    assert trans.fields['mychord/chord'].dtype is np.bool
+
+
+def test_task_chord_tag_present(SR, HOP_LENGTH, VOCAB):
+
+    # Construct a jam
+    jam = jams.JAMS(file_metadata=dict(duration=13.0))
+
+    ann = jams.Annotation(namespace='chord')
+
+    Y_true = ['C:maj',          # 0
+              'C:min6/3',       # 1
+              'C:maj6/3',       # 2
+              'Db:maj(*3)',     # 3
+              'N',              # 4
+              'C#:dim7(*3)/5',  # 5
+              'C#:7',           # 6
+              'C#:maj7',        # 7
+              'C#:minmaj7',     # 8
+              'C#:min7',        # 9
+              'C#:hdim7',       # 10
+              'G:sus2',         # 11
+              'G:sus4']         # 12
+
+    Y_true_out = ['C:maj',
+                  'C:min6',
+                  'C:maj6',
+                  'C#:maj',
+                  'N',
+                  'C#:dim7',
+                  'C#:7',
+                  'C#:maj7',
+                  'C#:minmaj7',
+                  'C#:min7',
+                  'C#:hdim7',
+                  'G:sus2',
+                  'G:sus4']
+
+    if 's' not in VOCAB:
+        Y_true_out[11] = 'N'       # sus2 -> N
+        Y_true_out[12] = 'N'       # sus4 -> N
+    if '6' not in VOCAB:
+        Y_true_out[1] = 'C:min'    # min6 -> maj
+        Y_true_out[2] = 'C:maj'    # maj6 -> maj
+    if '7' not in VOCAB:
+        Y_true_out[5] = 'C#:dim'   # dim7 -> dim
+        Y_true_out[6] = 'C#:maj'   # 7 -> maj
+        Y_true_out[7] = 'C#:maj'   # maj7 -> maj
+        Y_true_out[8] = 'C#:min'   # minmaj7 -> min
+        Y_true_out[9] = 'C#:min'   # min7 -> min
+        Y_true_out[10] = 'C#:dim'  # hdim7 -> dim
+    if '5' not in VOCAB:
+        Y_true_out[5] = 'C#:min'   # dim7 -> dim -> min
+        Y_true_out[6] = 'C#:maj'   # 7 -> maj
+        Y_true_out[7] = 'C#:maj'   # maj7 -> maj
+        Y_true_out[8] = 'C#:min'   # minmaj7 -> min
+        Y_true_out[9] = 'C#:min'   # min7 -> min
+        Y_true_out[10] = 'C#:min'  # hdim7 -> dim -> min
+
+    for i, y in enumerate(Y_true):
+        ann.append(time=i, duration=1.0, value=y)
+
+    jam.annotations.append(ann)
+
+    trans = pumpp.task.ChordTagTransformer(name='chord', vocab=VOCAB,
+                                           sr=SR, hop_length=HOP_LENGTH)
+
+    output = trans.transform(jam)
+
+    # Make sure we have the mask
+    assert np.all(output['chord/_valid'] == [0, 13 * trans.sr //
+                                             trans.hop_length])
+
+    # Decode the label encoding
+    Y_pred = trans.encoder.inverse_transform(output['chord/chord'][0])
+    Y_expected = np.repeat(Y_true_out, (SR // HOP_LENGTH), axis=0)
+
+    assert np.all(Y_pred == Y_expected)
+
+
+def test_task_chord_tag_absent(SR, HOP_LENGTH, VOCAB, NOCHORD):
+
+    jam = jams.JAMS(file_metadata=dict(duration=4.0))
+    trans = pumpp.task.ChordTagTransformer(name='chord',
+                                           vocab=VOCAB, nochord=NOCHORD,
+                                           sr=SR, hop_length=HOP_LENGTH)
+
+    output = trans.transform(jam)
+
+    # Valid range is 0 since we have no matching namespace
+    assert not np.any(output['chord/_valid'])
+
+    # Make sure it's all no-chord
+    Y_pred = trans.encoder.inverse_transform(output['chord/chord'][0])
+
+    assert all([_ == NOCHORD for _ in Y_pred])
+
+    # Check the shape
+    for key in trans.fields:
+        assert shape_match(output[key].shape[1:], trans.fields[key].shape)
+        assert type_match(output[key].dtype, trans.fields[key].dtype)

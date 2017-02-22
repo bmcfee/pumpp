@@ -164,3 +164,19 @@ def test_decode_simplechord(sr, hop_length, ann_chord):
     data2 = tc.transform_annotation(inverse, ann_chord.duration)
 
     assert np.allclose(data['pitch'], data2['pitch'])
+
+
+def test_decode_chordtag(sr, hop_length, ann_chord):
+
+    # This test encodes an annotation, decodes it, and then re-encodes it
+    # It passes if the re-encoded version matches the initial encoding
+    tc = pumpp.task.ChordTagTransformer('chord', vocab='3567s',
+                                        hop_length=hop_length,
+                                        sr=sr)
+
+    data = tc.transform_annotation(ann_chord, ann_chord.duration)
+
+    inverse = tc.inverse(data['chord'], duration=ann_chord.duration)
+    data2 = tc.transform_annotation(inverse, ann_chord.duration)
+
+    assert np.allclose(data['chord'], data2['chord'])
