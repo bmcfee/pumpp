@@ -184,6 +184,9 @@ class StaticLabelTransformer(BaseTaskTransformer):
 
         ann = jams.Annotation(namespace=self.namespace, duration=duration)
 
+        if np.isrealobj(encoded):
+            encoded = (encoded >= 0.5)
+
         for vd in self.encoder.inverse_transform(np.atleast_2d(encoded))[0]:
             ann.append(time=0, duration=duration, value=vd)
 

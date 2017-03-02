@@ -431,7 +431,8 @@ class ChordTagTransformer(BaseTaskTransformer):
         ann = jams.Annotation(self.namespace, duration=duration)
 
         for start, end, value in self.decode_intervals(encoded,
-                                                       duration=duration):
+                                                       duration=duration,
+                                                       multi=False):
             value_dec = self.encoder.inverse_transform(np.atleast_2d(value))
 
             for vd in value_dec:
