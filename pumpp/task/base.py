@@ -218,19 +218,23 @@ class BaseTaskTransformer(Scope):
         encoded : np.ndarray, shape=(n_frames, m)
             Frame-level annotation encodings as produced by ``encode_events``.
 
+            Real-valued inputs are thresholded at 0.5.
+
         Returns
         -------
         [(time, value)] : iterable of tuples
             where `time` is the event time and `value` is an
             np.ndarray, shape=(m,) of the encoded value at that time
         '''
+        if np.isrealobj(encoded):
+            encoded = (encoded >= 0.5)
         times = frames_to_time(np.arange(encoded.shape[0]),
                                sr=self.sr,
                                hop_length=self.hop_length)
 
         return zip(times, encoded)
 
-    def decode_intervals(self, encoded, duration=None):
+    def decode_intervals(self, encoded, duration=None, multi=True):
         '''Decode labeled intervals into (start, end, value) triples
 
         Parameters
@@ -243,6 +247,11 @@ class BaseTaskTransformer(Scope):
             The max duration of the annotation (in seconds)
             Must be greater than the length of encoded array.
 
+        multi : bool
+            If true, allow multiple labels per input frame.
+            If false, take the most likely label per input frame.
+
+
         Returns
         -------
         [(start, end, value)] : iterable of tuples
@@ -250,6 +259,12 @@ class BaseTaskTransformer(Scope):
             and `value` is an np.ndarray, shape=(m,) of the encoded value
             for this interval.
         '''
+        if np.isrealobj(encoded):
+            if multi:
+                encoded = encoded >= 0.5
+            else:
+                encoded = (encoded == np.max(encoded, axis=1, keepdims=True))
+
         if duration is None:
             # 1+ is fair here, because encode_intervals already pads
             duration = 1 + encoded.shape[0]
