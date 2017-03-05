@@ -35,8 +35,8 @@ class FeatureExtractor(Scope):
         super(FeatureExtractor, self).__init__(name)
 
         if conv not in ('tf', 'th', None):
-            raise ParameterError("conv='{}', must be one of "
-                                 "{'tf', 'th', None}".format(conv))
+            raise ParameterError('conv="{}", must be one of '
+                                 '("tf", "th", None)'.format(conv))
 
         self.sr = sr
         self.hop_length = hop_length
