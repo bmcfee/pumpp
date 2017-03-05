@@ -4,6 +4,7 @@
 
 import numpy as np
 import librosa
+from keras.layers import Input
 
 from ..base import Scope
 from ..exceptions import ParameterError
@@ -123,3 +124,20 @@ class FeatureExtractor(Scope):
         dphase[zero_idx] = phase[zero_idx]
         dphase[else_idx] = np.diff(np.unwrap(phase, axis=axis), axis=axis)
         return dphase
+
+    def layers(self):
+        '''Construct Keras input layers for the given transformer
+
+        Returns
+        -------
+        layers : {field: keras.layers.Input}
+            A dictionary of keras input layers, keyed by the corresponding
+            field keys.
+        '''
+        L = dict()
+        for key in self.fields:
+            L[key] = Input(name=key,
+                           shape=self.fields[key].shape,
+                           dtype=self.fields[key].dtype)
+
+        return L
