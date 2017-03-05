@@ -4,7 +4,7 @@
 import numpy as np
 from librosa import cqt, magphase, note_to_hz
 
-from .base import FeatureExtractor, phase_diff
+from .base import FeatureExtractor
 
 __all__ = ['CQT', 'CQTMag', 'CQTPhaseDiff']
 
@@ -140,5 +140,5 @@ class CQTPhaseDiff(CQT):
                 Unwrapped phase differential
         '''
         data = super(CQTPhaseDiff, self).transform_audio(y)
-        data['dphase'] = phase_diff(data.pop('phase'), axis=0)
+        data['dphase'] = self.phase_diff(data.pop('phase'))
         return data

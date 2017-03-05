@@ -93,30 +93,33 @@ class FeatureExtractor(Scope):
     def transform_audio(self, y):
         raise NotImplementedError
 
+    def phase_diff(self, phase):
+        '''Compute the phase differential along a given axis
 
-def phase_diff(phase, axis=0):
-    '''Compute the phase differential along a given axis
+        Parameters
+        ----------
+        phase : np.ndarray
+            Input phase (in radians)
 
-    Parameters
-    ----------
-    phase : np.ndarray
-        Input phase (in radians)
+        Returns
+        -------
+        dphase : np.ndarray like `phase`
+            The phase differential.
+        '''
 
-    axis : int
-        The axis along which to differentiate
+        if self.conv is None:
+            axis = 0
+        elif self.conv == 'tf':
+            axis = 0
+        elif self.conv == 'th':
+            axis = 1
 
-    Returns
-    -------
-    dphase : np.ndarray like `phase`
-        The phase differential.
-    '''
-
-    # Compute the phase differential
-    dphase = np.empty(phase.shape, dtype=phase.dtype)
-    zero_idx = [slice(None)] * phase.ndim
-    zero_idx[axis] = slice(1)
-    else_idx = [slice(None)] * phase.ndim
-    else_idx[axis] = slice(1, None)
-    dphase[zero_idx] = phase[zero_idx]
-    dphase[else_idx] = np.diff(np.unwrap(phase, axis=axis), axis=axis)
-    return dphase
+        # Compute the phase differential
+        dphase = np.empty(phase.shape, dtype=phase.dtype)
+        zero_idx = [slice(None)] * phase.ndim
+        zero_idx[axis] = slice(1)
+        else_idx = [slice(None)] * phase.ndim
+        else_idx[axis] = slice(1, None)
+        dphase[zero_idx] = phase[zero_idx]
+        dphase[else_idx] = np.diff(np.unwrap(phase, axis=axis), axis=axis)
+        return dphase

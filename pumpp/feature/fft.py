@@ -4,7 +4,7 @@
 import numpy as np
 import librosa
 
-from .base import FeatureExtractor, phase_diff
+from .base import FeatureExtractor
 
 __all__ = ['STFT', 'STFTMag', 'STFTPhaseDiff']
 
@@ -95,7 +95,7 @@ class STFTPhaseDiff(STFT):
                 The unwrapped phase differential
         '''
         data = super(STFTPhaseDiff, self).transform_audio(y)
-        data['dphase'] = phase_diff(data.pop('phase'), axis=0)
+        data['dphase'] = self.phase_diff(data.pop('phase'))
         return data
 
 
