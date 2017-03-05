@@ -6,6 +6,7 @@ import numpy as np
 import librosa
 
 from ..base import Scope
+from ..exceptions import ParameterError
 
 
 class FeatureExtractor(Scope):
@@ -21,13 +22,48 @@ class FeatureExtractor(Scope):
 
     hop_length : int > 0
         The hop length between analysis frames
+
+    conv : {'tf', 'th', None}
+        convolution dimension ordering:
+
+            - 'tf' for tensorflow-style 2D convolution
+            - 'th' for theano-style 2D convolution
+            - None for 1D or non-convolutional representations
     '''
-    def __init__(self, name, sr, hop_length):
+    def __init__(self, name, sr, hop_length, conv=None):
 
         super(FeatureExtractor, self).__init__(name)
 
+        if conv not in ('tf', 'th', None):
+            raise ParameterError("conv='{}', must be one of "
+                                 "{'tf', 'th', None}".format(conv))
+
         self.sr = sr
         self.hop_length = hop_length
+        self.conv = conv
+
+    def register(self, key, dimension, dtype):
+
+        shape = [None, dimension]
+
+        if self.conv == 'tf':
+            shape.append(1)
+
+        elif self.conv == 'th':
+            shape.insert(0, 1)
+
+        super(FeatureExtractor, self).register(key, shape, dtype)
+
+    @property
+    def idx(self):
+        if self.conv is None:
+            return Ellipsis
+
+        elif self.conv == 'tf':
+            return (slice(None), slice(None), np.newaxis)
+
+        elif self.conv == 'th':
+            return (np.newaxis, slice(None), slice(None))
 
     def transform(self, y, sr):
         '''Transform an audio signal

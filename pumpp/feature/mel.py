@@ -33,14 +33,15 @@ class Mel(FeatureExtractor):
         The maximum frequency bin.
         Defaults to `0.5 * sr`
     '''
-    def __init__(self, name, sr, hop_length, n_fft, n_mels, fmax=None):
-        super(Mel, self).__init__(name, sr, hop_length)
+    def __init__(self, name, sr, hop_length, n_fft, n_mels, fmax=None,
+                 conv=None):
+        super(Mel, self).__init__(name, sr, hop_length, conv=conv)
 
         self.n_fft = n_fft
         self.n_mels = n_mels
         self.fmax = fmax
 
-        self.register('mag', [None, n_mels], np.float32)
+        self.register('mag', n_mels, np.float32)
 
     def transform_audio(self, y):
         '''Compute the Mel spectrogram
@@ -62,4 +63,4 @@ class Mel(FeatureExtractor):
                                      n_mels=self.n_mels,
                                      fmax=self.fmax)).astype(np.float32)
 
-        return {'mag': mel.T}
+        return {'mag': mel.T[self.idx]}
