@@ -4,7 +4,6 @@
 
 import numpy as np
 import librosa
-from keras.layers import Input
 
 from ..base import Scope
 from ..exceptions import ParameterError
@@ -134,6 +133,8 @@ class FeatureExtractor(Scope):
             A dictionary of keras input layers, keyed by the corresponding
             field keys.
         '''
+        from keras.layers import Input
+
         L = dict()
         for key in self.fields:
             L[key] = Input(name=key,

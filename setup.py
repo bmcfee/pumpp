@@ -31,10 +31,10 @@ setup(
                       'librosa>=0.5.0',
                       'jams>=0.2.2',
                       'scikit-learn>=0.17',
-                      'mir_eval>=0.4',
-                      'keras'],
+                      'mir_eval>=0.4'],
     extras_require={
         'docs': ['numpydoc'],
-        'tests': ['pytest', 'pytest-cov']
+        'tests': ['pytest', 'pytest-cov', 'keras', 'tensorflow'],
+        'keras': ['keras'],
     }
 )
