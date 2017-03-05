@@ -34,6 +34,7 @@ setup(
                       'mir_eval>=0.4'],
     extras_require={
         'docs': ['numpydoc'],
-        'tests': ['pytest', 'pytest-cov']
+        'tests': ['pytest', 'pytest-cov', 'keras', 'tensorflow'],
+        'keras': ['keras'],
     }
 )

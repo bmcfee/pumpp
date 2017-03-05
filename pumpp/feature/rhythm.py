@@ -27,12 +27,12 @@ class Tempogram(FeatureExtractor):
     win_length : int > 0
         The length of the analysis window (in frames)
     '''
-    def __init__(self, name, sr, hop_length, win_length):
-        super(Tempogram, self).__init__(name, sr, hop_length)
+    def __init__(self, name, sr, hop_length, win_length, conv=None):
+        super(Tempogram, self).__init__(name, sr, hop_length, conv=conv)
 
         self.win_length = win_length
 
-        self.register('tempogram', [None, win_length], np.float32)
+        self.register('tempogram', win_length, np.float32)
 
     def transform_audio(self, y):
         '''Compute the tempogram
@@ -52,7 +52,7 @@ class Tempogram(FeatureExtractor):
                           hop_length=self.hop_length,
                           win_length=self.win_length).astype(np.float32)
 
-        return {'tempogram': tgram.T}
+        return {'tempogram': tgram.T[self.idx]}
 
 
 class TempoScale(Tempogram):
@@ -77,12 +77,13 @@ class TempoScale(Tempogram):
     n_fmt : int > 0
         Number of scale coefficients to retain
     '''
-    def __init__(self, name, sr, hop_length, win_length, n_fmt=128):
-        super(TempoScale, self).__init__(name, sr, hop_length, win_length)
+    def __init__(self, name, sr, hop_length, win_length, n_fmt=128, conv=None):
+        super(TempoScale, self).__init__(name, sr, hop_length, win_length,
+                                         conv=conv)
 
         self.n_fmt = n_fmt
         self.pop('tempogram')
-        self.register('temposcale', [None, 1 + n_fmt // 2], np.float32)
+        self.register('temposcale', 1 + n_fmt // 2, np.float32)
 
     def transform_audio(self, y):
         '''Apply the scale transform to the tempogram
@@ -101,5 +102,5 @@ class TempoScale(Tempogram):
         data = super(TempoScale, self).transform_audio(y)
         data['temposcale'] = np.abs(fmt(data.pop('tempogram'),
                                         axis=1,
-                                        n_fmt=self.n_fmt)).astype(np.float32)
+                                        n_fmt=self.n_fmt)).astype(np.float32)[self.idx]
         return data

@@ -4,7 +4,7 @@
 import numpy as np
 from librosa import cqt, magphase, note_to_hz
 
-from .base import FeatureExtractor, phase_diff
+from .base import FeatureExtractor
 
 __all__ = ['CQT', 'CQTMag', 'CQTPhaseDiff']
 
@@ -33,8 +33,8 @@ class CQT(FeatureExtractor):
         The minimum frequency of the CQT
     '''
     def __init__(self, name, sr, hop_length, n_octaves=8, over_sample=3,
-                 fmin=None):
-        super(CQT, self).__init__(name, sr, hop_length)
+                 fmin=None, conv=None):
+        super(CQT, self).__init__(name, sr, hop_length, conv=conv)
 
         if fmin is None:
             fmin = note_to_hz('C1')
@@ -44,8 +44,8 @@ class CQT(FeatureExtractor):
         self.fmin = fmin
 
         n_bins = n_octaves * 12 * over_sample
-        self.register('mag', [None, n_bins], np.float32)
-        self.register('phase', [None, n_bins], np.float32)
+        self.register('mag', n_bins, np.float32)
+        self.register('phase', n_bins, np.float32)
 
     def transform_audio(self, y):
         '''Compute the CQT
@@ -72,8 +72,8 @@ class CQT(FeatureExtractor):
                                            self.over_sample * 12),
                                    bins_per_octave=(self.over_sample * 12)))
 
-        return {'mag': cqtm.T.astype(np.float32),
-                'phase': np.angle(phase).T.astype(np.float32)}
+        return {'mag': cqtm.T.astype(np.float32)[self.idx],
+                'phase': np.angle(phase).T.astype(np.float32)[self.idx]}
 
 
 class CQTMag(CQT):
@@ -117,7 +117,10 @@ class CQTPhaseDiff(CQT):
     def __init__(self, *args, **kwargs):
         super(CQTPhaseDiff, self).__init__(*args, **kwargs)
         phase_field = self.pop('phase')
-        self.register('dphase', phase_field.shape, phase_field.dtype)
+
+        self.register('dphase',
+                      self.n_octaves * 12 * self.over_sample,
+                      phase_field.dtype)
 
     def transform_audio(self, y):
         '''Compute the CQT with unwrapped phase
@@ -137,5 +140,5 @@ class CQTPhaseDiff(CQT):
                 Unwrapped phase differential
         '''
         data = super(CQTPhaseDiff, self).transform_audio(y)
-        data['dphase'] = phase_diff(data.pop('phase'), axis=0)
+        data['dphase'] = self.phase_diff(data.pop('phase'))
         return data
