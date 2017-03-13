@@ -41,6 +41,11 @@ be easily consumed by statistical algorithms.  Some desired features:
 >>> p_beat = pumpp.task.BeatTransformer(sr=sr, hop_length=hop_length)
 >>> p_chord = pumpp.task.SimpleChordTransformer(sr=sr, hop_length=hop_length)
 
->>> # Apply the extractors
->>> data = pumpp.apply(audio_f, jams_f, p_cqt, p_beat, b_chord)
+>>> # Collect the operators
+>>> P = pumpp.Pump(p_cqt, p_beat, p_chord)
+>>> # Apply the extractors to generate training data
+>>> data = P.transform(audio_f, jams_f)
+
+>>> # Or test data
+>>> test_data = P.transform('/my/test/audio.ogg')
 ```

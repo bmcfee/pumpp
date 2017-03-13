@@ -64,3 +64,63 @@ def test_transform(audio_f, jam, sr, hop_length):
     assert (np.abs(data['stft/mag'].shape[1] - data['beat/beat'].shape[1])
             * hop_length / float(sr)) <= 0.05
     pass
+
+
+@pytest.mark.parametrize('audio_f', ['tests/data/test.ogg'])
+def test_pump(audio_f, jam, sr, hop_length):
+
+    ops = [pumpp.feature.STFT(name='stft', sr=sr,
+                              hop_length=hop_length,
+                              n_fft=2*hop_length),
+
+           pumpp.task.BeatTransformer(name='beat', sr=sr,
+                                      hop_length=hop_length),
+
+           pumpp.task.ChordTransformer(name='chord', sr=sr,
+                                       hop_length=hop_length),
+
+           pumpp.task.StaticLabelTransformer(name='tags',
+                                             namespace='tag_open',
+                                             labels=['rock', 'jazz'])]
+
+    data1 = pumpp.transform(audio_f, jam, *ops)
+
+    pump = pumpp.Pump(*ops)
+    data2 = pump.transform(audio_f, jam)
+
+    assert data1.keys() == data2.keys()
+
+    for key in data1:
+        assert np.allclose(data1[key], data2[key])
+
+
+@pytest.mark.parametrize('audio_f', ['tests/data/test.ogg'])
+def test_pump_empty(audio_f, jam, sr, hop_length):
+
+    pump = pumpp.Pump()
+    data = pump.transform(audio_f, jam)
+    assert data == dict()
+
+
+def test_pump_add(sr, hop_length):
+
+    ops = [pumpp.feature.STFT(name='stft', sr=sr,
+                              hop_length=hop_length,
+                              n_fft=2*hop_length),
+
+           pumpp.task.BeatTransformer(name='beat', sr=sr,
+                                      hop_length=hop_length),
+
+           pumpp.task.ChordTransformer(name='chord', sr=sr,
+                                       hop_length=hop_length),
+
+           pumpp.task.StaticLabelTransformer(name='tags',
+                                             namespace='tag_open',
+                                             labels=['rock', 'jazz'])]
+
+    pump = pumpp.Pump()
+    assert pump.ops == []
+
+    for op in ops:
+        pump.add(op)
+        assert op in pump.ops
