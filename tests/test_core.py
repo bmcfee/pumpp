@@ -130,3 +130,23 @@ def test_pump_add(sr, hop_length):
 def test_pump_add_bad():
 
     pumpp.Pump('foo')
+
+
+@pytest.mark.parametrize('n_samples', [None, 10])
+@pytest.mark.parametrize('duration', [1, 5])
+def test_pump_sampler(sr, hop_length, n_samples, duration):
+    ops = [pumpp.feature.STFT(name='stft', sr=sr,
+                              hop_length=hop_length,
+                              n_fft=2*hop_length),
+
+           pumpp.task.BeatTransformer(name='beat', sr=sr,
+                                      hop_length=hop_length)]
+
+    P = pumpp.Pump(*ops)
+
+    S1 = pumpp.Sampler(n_samples, duration, *ops)
+    S2 = P.sampler(n_samples, duration)
+
+    assert S1._time == S2._time
+    assert S1.n_samples == S2.n_samples
+    assert S1.duration == S2.duration
