@@ -124,3 +124,9 @@ def test_pump_add(sr, hop_length):
     for op in ops:
         pump.add(op)
         assert op in pump.ops
+
+
+@pytest.mark.xfail(raises=pumpp.ParameterError)
+def test_pump_add_bad():
+
+    pumpp.Pump('foo')

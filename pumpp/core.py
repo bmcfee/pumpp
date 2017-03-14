@@ -87,7 +87,9 @@ class Pump(object):
 
     def __init__(self, *ops):
 
-        self.ops = list(ops)
+        self.ops = []
+        for op in ops:
+            self.add(op)
 
     def add(self, op):
         '''Add an operation to this pump.
