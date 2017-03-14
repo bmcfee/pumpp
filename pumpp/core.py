@@ -16,6 +16,7 @@ import jams
 from .exceptions import ParameterError
 from .task import BaseTaskTransformer
 from .feature import FeatureExtractor
+from .sampler import Sampler
 
 
 def transform(audio_f, jam, *ops):
@@ -131,3 +132,26 @@ class Pump(object):
         '''
 
         return transform(audio_f, jam, *self.ops)
+
+    def sampler(self, n_samples, duration):
+        '''Construct a sampler object for this pump's operators.
+
+        Parameters
+        ----------
+        n_samples : None or int > 0
+            The number of samples to generate
+
+        duration : int > 0
+            The duration (in frames) of each sample patch
+
+        Returns
+        -------
+        sampler : pumpp.Sampler
+            The sampler object
+
+        See Also
+        --------
+        pumpp.Sampler
+        '''
+
+        return Sampler(n_samples, duration, *self.ops)
