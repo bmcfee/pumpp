@@ -59,7 +59,7 @@ def n_octaves(request):
     return request.param
 
 
-@pytest.fixture(params=[None, 'tf', 'th',
+@pytest.fixture(params=[None, 'tf', 'th', 'channels_last', 'channels_first',
                         pytest.mark.xfail('bad mode',
                                           raises=pumpp.ParameterError)])
 def conv(request):
@@ -78,9 +78,9 @@ def __check_shape(fields, key, dim, conv):
 
     if conv is None:
         assert fields[key].shape == (None, dim)
-    elif conv == 'tf':
+    elif conv in ('channels_last', 'tf'):
         assert fields[key].shape == (None, dim, 1)
-    elif conv == 'th':
+    elif conv in ('channels_first', 'th'):
         assert fields[key].shape == (1, None, dim)
 
 
