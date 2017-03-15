@@ -27,15 +27,21 @@ class STFT(FeatureExtractor):
     n_fft : int > 0
         The number of FFT bins per frame
 
+    log : bool
+        If `True`, scale magnitude in decibels.
+
+        Otherwise use linear magnitude.
+
     See Also
     --------
     STFTMag
     STFTPhaseDiff
     '''
-    def __init__(self, name, sr, hop_length, n_fft, conv=None):
+    def __init__(self, name, sr, hop_length, n_fft, log=False, conv=None):
         super(STFT, self).__init__(name, sr, hop_length, conv=conv)
 
         self.n_fft = n_fft
+        self.log = log
 
         self.register('mag', 1 + n_fft // 2, np.float32)
         self.register('phase', 1 + n_fft // 2, np.float32)
@@ -61,6 +67,9 @@ class STFT(FeatureExtractor):
                                                    hop_length=self.hop_length,
                                                    n_fft=self.n_fft,
                                                    dtype=np.float32))
+        if self.log:
+            mag = librosa.amplitude_to_db(mag, ref=np.max)
+
         return {'mag': mag.T[self.idx],
                 'phase': np.angle(phase.T)[self.idx]}
 
