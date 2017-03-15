@@ -32,14 +32,20 @@ class Mel(FeatureExtractor):
     fmax : number > 0
         The maximum frequency bin.
         Defaults to `0.5 * sr`
+
+    log : bool
+        If `True`, scale magnitude in decibels.
+
+        Otherwise, use a linear amplitude scale.
     '''
     def __init__(self, name, sr, hop_length, n_fft, n_mels, fmax=None,
-                 conv=None):
+                 log=False, conv=None):
         super(Mel, self).__init__(name, sr, hop_length, conv=conv)
 
         self.n_fft = n_fft
         self.n_mels = n_mels
         self.fmax = fmax
+        self.log = log
 
         self.register('mag', n_mels, np.float32)
 
@@ -62,5 +68,7 @@ class Mel(FeatureExtractor):
                                      hop_length=self.hop_length,
                                      n_mels=self.n_mels,
                                      fmax=self.fmax)).astype(np.float32)
+        if self.log:
+            mel = librosa.amplitude_to_db(mel, ref=np.max)
 
         return {'mag': mel.T[self.idx]}

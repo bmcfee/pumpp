@@ -2,7 +2,7 @@
 '''CQT features'''
 
 import numpy as np
-from librosa import cqt, magphase, note_to_hz
+from librosa import cqt, magphase, note_to_hz, amplitude_to_db
 
 from .base import FeatureExtractor
 
@@ -31,9 +31,15 @@ class CQT(FeatureExtractor):
 
     fmin : float > 0
         The minimum frequency of the CQT
+
+    log : boolean
+        If `True`, scale the magnitude to decibels
+
+        Otherwise, use linear magnitude
+
     '''
     def __init__(self, name, sr, hop_length, n_octaves=8, over_sample=3,
-                 fmin=None, conv=None):
+                 fmin=None, log=False, conv=None):
         super(CQT, self).__init__(name, sr, hop_length, conv=conv)
 
         if fmin is None:
@@ -42,6 +48,7 @@ class CQT(FeatureExtractor):
         self.n_octaves = n_octaves
         self.over_sample = over_sample
         self.fmin = fmin
+        self.log = log
 
         n_bins = n_octaves * 12 * over_sample
         self.register('mag', n_bins, np.float32)
@@ -71,6 +78,8 @@ class CQT(FeatureExtractor):
                                    n_bins=(self.n_octaves *
                                            self.over_sample * 12),
                                    bins_per_octave=(self.over_sample * 12)))
+        if self.log:
+            cqtm = amplitude_to_db(cqtm, ref=np.max)
 
         return {'mag': cqtm.T.astype(np.float32)[self.idx],
                 'phase': np.angle(phase).T.astype(np.float32)[self.idx]}

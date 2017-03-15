@@ -66,6 +66,13 @@ def conv(request):
     return request.param
 
 
+
+@pytest.fixture(params=[False, True])
+def log(request):
+    return request.param
+
+
+
 # STFT features
 def __check_shape(fields, key, dim, conv):
 
@@ -77,7 +84,7 @@ def __check_shape(fields, key, dim, conv):
         assert fields[key].shape == (1, None, dim)
 
 
-def test_feature_stft_fields(SR, HOP_LENGTH, n_fft, conv):
+def test_feature_stft_fields(SR, HOP_LENGTH, n_fft, conv, log):
 
     ext = pumpp.feature.STFT(name='stft',
                              sr=SR, hop_length=HOP_LENGTH,
@@ -123,7 +130,7 @@ def test_feature_stft_phasediff_fields(SR, HOP_LENGTH, n_fft, conv):
     assert ext.fields['stft/dphase'].dtype is np.float32
 
 
-def test_feature_stft(audio, SR, HOP_LENGTH, n_fft, conv):
+def test_feature_stft(audio, SR, HOP_LENGTH, n_fft, conv, log):
 
     ext = pumpp.feature.STFT(name='stft',
                              sr=SR, hop_length=HOP_LENGTH,
@@ -139,7 +146,7 @@ def test_feature_stft(audio, SR, HOP_LENGTH, n_fft, conv):
         assert type_match(output[key].dtype, ext.fields[key].dtype)
 
 
-def test_feature_stft_phasediff(audio, SR, HOP_LENGTH, n_fft, conv):
+def test_feature_stft_phasediff(audio, SR, HOP_LENGTH, n_fft, conv, log):
 
     ext = pumpp.feature.STFTPhaseDiff(name='stft',
                                       sr=SR, hop_length=HOP_LENGTH,
@@ -156,7 +163,7 @@ def test_feature_stft_phasediff(audio, SR, HOP_LENGTH, n_fft, conv):
         assert type_match(output[key].dtype, ext.fields[key].dtype)
 
 
-def test_feature_stft_mag(audio, SR, HOP_LENGTH, n_fft, conv):
+def test_feature_stft_mag(audio, SR, HOP_LENGTH, n_fft, conv, log):
 
     ext = pumpp.feature.STFTMag(name='stft',
                                 sr=SR, hop_length=HOP_LENGTH,
@@ -188,7 +195,7 @@ def test_feature_mel_fields(SR, HOP_LENGTH, n_fft, n_mels, conv):
     assert ext.fields['mel/mag'].dtype is np.float32
 
 
-def test_feature_mel(audio, SR, HOP_LENGTH, n_fft, n_mels, conv):
+def test_feature_mel(audio, SR, HOP_LENGTH, n_fft, n_mels, conv, log):
 
     ext = pumpp.feature.Mel(name='mel',
                             sr=SR, hop_length=HOP_LENGTH,
@@ -256,7 +263,7 @@ def test_feature_cqtphasediff_fields(SR, HOP_LENGTH, over_sample, n_octaves, con
     assert ext.fields['cqt/dphase'].dtype is np.float32
 
 
-def test_feature_cqt(audio, SR, HOP_LENGTH, over_sample, n_octaves, conv):
+def test_feature_cqt(audio, SR, HOP_LENGTH, over_sample, n_octaves, conv, log):
 
     ext = pumpp.feature.CQT(name='cqt',
                             sr=SR, hop_length=HOP_LENGTH,
@@ -273,7 +280,7 @@ def test_feature_cqt(audio, SR, HOP_LENGTH, over_sample, n_octaves, conv):
         assert type_match(output[key].dtype, ext.fields[key].dtype)
 
 
-def test_feature_cqtmag(audio, SR, HOP_LENGTH, over_sample, n_octaves, conv):
+def test_feature_cqtmag(audio, SR, HOP_LENGTH, over_sample, n_octaves, conv, log):
 
     ext = pumpp.feature.CQTMag(name='cqt',
                                sr=SR, hop_length=HOP_LENGTH,
@@ -290,7 +297,7 @@ def test_feature_cqtmag(audio, SR, HOP_LENGTH, over_sample, n_octaves, conv):
         assert type_match(output[key].dtype, ext.fields[key].dtype)
 
 
-def test_feature_cqtphasediff(audio, SR, HOP_LENGTH, over_sample, n_octaves, conv):
+def test_feature_cqtphasediff(audio, SR, HOP_LENGTH, over_sample, n_octaves, conv, log):
 
     ext = pumpp.feature.CQTPhaseDiff(name='cqt',
                                      sr=SR, hop_length=HOP_LENGTH,
