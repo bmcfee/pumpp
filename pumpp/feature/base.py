@@ -23,20 +23,22 @@ class FeatureExtractor(Scope):
     hop_length : int > 0
         The hop length between analysis frames
 
-    conv : {'tf', 'th', None}
+    conv : {'tf', 'th', 'channels_last', 'channels_first', None}
         convolution dimension ordering:
 
-            - 'tf' for tensorflow-style 2D convolution
-            - 'th' for theano-style 2D convolution
+            - 'channels_last' for tensorflow-style 2D convolution
+            - 'tf' equivalent to 'channels_last'
+            - 'channels_first' for theano-style 2D convolution
+            - 'th' equivalent to 'channels_first'
             - None for 1D or non-convolutional representations
     '''
     def __init__(self, name, sr, hop_length, conv=None):
 
         super(FeatureExtractor, self).__init__(name)
 
-        if conv not in ('tf', 'th', None):
+        if conv not in ('tf', 'th', 'channels_last', 'channels_first', None):
             raise ParameterError('conv="{}", must be one of '
-                                 '("tf", "th", None)'.format(conv))
+                                 '("channels_last", "tf", "channels_first", "th", None)'.format(conv))
 
         self.sr = sr
         self.hop_length = hop_length
@@ -46,10 +48,10 @@ class FeatureExtractor(Scope):
 
         shape = [None, dimension]
 
-        if self.conv == 'tf':
+        if self.conv in ('channels_last', 'tf'):
             shape.append(1)
 
-        elif self.conv == 'th':
+        elif self.conv in ('channels_first', 'th'):
             shape.insert(0, 1)
 
         super(FeatureExtractor, self).register(key, shape, dtype)
@@ -59,10 +61,10 @@ class FeatureExtractor(Scope):
         if self.conv is None:
             return Ellipsis
 
-        elif self.conv == 'tf':
+        elif self.conv in ('channels_last', 'tf'):
             return (slice(None), slice(None), np.newaxis)
 
-        elif self.conv == 'th':
+        elif self.conv in ('channels_first', 'th'):
             return (np.newaxis, slice(None), slice(None))
 
     def transform(self, y, sr):
@@ -109,9 +111,9 @@ class FeatureExtractor(Scope):
 
         if self.conv is None:
             axis = 0
-        elif self.conv == 'tf':
+        elif self.conv in ('channels_last', 'tf'):
             axis = 0
-        elif self.conv == 'th':
+        elif self.conv in ('channels_first', 'th'):
             axis = 1
 
         # Compute the phase differential
