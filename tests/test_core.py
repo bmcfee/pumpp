@@ -93,6 +93,12 @@ def test_pump(audio_f, jam, sr, hop_length):
     for key in data1:
         assert np.allclose(data1[key], data2[key])
 
+    fields = dict()
+    for op in ops:
+        fields.update(**op.fields)
+
+    assert pump.fields == fields
+
 
 @pytest.mark.parametrize('audio_f', ['tests/data/test.ogg'])
 def test_pump_empty(audio_f, jam, sr, hop_length):

@@ -155,3 +155,11 @@ class Pump(object):
         '''
 
         return Sampler(n_samples, duration, *self.ops)
+
+    @property
+    def fields(self):
+        out = dict()
+        for op in self.ops:
+            out.update(**op.fields)
+
+        return out
