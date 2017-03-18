@@ -51,7 +51,7 @@ class DynamicLabelTransformer(BaseTaskTransformer):
         self.encoder = MultiLabelBinarizer()
         self.encoder.fit([labels])
         self._classes = set(self.encoder.classes_)
-        
+
         self.register('tags', [None, len(self._classes)], np.bool)
 
     def empty(self, duration):
