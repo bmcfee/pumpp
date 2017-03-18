@@ -28,7 +28,7 @@ class Sampler(object):
     duration : int > 0
         the duration (in frames) of each sample
 
-    *ops : one or more pumpp.feature.FeatureExtractor or pumpp.task.BaseTaskTransformer
+    ops : one or more pumpp.feature.FeatureExtractor or pumpp.task.BaseTaskTransformer
         The operators to include when sampling data.
 
 
@@ -124,8 +124,8 @@ class Sampler(object):
         data : dict
             As produced by pumpp.transform
 
-        Generates
-        ---------
+        Yields 
+        ------
         data_sample : dict
             A sequence of patch samples from `data`,
             as parameterized by the sampler object.

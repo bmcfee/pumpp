@@ -75,6 +75,7 @@ class Pump(object):
     Examples
     --------
     Create a CQT and chord transformer
+
     >>> p_cqt = pumpp.feature.CQT('cqt', sr=44100, hop_length=1024)
     >>> p_chord = pumpp.task.ChordTagTransformer(sr=44100, hop_length=1024)
     >>> pump = pumpp.Pump(p_cqt, p_chord)
@@ -151,7 +152,7 @@ class Pump(object):
 
         See Also
         --------
-        pumpp.Sampler
+        pumpp.sampler.Sampler
         '''
 
         return Sampler(n_samples, duration, *self.ops)

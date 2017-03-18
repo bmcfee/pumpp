@@ -309,3 +309,5 @@ intersphinx_mapping = {'python': ('https://docs.python.org/3', None),
                        'numpy': ('https://docs.scipy.org/doc/numpy/', None),
                        'librosa': ('https://librosa.github.io/librosa/', None),
                        'jams': ('https://jams.readthedocs.io/en/latest/', None)}
+
+numpydoc_show_class_members = False

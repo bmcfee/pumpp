@@ -15,11 +15,9 @@ The goal of this package is to make it easy to convert pairs of `(audio, jams)` 
 be easily consumed by statistical algorithms.  Some desired features:
 
 - Converting tags to sparse encoding vectors
-- Sampling `(start, end, label)` to frame-level annotations at a specific sampling rate
-- Extracting first-level features (eg, Mel spectra or CQT) from audio
-- Aligning and storing the results in a simple data structure (npz, hdf5)
+- Sampling `(start, end, label)` to frame-level annotations at a specific frame rate
+- Extracting input features (eg, Mel spectra or CQT) from audio
 - Converting between annotation spaces for a given task
-- Helper variables for semi-supervised learning
 
 ## Example usage
 
@@ -41,8 +39,9 @@ be easily consumed by statistical algorithms.  Some desired features:
 >>> p_beat = pumpp.task.BeatTransformer(sr=sr, hop_length=hop_length)
 >>> p_chord = pumpp.task.SimpleChordTransformer(sr=sr, hop_length=hop_length)
 
->>> # Collect the operators
+>>> # Collect the operators in a pump
 >>> P = pumpp.Pump(p_cqt, p_beat, p_chord)
+
 >>> # Apply the extractors to generate training data
 >>> data = P.transform(audio_f, jams_f)
 
