@@ -124,7 +124,7 @@ class Sampler(object):
         data : dict
             As produced by pumpp.transform
 
-        Yields 
+        Yields
         ------
         data_sample : dict
             A sequence of patch samples from `data`,
