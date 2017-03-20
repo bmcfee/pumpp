@@ -7,7 +7,6 @@ import numpy as np
 
 import pumpp
 import jams
-import keras as K
 
 
 @pytest.fixture(params=[11025, 22050])
