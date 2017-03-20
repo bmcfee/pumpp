@@ -159,6 +159,7 @@ def test_pump_sampler(sr, hop_length, n_samples, duration):
     assert S1.duration == S2.duration
 
 
+@pytest.mark.skip
 def test_pump_layers(sr, hop_length):
     ops = [pumpp.feature.STFT(name='stft', sr=sr,
                               hop_length=hop_length,
