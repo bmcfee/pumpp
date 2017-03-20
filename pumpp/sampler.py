@@ -85,13 +85,19 @@ class Sampler(object):
         data_slice = dict()
 
         for key in data:
-            if key in self._time:
-                index = [slice(None)] * data[key].ndim
+            if '_valid' in key:
+                continue
 
-                if self._time[key] is not None:
-                    index[self._time[key]] = interval
+            index = [slice(None)] * data[key].ndim
 
-                data_slice[key] = data[key][index]
+            # if we have multiple observations for this key, pick one
+            index[0] = np.random.randint(0, data[key].shape[0])
+            index[0] = slice(index[0], index[0] + 1)
+
+            if self._time.get(key, None) is not None:
+                index[self._time[key]] = interval
+
+            data_slice[key] = data[key][index]
 
         return data_slice
 
