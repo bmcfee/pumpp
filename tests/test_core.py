@@ -156,3 +156,30 @@ def test_pump_sampler(sr, hop_length, n_samples, duration):
     assert S1._time == S2._time
     assert S1.n_samples == S2.n_samples
     assert S1.duration == S2.duration
+
+
+@pytest.mark.skip
+def test_pump_layers(sr, hop_length):
+    ops = [pumpp.feature.STFT(name='stft', sr=sr,
+                              hop_length=hop_length,
+                              n_fft=2*hop_length),
+
+           pumpp.feature.CQT(name='cqt', sr=sr,
+                             hop_length=hop_length),
+
+           pumpp.task.BeatTransformer(name='beat', sr=sr,
+                                      hop_length=hop_length)]
+
+    P = pumpp.Pump(*ops)
+
+    L1 = P.layers()
+    L2 = dict()
+    L2.update(ops[0].layers())
+    L2.update(ops[1].layers())
+
+    assert L1.keys() == L2.keys()
+
+    for k in L1:
+        assert L1[k].dtype == L2[k].dtype
+        for d1, d2 in zip(L1[k].shape, L2[k].shape):
+            assert str(d1) == str(d2)

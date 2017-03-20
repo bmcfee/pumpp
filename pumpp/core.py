@@ -164,3 +164,20 @@ class Pump(object):
             out.update(**op.fields)
 
         return out
+
+    def layers(self):
+        '''Construct Keras input layers for all feature transformers
+        in the pump.
+
+        Returns
+        -------
+        layers : {field: keras.layers.Input}
+            A dictionary of keras input layers, keyed by the corresponding
+            fields.
+        '''
+
+        L = dict()
+        for op in self.ops:
+            if hasattr(op, 'layers'):
+                L.update(op.layers())
+        return L
