@@ -33,8 +33,8 @@ def ops(sr, hop_length):
                                        win_length=hop_length))
 
     # A time-varying annotation
-    ops.append(pumpp.task.BeatTransformer(name='beat', sr=sr,
-                                          hop_length=hop_length))
+    ops.append(pumpp.task.ChordTransformer(name='chord', sr=sr,
+                                           hop_length=hop_length))
 
     # And a static annotation
     ops.append(pumpp.task.VectorTransformer(namespace='vector',
@@ -80,10 +80,12 @@ def test_sampler(data, ops, n_samples, duration):
         # Now test that shape is preserved in the right way
         for key in datum:
             ref_shape = list(data[key].shape)
-            if sampler._time[key] is not None:
+            if sampler._time.get(key, None) is not None:
                 ref_shape[sampler._time[key]] = duration
 
-            assert list(datum[key].shape) == ref_shape
+            # Check that all keys have length=1
+            assert datum[key].shape[0] == 1
+            assert list(datum[key].shape[1:]) == ref_shape[1:]
 
     # Test that we got the right number of samples out
     if n_samples is None:
