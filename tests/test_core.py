@@ -96,6 +96,7 @@ def test_pump(audio_f, jam, sr, hop_length):
     fields = dict()
     for op in ops:
         fields.update(**op.fields)
+        assert pump[op.name] == op
 
     assert pump.fields == fields
 
@@ -136,6 +137,31 @@ def test_pump_add(sr, hop_length):
 def test_pump_add_bad():
 
     pumpp.Pump('foo')
+
+
+@pytest.mark.xfail(raises=pumpp.ParameterError)
+def test_pump_add_twice(sr, hop_length):
+
+    op = pumpp.feature.STFT(name='stft', sr=sr,
+                            hop_length=hop_length,
+                            n_fft=2*hop_length)
+
+    P = pumpp.Pump()
+
+    P.add(op)
+    P.add(op)
+
+
+@pytest.mark.xfail(raises=KeyError)
+def test_pump_badkey(sr, hop_length):
+
+    op = pumpp.feature.STFT(name='stft', sr=sr,
+                            hop_length=hop_length,
+                            n_fft=2*hop_length)
+
+    P = pumpp.Pump(op)
+
+    P['bad key']
 
 
 @pytest.mark.parametrize('n_samples', [None, 10])

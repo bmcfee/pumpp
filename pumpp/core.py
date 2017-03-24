@@ -81,6 +81,17 @@ class Pump(object):
     >>> pump = pumpp.Pump(p_cqt, p_chord)
     >>> data = pump.transform('/my/audio/file.mp3', '/my/jams/annotation.jams')
 
+    Access all the fields produced by this pump:
+
+    >>> pump.fields
+    {'chord/chord': Tensor(shape=(None, 170), dtype=<class 'bool'>),
+     'cqt/mag': Tensor(shape=(None, 288), dtype=<class 'numpy.float32'>),
+     'cqt/phase': Tensor(shape=(None, 288), dtype=<class 'numpy.float32'>)}
+
+    Access a constituent operator by name:
+
+    >>> pump['chord'].fields
+    {'chord/chord': Tensor(shape=(None, 170), dtype=<class 'bool'>)}
 
     See Also
     --------
@@ -90,6 +101,7 @@ class Pump(object):
     def __init__(self, *ops):
 
         self.ops = []
+        self.opmap = dict()
         for op in ops:
             self.add(op)
 
@@ -111,6 +123,10 @@ class Pump(object):
                                  '(BaseTaskTransformer, FeatureExtractor)'
                                  .format(op))
 
+        if op.name in self.opmap:
+            raise ParameterError('Duplicate operator name detected: {}'.format(op))
+
+        self.opmap[op.name] = op
         self.ops.append(op)
 
     def transform(self, audio_f, jam=None):
@@ -181,3 +197,6 @@ class Pump(object):
             if hasattr(op, 'layers'):
                 L.update(op.layers())
         return L
+
+    def __getitem__(self, key):
+        return self.opmap.get(key)
