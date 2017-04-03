@@ -24,6 +24,11 @@ def VOCAB(request):
     yield request.param
 
 
+@pytest.fixture(params=[False, True])
+def SPARSE(request):
+    return request.param
+
+
 def shape_match(sh1, sh2):
 
     for i, j in zip(sh1, sh2):
@@ -655,17 +660,21 @@ def test_transform_coerce():
                                             raises=pumpp.ParameterError),
                           pytest.mark.xfail(('357', 1),
                                             raises=pumpp.ParameterError)])
-def test_task_chord_tag_fields(vocab, vocab_size):
+def test_task_chord_tag_fields(vocab, vocab_size, SPARSE):
 
-    trans = pumpp.task.ChordTagTransformer(name='mychord', vocab=vocab)
+    trans = pumpp.task.ChordTagTransformer(name='mychord', vocab=vocab, sparse=SPARSE)
 
     assert set(trans.fields.keys()) == set(['mychord/chord'])
 
-    assert trans.fields['mychord/chord'].shape == (None, vocab_size)
-    assert trans.fields['mychord/chord'].dtype is np.bool
+    if SPARSE:
+        assert trans.fields['mychord/chord'].shape == (None, 1)
+        assert np.issubdtype(trans.fields['mychord/chord'].dtype, np.int)
+    else:
+        assert trans.fields['mychord/chord'].shape == (None, vocab_size)
+        assert trans.fields['mychord/chord'].dtype is np.bool
 
 
-def test_task_chord_tag_present(SR, HOP_LENGTH, VOCAB):
+def test_task_chord_tag_present(SR, HOP_LENGTH, VOCAB, SPARSE):
 
     # Construct a jam
     jam = jams.JAMS(file_metadata=dict(duration=13.0))
@@ -727,7 +736,8 @@ def test_task_chord_tag_present(SR, HOP_LENGTH, VOCAB):
     jam.annotations.append(ann)
 
     trans = pumpp.task.ChordTagTransformer(name='chord', vocab=VOCAB,
-                                           sr=SR, hop_length=HOP_LENGTH)
+                                           sr=SR, hop_length=HOP_LENGTH,
+                                           sparse=SPARSE)
 
     output = trans.transform(jam)
 
@@ -737,17 +747,22 @@ def test_task_chord_tag_present(SR, HOP_LENGTH, VOCAB):
 
     # Decode the label encoding
     Y_pred = trans.encoder.inverse_transform(output['chord/chord'][0])
+    if SPARSE:
+        # Sparse label encoders use an extra output dimension
+        Y_pred = Y_pred[:, 0]
+
     Y_expected = np.repeat(Y_true_out, (SR // HOP_LENGTH), axis=0)
 
     assert np.all(Y_pred == Y_expected)
 
 
-def test_task_chord_tag_absent(SR, HOP_LENGTH, VOCAB):
+def test_task_chord_tag_absent(SR, HOP_LENGTH, VOCAB, SPARSE):
 
     jam = jams.JAMS(file_metadata=dict(duration=4.0))
     trans = pumpp.task.ChordTagTransformer(name='chord',
                                            vocab=VOCAB,
-                                           sr=SR, hop_length=HOP_LENGTH)
+                                           sr=SR, hop_length=HOP_LENGTH,
+                                           sparse=SPARSE)
 
     output = trans.transform(jam)
 

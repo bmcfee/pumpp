@@ -6,7 +6,7 @@ import re
 from itertools import product
 
 import numpy as np
-from sklearn.preprocessing import LabelBinarizer
+from sklearn.preprocessing import LabelBinarizer, LabelEncoder
 from sklearn.preprocessing import MultiLabelBinarizer
 
 import mir_eval
@@ -282,7 +282,7 @@ class ChordTagTransformer(BaseTaskTransformer):
     SimpleChordTransformer
     '''
     def __init__(self, name='chord', vocab='3567s',
-                 sr=22050, hop_length=512):
+                 sr=22050, hop_length=512, sparse=False):
 
         super(ChordTagTransformer, self).__init__(name=name,
                                                   namespace='chord',
@@ -304,8 +304,12 @@ class ChordTagTransformer(BaseTaskTransformer):
 
         self.vocab = vocab.lower()
         labels = self.vocabulary()
+        self.sparse = sparse
 
-        self.encoder = LabelBinarizer()
+        if self.sparse:
+            self.encoder = LabelEncoder()
+        else:
+            self.encoder = LabelBinarizer()
         self.encoder.fit(labels)
         self._classes = set(self.encoder.classes_)
 
@@ -322,7 +326,10 @@ class ChordTagTransformer(BaseTaskTransformer):
         if 's' in self.vocab:
             self.mask_ |= 0b001001010000
 
-        self.register('chord', [None, len(self._classes)], np.bool)
+        if self.sparse:
+            self.register('chord', [None, 1], np.int)
+        else:
+            self.register('chord', [None, len(self._classes)], np.bool)
 
     def empty(self, duration):
         '''Empty chord annotations
@@ -419,9 +426,15 @@ class ChordTagTransformer(BaseTaskTransformer):
         for v in values:
             chords.extend(self.encoder.transform([self.simplify(v)]))
 
+        dtype = self.fields[self.scope('chord')].dtype
+
         chords = np.asarray(chords)
+
+        if self.sparse:
+            chords = chords[:, np.newaxis]
+
         target = self.encode_intervals(duration, intervals, chords,
-                                       multi=False)
+                                       multi=False, dtype=dtype)
 
         return {'chord': target}
 
@@ -432,8 +445,12 @@ class ChordTagTransformer(BaseTaskTransformer):
 
         for start, end, value in self.decode_intervals(encoded,
                                                        duration=duration,
-                                                       multi=False):
-            value_dec = self.encoder.inverse_transform(np.atleast_2d(value))
+                                                       multi=False,
+                                                       sparse=self.sparse):
+            if self.sparse:
+                value_dec = self.encoder.inverse_transform(value)
+            else:
+                value_dec = self.encoder.inverse_transform(np.atleast_2d(value))
 
             for vd in value_dec:
                 ann.append(time=start, duration=end-start, value=vd)
