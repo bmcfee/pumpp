@@ -45,9 +45,9 @@ def type_match(x, y):
     return np.issubdtype(x, y) and np.issubdtype(y, x)
 
 
-def test_task_chord_fields():
+def test_task_chord_fields(SPARSE):
 
-    trans = pumpp.task.ChordTransformer(name='mychord')
+    trans = pumpp.task.ChordTransformer(name='mychord', sparse=SPARSE)
 
     assert set(trans.fields.keys()) == set(['mychord/pitch',
                                             'mychord/root',
@@ -55,13 +55,20 @@ def test_task_chord_fields():
 
     assert trans.fields['mychord/pitch'].shape == (None, 12)
     assert trans.fields['mychord/pitch'].dtype is np.bool
-    assert trans.fields['mychord/root'].shape == (None, 13)
-    assert trans.fields['mychord/root'].dtype is np.bool
-    assert trans.fields['mychord/bass'].shape == (None, 13)
-    assert trans.fields['mychord/bass'].dtype is np.bool
+
+    if SPARSE:
+        assert trans.fields['mychord/root'].shape == (None, 1)
+        assert np.issubdtype(trans.fields['mychord/root'].dtype, np.int)
+        assert trans.fields['mychord/bass'].shape == (None, 1)
+        assert np.issubdtype(trans.fields['mychord/bass'].dtype, np.int)
+    else:
+        assert trans.fields['mychord/root'].shape == (None, 13)
+        assert trans.fields['mychord/root'].dtype is np.bool
+        assert trans.fields['mychord/bass'].shape == (None, 13)
+        assert trans.fields['mychord/bass'].dtype is np.bool
 
 
-def test_task_chord_present(SR, HOP_LENGTH):
+def test_task_chord_present(SR, HOP_LENGTH, SPARSE):
 
     # Construct a jam
     jam = jams.JAMS(file_metadata=dict(duration=5.0))
@@ -76,7 +83,9 @@ def test_task_chord_present(SR, HOP_LENGTH):
     jam.annotations.append(ann)
 
     # One second = one frame
-    trans = pumpp.task.ChordTransformer(name='chord')
+    trans = pumpp.task.ChordTransformer(name='chord',
+                                        sr=SR, hop_length=HOP_LENGTH,
+                                        sparse=SPARSE)
 
     output = trans.transform(jam)
 
@@ -94,17 +103,22 @@ def test_task_chord_present(SR, HOP_LENGTH):
                            [0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0],
                            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]])
 
-    root_true = np.asarray([[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                            [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-                            [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]])
+    if SPARSE:
+        root_true = np.asarray([[0],  [0],  [12], [2],  [12]])
+        bass_true = np.asarray([[0],  [4],  [12], [2],  [12]])
 
-    bass_true = np.asarray([[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                            [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-                            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-                            [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]])
+    else:
+        root_true = np.asarray([[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                                [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]])
+
+        bass_true = np.asarray([[1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                                [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+                                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                                [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]])
 
     assert np.all(output['chord/pitch'] == np.repeat(pcp_true,
                                                      (SR // HOP_LENGTH),
@@ -121,10 +135,12 @@ def test_task_chord_present(SR, HOP_LENGTH):
         assert type_match(output[key].dtype, trans.fields[key].dtype)
 
 
-def test_task_chord_absent(SR, HOP_LENGTH):
+def test_task_chord_absent(SR, HOP_LENGTH, SPARSE):
 
     jam = jams.JAMS(file_metadata=dict(duration=4.0))
-    trans = pumpp.task.ChordTransformer(name='chord')
+    trans = pumpp.task.ChordTransformer(name='chord',
+                                        sr=SR, hop_length=HOP_LENGTH,
+                                        sparse=SPARSE)
 
     output = trans.transform(jam)
 
@@ -133,15 +149,21 @@ def test_task_chord_absent(SR, HOP_LENGTH):
 
     # Check the shape
     assert output['chord/pitch'].shape == (1, 4 * (SR // HOP_LENGTH), 12)
-    assert output['chord/root'].shape == (1, 4 * (SR // HOP_LENGTH), 13)
-    assert output['chord/bass'].shape == (1, 4 * (SR // HOP_LENGTH), 13)
 
     # Make sure it's empty
     assert not np.any(output['chord/pitch'])
-    assert not np.any(output['chord/root'][:, :, :12])
-    assert not np.any(output['chord/bass'][:, :, :12])
-    assert np.all(output['chord/root'][:, :, 12])
-    assert np.all(output['chord/bass'][:, :, 12])
+    if SPARSE:
+        assert output['chord/root'].shape == (1, 4 * (SR // HOP_LENGTH), 1)
+        assert output['chord/bass'].shape == (1, 4 * (SR // HOP_LENGTH), 1)
+        assert np.all(output['chord/root'] == 12)
+        assert np.all(output['chord/bass'] == 12)
+    else:
+        assert output['chord/root'].shape == (1, 4 * (SR // HOP_LENGTH), 13)
+        assert output['chord/bass'].shape == (1, 4 * (SR // HOP_LENGTH), 13)
+        assert not np.any(output['chord/root'][:, :, :12])
+        assert not np.any(output['chord/bass'][:, :, :12])
+        assert np.all(output['chord/root'][:, :, 12])
+        assert np.all(output['chord/bass'][:, :, 12])
 
     for key in trans.fields:
         assert shape_match(output[key].shape[1:], trans.fields[key].shape)
