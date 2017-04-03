@@ -7,6 +7,7 @@ Data subsampling
     :toctree: generated/
 
     Sampler
+    SequentialSampler
 '''
 
 from itertools import count
@@ -15,11 +16,11 @@ import numpy as np
 
 from .exceptions import ParameterError
 
-__all__ = ['Sampler']
+__all__ = ['Sampler', 'SequentialSampler']
 
 
 class Sampler(object):
-    '''Generate samples from a pumpp data dict.
+    '''Generate samples uniformly at random from a pumpp data dict.
 
     Attributes
     ----------
@@ -185,3 +186,46 @@ class Sampler(object):
 
         for i, start in zip(counter, self.indices(data)):
             yield self.sample(data, slice(start, start + self.duration))
+
+
+class SequentialSampler(Sampler):
+    '''Sample patches in sequential (temporal) order
+
+    Attributes
+    ----------
+    duration : int > 0
+        the duration (in frames) of each sample
+
+    stride : int > 0
+        The number of frames to advance between samples.
+        By default, matches `duration` so there is no overlap.
+
+    ops : array of pumpp.feature.FeatureExtractor or pumpp.task.BaseTaskTransformer
+        The operators to include when sampling data.
+    '''
+
+    def __init__(self, duration, *ops, **kwargs):
+
+        super(SequentialSampler, self).__init__(None, duration, *ops)
+        stride = kwargs.pop('stride', duration)
+        if not stride > 0:
+            raise ParameterError('Invalid patch stride={}'.format(stride))
+        self.stride = stride
+
+    def indices(self, data):
+        '''Generate patch start indices
+
+        Parameters
+        ----------
+        data : dict of np.ndarray
+            As produced by pumpp.transform
+
+        Yields
+        ------
+        start : int >= 0
+            The start index of a sample patch
+        '''
+        duration = self.data_duration(data)
+
+        for start in range(0, duration - self.duration, self.stride):
+            yield start
