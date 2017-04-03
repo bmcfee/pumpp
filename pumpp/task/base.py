@@ -165,7 +165,7 @@ class BaseTaskTransformer(Scope):
         return target
 
     def encode_intervals(self, duration, intervals, values, dtype=np.bool,
-                         multi=True):
+                         multi=True, fill=None):
         '''Encode labeled intervals as a time-series matrix.
 
         Parameters
@@ -185,11 +185,19 @@ class BaseTaskTransformer(Scope):
         multi : bool
             If `True`, allow multiple labels per interval.
 
+        fill : dtype (optional)
+            Optional default fill value for missing data.
+
+            If not provided, the default is inferred from `dtype`.
+
         Returns
         -------
         target : np.ndarray, shape=(duration * sr / hop_length, m)
             The labeled interval encoding, sampled at the desired frame rate
         '''
+        if fill is None:
+            fill = fill_value(dtype)
+
         frames = time_to_frames(intervals, sr=self.sr,
                                 hop_length=self.hop_length)
 
@@ -200,7 +208,7 @@ class BaseTaskTransformer(Scope):
 
         target = np.empty((n_total, values.shape[1]), dtype=dtype)
 
-        target.fill(fill_value(dtype))
+        target.fill(fill)
 
         for column, interval in zip(values, frames):
             if multi:
@@ -234,7 +242,7 @@ class BaseTaskTransformer(Scope):
 
         return zip(times, encoded)
 
-    def decode_intervals(self, encoded, duration=None, multi=True):
+    def decode_intervals(self, encoded, duration=None, multi=True, sparse=False):
         '''Decode labeled intervals into (start, end, value) triples
 
         Parameters
@@ -251,6 +259,11 @@ class BaseTaskTransformer(Scope):
             If true, allow multiple labels per input frame.
             If false, take the most likely label per input frame.
 
+        sparse : bool
+            If true, values are returned as indices, not one-hot.
+            If false, values are returned as one-hot encodings.
+
+            Only applies when `multi=False`.
 
         Returns
         -------
@@ -262,7 +275,11 @@ class BaseTaskTransformer(Scope):
         if np.isrealobj(encoded):
             if multi:
                 encoded = encoded >= 0.5
-            else:
+            elif sparse and encoded.shape[1] > 1:
+                # map to argmax if it's densely encoded (logits)
+                encoded = np.argmax(encoded, axis=1)[:, np.newaxis]
+            elif not sparse:
+                # if dense and multi, map to one-hot encoding
                 encoded = (encoded == np.max(encoded, axis=1, keepdims=True))
 
         if duration is None:
@@ -279,9 +296,12 @@ class BaseTaskTransformer(Scope):
                                hop_length=self.hop_length)
 
         # Find the change-points of the rows
-        idx = np.unique(np.append(np.where(np.max(encoded[1:] != encoded[:-1],
-                                                  axis=-1)),
-                                  encoded.shape[0]))
+        if sparse:
+            idx = np.where(encoded[1:] != encoded[:-1])[0]
+        else:
+            idx = np.where(np.max(encoded[1:] != encoded[:-1], axis=-1))[0]
+
+        idx = np.unique(np.append(idx, encoded.shape[0]))
         delta = np.diff(np.append(-1, idx))
 
         # Starting positions can be integrated from changes

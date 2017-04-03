@@ -224,13 +224,13 @@ def test_decode_simplechord(sr, hop_length, ann_chord):
     assert np.allclose(data['pitch'], data2['pitch'])
 
 
-def test_decode_chordtag_hard(sr, hop_length, ann_chord):
+def test_decode_chordtag_hard_dense(sr, hop_length, ann_chord):
 
     # This test encodes an annotation, decodes it, and then re-encodes it
     # It passes if the re-encoded version matches the initial encoding
     tc = pumpp.task.ChordTagTransformer('chord', vocab='3567s',
                                         hop_length=hop_length,
-                                        sr=sr)
+                                        sr=sr, sparse=False)
 
     data = tc.transform_annotation(ann_chord, ann_chord.duration)
 
@@ -240,13 +240,13 @@ def test_decode_chordtag_hard(sr, hop_length, ann_chord):
     assert np.allclose(data['chord'], data2['chord'])
 
 
-def test_decode_chordtag_soft(sr, hop_length, ann_chord):
+def test_decode_chordtag_soft_dense(sr, hop_length, ann_chord):
 
     # This test encodes an annotation, decodes it, and then re-encodes it
     # It passes if the re-encoded version matches the initial encoding
     tc = pumpp.task.ChordTagTransformer('chord', vocab='3567s',
                                         hop_length=hop_length,
-                                        sr=sr)
+                                        sr=sr, sparse=False)
 
     data = tc.transform_annotation(ann_chord, ann_chord.duration)
 
@@ -255,3 +255,68 @@ def test_decode_chordtag_soft(sr, hop_length, ann_chord):
     data2 = tc.transform_annotation(inverse, ann_chord.duration)
 
     assert np.allclose(data['chord'], data2['chord'])
+
+
+def test_decode_chordtag_hard_sparse_sparse(sr, hop_length, ann_chord):
+
+    # This test encodes an annotation, decodes it, and then re-encodes it
+    # It passes if the re-encoded version matches the initial encoding
+    tc = pumpp.task.ChordTagTransformer('chord', vocab='3567s',
+                                        hop_length=hop_length,
+                                        sr=sr, sparse=True)
+
+    data = tc.transform_annotation(ann_chord, ann_chord.duration)
+
+    inverse = tc.inverse(data['chord'], duration=ann_chord.duration)
+    data2 = tc.transform_annotation(inverse, ann_chord.duration)
+
+    assert np.allclose(data['chord'], data2['chord'])
+
+
+def test_decode_chordtag_hard_dense_sparse(sr, hop_length, ann_chord):
+
+    # This test encodes an annotation, decodes it, and then re-encodes it
+    # It passes if the re-encoded version matches the initial encoding
+    tcd = pumpp.task.ChordTagTransformer('chord', vocab='3567s',
+                                         hop_length=hop_length,
+                                         sr=sr, sparse=False)
+
+    tcs = pumpp.task.ChordTagTransformer('chord', vocab='3567s',
+                                         hop_length=hop_length,
+                                         sr=sr, sparse=True)
+
+    # Make a hard, dense encoding of the data
+    data = tcd.transform_annotation(ann_chord, ann_chord.duration)
+
+    # Invert using the sparse encoder
+    inverse = tcs.inverse(data['chord'], duration=ann_chord.duration)
+    data2 = tcs.transform_annotation(inverse, ann_chord.duration)
+
+    dense_positions = np.where(data['chord'])[1]
+    sparse_positions = data2['chord'][:, 0]
+    assert np.allclose(dense_positions, sparse_positions)
+
+
+def test_decode_chordtag_soft_dense_sparse(sr, hop_length, ann_chord):
+
+    # This test encodes an annotation, decodes it, and then re-encodes it
+    # It passes if the re-encoded version matches the initial encoding
+    tcd = pumpp.task.ChordTagTransformer('chord', vocab='3567s',
+                                         hop_length=hop_length,
+                                         sr=sr, sparse=False)
+
+    tcs = pumpp.task.ChordTagTransformer('chord', vocab='3567s',
+                                         hop_length=hop_length,
+                                         sr=sr, sparse=True)
+
+    # Make a soft, dense encoding of the data
+    data = tcd.transform_annotation(ann_chord, ann_chord.duration)
+
+    chord_predict = data['chord'] * 0.51 + 0.1
+    # Invert using the sparse encoder
+    inverse = tcs.inverse(chord_predict, duration=ann_chord.duration)
+    data2 = tcs.transform_annotation(inverse, ann_chord.duration)
+
+    dense_positions = np.where(data['chord'])[1]
+    sparse_positions = data2['chord'][:, 0]
+    assert np.allclose(dense_positions, sparse_positions)

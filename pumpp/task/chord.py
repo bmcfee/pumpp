@@ -6,7 +6,7 @@ import re
 from itertools import product
 
 import numpy as np
-from sklearn.preprocessing import LabelBinarizer
+from sklearn.preprocessing import LabelBinarizer, LabelEncoder
 from sklearn.preprocessing import MultiLabelBinarizer
 
 import mir_eval
@@ -58,11 +58,15 @@ class ChordTransformer(BaseTaskTransformer):
     hop_length : int > 0
         The number of samples between each annotation frame
 
+    sparse : bool
+        If True, root and bass values are sparsely encoded as integers in [0, 12].
+        If False, root and bass values are densely encoded as 13-dimensional booleans.
+
     See Also
     --------
     SimpleTransformer
     '''
-    def __init__(self, name='chord', sr=22050, hop_length=512):
+    def __init__(self, name='chord', sr=22050, hop_length=512, sparse=False):
         '''Initialize a chord task transformer'''
 
         super(ChordTransformer, self).__init__(name=name,
@@ -72,9 +76,15 @@ class ChordTransformer(BaseTaskTransformer):
         self.encoder = MultiLabelBinarizer()
         self.encoder.fit([list(range(12))])
         self._classes = set(self.encoder.classes_)
+        self.sparse = sparse
+
         self.register('pitch', [None, 12], np.bool)
-        self.register('root', [None, 13], np.bool)
-        self.register('bass', [None, 13], np.bool)
+        if self.sparse:
+            self.register('root', [None, 1], np.int)
+            self.register('bass', [None, 1], np.int)
+        else:
+            self.register('root', [None, 13], np.bool)
+            self.register('bass', [None, 13], np.bool)
 
     def empty(self, duration):
         '''Empty chord annotations
@@ -112,8 +122,8 @@ class ChordTransformer(BaseTaskTransformer):
         -------
         data : dict
             data['pitch'] : np.ndarray, shape=(n, 12)
-            data['root'] : np.ndarray, shape=(n, 13)
-            data['bass'] : np.ndarray, shape=(n, 13)
+            data['root'] : np.ndarray, shape=(n, 13) or (n, 1)
+            data['bass'] : np.ndarray, shape=(n, 13) or (n, 1)
 
             `pitch` is a binary matrix indicating pitch class
             activation at each frame.
@@ -124,11 +134,21 @@ class ChordTransformer(BaseTaskTransformer):
             `bass` is a one-hot matrix indicating the chord
             bass (lowest note) pitch class at each frame.
 
-            `root` and `bass` have an extra final dimension
-            which is active when there is no chord sounding.
+            If sparsely encoded, `root` and `bass` are integers
+            in the range [0, 12] where 12 indicates no chord.
+
+            If densely encoded, `root` and `bass` have an extra
+            final dimension which is active when there is no chord
+            sounding.
         '''
         # Construct a blank annotation with mask = 0
         intervals, chords = ann.data.to_interval_values()
+
+        # Get the dtype for root/bass
+        if self.sparse:
+            dtype = np.int
+        else:
+            dtype = np.bool
 
         # If we don't have any labeled intervals, fill in a no-chord
         if not chords:
@@ -140,29 +160,54 @@ class ChordTransformer(BaseTaskTransformer):
         roots = []
         basses = []
 
+        # default value when data is missing
+        if self.sparse:
+            fill = 12
+        else:
+            fill = False
+
         for chord in chords:
             # Encode the pitches
             root, semi, bass = mir_eval.chord.encode(chord)
             pitches.append(np.roll(semi, root))
 
-            if root in self._classes:
-                roots.extend(self.encoder.transform([[root]]))
-                basses.extend(self.encoder.transform([[(root + bass) % 12]]))
+            if self.sparse:
+                if root in self._classes:
+                    roots.append([root])
+                    basses.append([(root + bass) % 12])
+                else:
+                    roots.append([fill])
+                    basses.append([fill])
             else:
-                roots.extend(self.encoder.transform([[]]))
-                basses.extend(self.encoder.transform([[]]))
+                if root in self._classes:
+                    roots.extend(self.encoder.transform([[root]]))
+                    basses.extend(self.encoder.transform([[(root + bass) % 12]]))
+                else:
+                    roots.extend(self.encoder.transform([[]]))
+                    basses.extend(self.encoder.transform([[]]))
 
         pitches = np.asarray(pitches, dtype=np.bool)
-        roots = np.asarray(roots, dtype=np.bool)
-        basses = np.asarray(basses, dtype=np.bool)
+        roots = np.asarray(roots, dtype=dtype)
+        basses = np.asarray(basses, dtype=dtype)
 
         target_pitch = self.encode_intervals(duration, intervals, pitches)
-        target_root = self.encode_intervals(duration, intervals, roots)
-        target_bass = self.encode_intervals(duration, intervals, basses)
+
+        target_root = self.encode_intervals(duration, intervals, roots,
+                                            multi=False,
+                                            dtype=dtype,
+                                            fill=fill)
+        target_bass = self.encode_intervals(duration, intervals, basses,
+                                            multi=False,
+                                            dtype=dtype,
+                                            fill=fill)
+
+        if not self.sparse:
+            target_root = _pad_nochord(target_root)
+            target_bass = _pad_nochord(target_bass)
 
         return {'pitch': target_pitch,
-                'root': _pad_nochord(target_root),
-                'bass': _pad_nochord(target_bass)}
+                'root': target_root,
+                'bass': target_bass}
 
     def inverse(self, pitch, root, bass, duration=None):
 
@@ -282,7 +327,7 @@ class ChordTagTransformer(BaseTaskTransformer):
     SimpleChordTransformer
     '''
     def __init__(self, name='chord', vocab='3567s',
-                 sr=22050, hop_length=512):
+                 sr=22050, hop_length=512, sparse=False):
 
         super(ChordTagTransformer, self).__init__(name=name,
                                                   namespace='chord',
@@ -304,8 +349,12 @@ class ChordTagTransformer(BaseTaskTransformer):
 
         self.vocab = vocab.lower()
         labels = self.vocabulary()
+        self.sparse = sparse
 
-        self.encoder = LabelBinarizer()
+        if self.sparse:
+            self.encoder = LabelEncoder()
+        else:
+            self.encoder = LabelBinarizer()
         self.encoder.fit(labels)
         self._classes = set(self.encoder.classes_)
 
@@ -322,7 +371,10 @@ class ChordTagTransformer(BaseTaskTransformer):
         if 's' in self.vocab:
             self.mask_ |= 0b001001010000
 
-        self.register('chord', [None, len(self._classes)], np.bool)
+        if self.sparse:
+            self.register('chord', [None, 1], np.int)
+        else:
+            self.register('chord', [None, len(self._classes)], np.bool)
 
     def empty(self, duration):
         '''Empty chord annotations
@@ -419,9 +471,15 @@ class ChordTagTransformer(BaseTaskTransformer):
         for v in values:
             chords.extend(self.encoder.transform([self.simplify(v)]))
 
+        dtype = self.fields[self.scope('chord')].dtype
+
         chords = np.asarray(chords)
+
+        if self.sparse:
+            chords = chords[:, np.newaxis]
+
         target = self.encode_intervals(duration, intervals, chords,
-                                       multi=False)
+                                       multi=False, dtype=dtype)
 
         return {'chord': target}
 
@@ -432,8 +490,12 @@ class ChordTagTransformer(BaseTaskTransformer):
 
         for start, end, value in self.decode_intervals(encoded,
                                                        duration=duration,
-                                                       multi=False):
-            value_dec = self.encoder.inverse_transform(np.atleast_2d(value))
+                                                       multi=False,
+                                                       sparse=self.sparse):
+            if self.sparse:
+                value_dec = self.encoder.inverse_transform(value)
+            else:
+                value_dec = self.encoder.inverse_transform(np.atleast_2d(value))
 
             for vd in value_dec:
                 ann.append(time=start, duration=end-start, value=vd)
