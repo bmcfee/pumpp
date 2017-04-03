@@ -220,8 +220,13 @@ class SequentialSampler(Sampler):
 
     def __init__(self, duration, *ops, **kwargs):
 
-        stride = kwargs.pop('stride', duration)
+        stride = kwargs.pop('stride', None)
+
         super(SequentialSampler, self).__init__(None, duration, *ops, **kwargs)
+
+        if stride is None:
+            stride = duration
+
         if not stride > 0:
             raise ParameterError('Invalid patch stride={}'.format(stride))
         self.stride = stride
