@@ -166,7 +166,8 @@ def test_pump_badkey(sr, hop_length):
 
 @pytest.mark.parametrize('n_samples', [None, 10])
 @pytest.mark.parametrize('duration', [1, 5])
-def test_pump_sampler(sr, hop_length, n_samples, duration):
+@pytest.mark.parametrize('rng', [None, 1])
+def test_pump_sampler(sr, hop_length, n_samples, duration, rng):
     ops = [pumpp.feature.STFT(name='stft', sr=sr,
                               hop_length=hop_length,
                               n_fft=2*hop_length),
@@ -176,8 +177,8 @@ def test_pump_sampler(sr, hop_length, n_samples, duration):
 
     P = pumpp.Pump(*ops)
 
-    S1 = pumpp.Sampler(n_samples, duration, *ops)
-    S2 = P.sampler(n_samples, duration)
+    S1 = pumpp.Sampler(n_samples, duration, random_state=rng, *ops)
+    S2 = P.sampler(n_samples, duration, random_state=rng)
 
     assert S1._time == S2._time
     assert S1.n_samples == S2.n_samples
