@@ -202,12 +202,25 @@ class SequentialSampler(Sampler):
 
     ops : array of pumpp.feature.FeatureExtractor or pumpp.task.BaseTaskTransformer
         The operators to include when sampling data.
+
+    random_state : None, int, or np.random.RandomState
+        If int, random_state is the seed used by the random number
+        generator;
+
+        If RandomState instance, random_state is the random number
+        generator;
+
+        If None, the random number generator is the RandomState instance
+
+    See Also
+    --------
+    Sampler
     '''
 
     def __init__(self, duration, *ops, **kwargs):
 
-        super(SequentialSampler, self).__init__(None, duration, *ops)
         stride = kwargs.pop('stride', duration)
+        super(SequentialSampler, self).__init__(None, duration, *ops, **kwargs)
         if not stride > 0:
             raise ParameterError('Invalid patch stride={}'.format(stride))
         self.stride = stride
