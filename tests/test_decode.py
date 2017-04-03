@@ -320,4 +320,3 @@ def test_decode_chordtag_soft_dense_sparse(sr, hop_length, ann_chord):
     dense_positions = np.where(data['chord'])[1]
     sparse_positions = data2['chord'][:, 0]
     assert np.allclose(dense_positions, sparse_positions)
-

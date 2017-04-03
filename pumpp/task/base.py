@@ -165,7 +165,7 @@ class BaseTaskTransformer(Scope):
         return target
 
     def encode_intervals(self, duration, intervals, values, dtype=np.bool,
-                         multi=True):
+                         multi=True, fill=None):
         '''Encode labeled intervals as a time-series matrix.
 
         Parameters
@@ -185,11 +185,19 @@ class BaseTaskTransformer(Scope):
         multi : bool
             If `True`, allow multiple labels per interval.
 
+        fill : dtype (optional)
+            Optional default fill value for missing data.
+
+            If not provided, the default is inferred from `dtype`.
+
         Returns
         -------
         target : np.ndarray, shape=(duration * sr / hop_length, m)
             The labeled interval encoding, sampled at the desired frame rate
         '''
+        if fill is None:
+            fill = fill_value(dtype)
+
         frames = time_to_frames(intervals, sr=self.sr,
                                 hop_length=self.hop_length)
 
@@ -200,7 +208,7 @@ class BaseTaskTransformer(Scope):
 
         target = np.empty((n_total, values.shape[1]), dtype=dtype)
 
-        target.fill(fill_value(dtype))
+        target.fill(fill)
 
         for column, interval in zip(values, frames):
             if multi:
