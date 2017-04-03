@@ -1,6 +1,20 @@
 Changes
 -------
 
+0.1.3
+=====
+
+- `#55`_ Refactored the `Sampler` class, added support for random states and the `SequentialSampler` class
+
+.. _#55: https://github.com/bmcfee/pumpp/pull/55
+
+0.1.2
+=====
+
+- `#51`_ Added named operator index to `Pump` objects
+
+.. _#51: https://github.com/bmcfee/pumpp/pull/51
+
 0.1.1
 =====
 
