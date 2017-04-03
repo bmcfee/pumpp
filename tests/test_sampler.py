@@ -112,7 +112,7 @@ def test_sampler(data, ops, n_samples, duration, rng):
 
 
 def test_sequential_sampler(data, ops, duration, stride, rng):
-    sampler = pumpp.SequentialSampler(duration, *ops, random_state=rng)
+    sampler = pumpp.SequentialSampler(duration, *ops, stride=stride, random_state=rng)
 
     # Build the set of reference keys that we want to track
     ref_keys = set()
