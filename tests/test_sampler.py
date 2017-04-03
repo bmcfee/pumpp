@@ -2,6 +2,8 @@
 # -*- encoding: utf-8 -*-
 '''Testing the sampler module'''
 
+import numpy as np
+
 import pytest
 
 import pumpp
@@ -63,10 +65,25 @@ def duration(request):
     return request.param
 
 
-def test_sampler(data, ops, n_samples, duration):
+@pytest.fixture(params=[None, 16, 256,
+                        pytest.mark.xfail(-1, raises=pumpp.ParameterError)],
+                scope='module')
+def stride(request):
+    return request.param
+
+
+@pytest.fixture(params=[None, 20170401, np.random.RandomState(100),
+                        pytest.mark.xfail('bad rng',
+                                          raises=pumpp.ParameterError)],
+                scope='module')
+def rng(request):
+    return request.param
+
+
+def test_sampler(data, ops, n_samples, duration, rng):
 
     MAX_SAMPLES = 30
-    sampler = pumpp.Sampler(n_samples, duration, *ops)
+    sampler = pumpp.Sampler(n_samples, duration, *ops, random_state=rng)
 
     # Build the set of reference keys that we want to track
     ref_keys = set()
@@ -92,3 +109,26 @@ def test_sampler(data, ops, n_samples, duration):
         assert n == MAX_SAMPLES - 1
     else:
         assert n == n_samples - 1
+
+
+def test_sequential_sampler(data, ops, duration, stride, rng):
+    sampler = pumpp.SequentialSampler(duration, *ops, stride=stride, random_state=rng)
+
+    # Build the set of reference keys that we want to track
+    ref_keys = set()
+    for op in ops:
+        ref_keys |= set(op.fields.keys())
+
+    for datum in sampler(data):
+        # First, test that we have the right fields
+        assert set(datum.keys()) == ref_keys
+
+        # Now test that shape is preserved in the right way
+        for key in datum:
+            ref_shape = list(data[key].shape)
+            if sampler._time.get(key, None) is not None:
+                ref_shape[sampler._time[key]] = duration
+
+            # Check that all keys have length=1
+            assert datum[key].shape[0] == 1
+            assert list(datum[key].shape[1:]) == ref_shape[1:]
