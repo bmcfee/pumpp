@@ -12,6 +12,7 @@ Data subsampling
 
 from itertools import count
 
+import six
 import numpy as np
 
 from .exceptions import ParameterError
@@ -180,7 +181,7 @@ class Sampler(object):
             as parameterized by the sampler object.
         '''
         if self.n_samples:
-            counter = range(self.n_samples)
+            counter = six.moves.range(self.n_samples)
         else:
             counter = count(0)
 
