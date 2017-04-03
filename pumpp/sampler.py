@@ -185,7 +185,7 @@ class Sampler(object):
         else:
             counter = count(0)
 
-        for i, start in zip(counter, self.indices(data)):
+        for i, start in six.moves.zip(counter, self.indices(data)):
             yield self.sample(data, slice(start, start + self.duration))
 
 
