@@ -2,6 +2,8 @@
 # -*- encoding: utf-8 -*-
 '''Testing the sampler module'''
 
+import numpy as np
+
 import pytest
 
 import pumpp
@@ -63,10 +65,17 @@ def duration(request):
     return request.param
 
 
-def test_sampler(data, ops, n_samples, duration):
+@pytest.fixture(params=[None, 20170401, np.random.RandomState(100),
+                        pytest.mark.xfail('bad rng',
+                                          raises=pumpp.ParameterError)])
+def rng(request):
+    return request.param
+
+
+def test_sampler(data, ops, n_samples, duration, rng):
 
     MAX_SAMPLES = 30
-    sampler = pumpp.Sampler(n_samples, duration, *ops)
+    sampler = pumpp.Sampler(n_samples, duration, *ops, random_state=rng)
 
     # Build the set of reference keys that we want to track
     ref_keys = set()
