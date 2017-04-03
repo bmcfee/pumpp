@@ -62,10 +62,12 @@ class Sampler(object):
     >>> for example in stream(data):
     ...     process(data)
     '''
-    def __init__(self, n_samples, duration, *ops, random_state=None):
+    def __init__(self, n_samples, duration, *ops, **kwargs):
 
         self.n_samples = n_samples
         self.duration = duration
+
+        random_state = kwargs.pop('random_state', None)
 
         if random_state is None:
             self.rng = np.random
