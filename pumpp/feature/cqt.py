@@ -256,7 +256,7 @@ class HCQT(FeatureExtractor):
             phase.append(P)
 
         cqtm = np.asarray(cqtm).astype(np.float32)
-        phase = np.asarray(phase).astype(np.float32)
+        phase = np.angle(np.asarray(phase)).astype(np.float32)
 
         return {'mag': self._index(cqtm),
                 'phase': self._index(phase)}
