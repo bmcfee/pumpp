@@ -1,6 +1,16 @@
 Changes
 -------
 
+0.1.4
+=====
+- `#59`_ harmonic CQT
+- `#58`_ Sparse chord output for chord labels
+- `#57`_ Updated sampler bindings for Pump object
+
+.. _#59: https://github.com/bmcfee/pumpp/pull/59
+.. _#58: https://github.com/bmcfee/pumpp/pull/58
+.. _#57: https://github.com/bmcfee/pumpp/pull/57
+
 0.1.3
 =====
 
