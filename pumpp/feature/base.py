@@ -44,15 +44,15 @@ class FeatureExtractor(Scope):
         self.hop_length = hop_length
         self.conv = conv
 
-    def register(self, key, dimension, dtype):
+    def register(self, key, dimension, dtype, channels=1):
 
         shape = [None, dimension]
 
         if self.conv in ('channels_last', 'tf'):
-            shape.append(1)
+            shape.append(channels)
 
         elif self.conv in ('channels_first', 'th'):
-            shape.insert(0, 1)
+            shape.insert(0, channels)
 
         super(FeatureExtractor, self).register(key, shape, dtype)
 
