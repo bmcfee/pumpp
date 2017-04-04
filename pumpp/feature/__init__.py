@@ -11,6 +11,9 @@ Feature extractors
     CQT
     CQTMag
     CQTPhaseDiff
+    HCQT
+    HCQTMag
+    HCQTPhaseDiff
     STFT
     STFTMag
     STFTPhaseDiff
