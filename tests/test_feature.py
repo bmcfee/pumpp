@@ -80,7 +80,7 @@ def hconv(request):
     return request.param
 
 
-@pytest.fixture(params=[[1], [1, 2], [1, 2, 3],
+@pytest.fixture(params=[None, [1], [1, 2], [1, 2, 3],
                         pytest.mark.xfail([-1], raises=pumpp.ParameterError),
                         pytest.mark.xfail('bad harmonics',
                                           raises=pumpp.ParameterError)])
@@ -261,7 +261,8 @@ def test_feature_cqtmag_fields(SR, HOP_LENGTH, over_sample, n_octaves, conv):
     assert ext.fields['cqt/mag'].dtype is np.float32
 
 
-def test_feature_cqtphasediff_fields(SR, HOP_LENGTH, over_sample, n_octaves, conv):
+def test_feature_cqtphasediff_fields(SR, HOP_LENGTH, over_sample, n_octaves,
+                                     conv):
 
     ext = pumpp.feature.CQTPhaseDiff(name='cqt',
                                      sr=SR, hop_length=HOP_LENGTH,
@@ -284,6 +285,7 @@ def test_feature_cqt(audio, SR, HOP_LENGTH, over_sample, n_octaves, conv, log):
                             sr=SR, hop_length=HOP_LENGTH,
                             n_octaves=n_octaves,
                             over_sample=over_sample,
+                            log=log,
                             conv=conv)
 
     output = ext.transform(**audio)
@@ -295,12 +297,14 @@ def test_feature_cqt(audio, SR, HOP_LENGTH, over_sample, n_octaves, conv, log):
         assert type_match(output[key].dtype, ext.fields[key].dtype)
 
 
-def test_feature_cqtmag(audio, SR, HOP_LENGTH, over_sample, n_octaves, conv, log):
+def test_feature_cqtmag(audio, SR, HOP_LENGTH, over_sample, n_octaves, conv,
+                        log):
 
     ext = pumpp.feature.CQTMag(name='cqt',
                                sr=SR, hop_length=HOP_LENGTH,
                                n_octaves=n_octaves,
                                over_sample=over_sample,
+                               log=log,
                                conv=conv)
 
     output = ext.transform(**audio)
@@ -319,6 +323,7 @@ def test_feature_cqtphasediff(audio, SR, HOP_LENGTH, over_sample, n_octaves,
                                      sr=SR, hop_length=HOP_LENGTH,
                                      n_octaves=n_octaves,
                                      over_sample=over_sample,
+                                     log=log,
                                      conv=conv)
 
     output = ext.transform(**audio)
@@ -408,10 +413,15 @@ def test_feature_hcqt_fields(SR, HOP_LENGTH, over_sample, n_octaves,
     # Check the fields
     assert set(ext.fields.keys()) == set(['hcqt/mag', 'hcqt/phase'])
 
+    if not harmonics:
+        channels = 1
+    else:
+        channels = len(harmonics)
+
     __check_shape(ext.fields, 'hcqt/mag', over_sample * n_octaves * 12,
-                  hconv, channels=len(harmonics))
+                  hconv, channels=channels)
     __check_shape(ext.fields, 'hcqt/phase', over_sample * n_octaves * 12,
-                  hconv, channels=len(harmonics))
+                  hconv, channels=channels)
     assert ext.fields['hcqt/mag'].dtype is np.float32
     assert ext.fields['hcqt/phase'].dtype is np.float32
 
@@ -425,11 +435,16 @@ def test_feature_hcqtmag_fields(SR, HOP_LENGTH, over_sample, n_octaves,
                                 over_sample=over_sample,
                                 conv=hconv, harmonics=harmonics)
 
+    if not harmonics:
+        channels = 1
+    else:
+        channels = len(harmonics)
+
     # Check the fields
     assert set(ext.fields.keys()) == set(['hcqt/mag'])
 
     __check_shape(ext.fields, 'hcqt/mag', over_sample * n_octaves * 12,
-                  hconv, channels=len(harmonics))
+                  hconv, channels=channels)
     assert ext.fields['hcqt/mag'].dtype is np.float32
 
 
@@ -442,13 +457,18 @@ def test_feature_hcqtphasediff_fields(SR, HOP_LENGTH, over_sample, n_octaves,
                                       over_sample=over_sample,
                                       conv=hconv, harmonics=harmonics)
 
+    if not harmonics:
+        channels = 1
+    else:
+        channels = len(harmonics)
+
     # Check the fields
     assert set(ext.fields.keys()) == set(['hcqt/mag', 'hcqt/dphase'])
 
     __check_shape(ext.fields, 'hcqt/mag', over_sample * n_octaves * 12,
-                  hconv, channels=len(harmonics))
+                  hconv, channels=channels)
     __check_shape(ext.fields, 'hcqt/dphase', over_sample * n_octaves * 12,
-                  hconv, channels=len(harmonics))
+                  hconv, channels=channels)
     assert ext.fields['hcqt/mag'].dtype is np.float32
     assert ext.fields['hcqt/dphase'].dtype is np.float32
 
@@ -461,6 +481,7 @@ def test_feature_hcqt(audio, SR, HOP_LENGTH, over_sample, n_octaves,
                              n_octaves=n_octaves,
                              over_sample=over_sample,
                              conv=hconv,
+                             log=log,
                              harmonics=harmonics)
 
     output = ext.transform(**audio)
@@ -480,6 +501,7 @@ def test_feature_hcqtmag(audio, SR, HOP_LENGTH, over_sample, n_octaves,
                                 n_octaves=n_octaves,
                                 over_sample=over_sample,
                                 conv=hconv,
+                                log=log,
                                 harmonics=harmonics)
 
     output = ext.transform(**audio)
@@ -499,6 +521,7 @@ def test_feature_hcqtphasediff(audio, SR, HOP_LENGTH, over_sample, n_octaves,
                                       n_octaves=n_octaves,
                                       over_sample=over_sample,
                                       conv=hconv,
+                                      log=log,
                                       harmonics=harmonics)
 
     output = ext.transform(**audio)
