@@ -1,6 +1,12 @@
 Changes
 -------
 
+0.1.5
+=====
+- `#61`_ Fixed an alignment bug in feature extractors
+
+.. _#61: https://github.com/bmcfee/pumpp/pull/61
+
 0.1.4
 =====
 - `#59`_ harmonic CQT
