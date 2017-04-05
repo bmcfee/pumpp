@@ -3,7 +3,7 @@
 '''Feature extraction base class'''
 
 import numpy as np
-import librosa
+from librosa import resample, time_to_frames
 
 from ..base import Scope
 from ..exceptions import ParameterError
@@ -38,7 +38,8 @@ class FeatureExtractor(Scope):
 
         if conv not in ('tf', 'th', 'channels_last', 'channels_first', None):
             raise ParameterError('conv="{}", must be one of '
-                                 '("channels_last", "tf", "channels_first", "th", None)'.format(conv))
+                                 '("channels_last", "tf", '
+                                 '"channels_first", "th", None)'.format(conv))
 
         self.sr = sr
         self.hop_length = hop_length
@@ -88,7 +89,7 @@ class FeatureExtractor(Scope):
         transform_audio
         '''
         if sr != self.sr:
-            y = librosa.resample(y, sr, self.sr)
+            y = resample(y, sr, self.sr)
 
         return self.merge([self.transform_audio(y)])
 
@@ -144,3 +145,21 @@ class FeatureExtractor(Scope):
                            dtype=self.fields[key].dtype)
 
         return L
+
+    def n_frames(self, duration):
+        '''Get the number of frames for a given duration
+
+        Parameters
+        ----------
+        duration : number >= 0
+            The duration, in seconds
+
+        Returns
+        -------
+        n_frames : int >= 0
+            The number of frames at this extractor's sampling rate and
+            hop length
+        '''
+
+        return int(time_to_frames(duration, sr=self.sr,
+                                  hop_length=self.hop_length))

@@ -3,6 +3,8 @@
 
 import numpy as np
 from librosa.feature import melspectrogram
+from librosa import amplitude_to_db, get_duration
+from librosa.util import fix_length
 
 from .base import FeatureExtractor
 
@@ -63,12 +65,17 @@ class Mel(FeatureExtractor):
             data['mag'] : np.ndarray, shape=(n_frames, n_mels)
                 The Mel spectrogram
         '''
+        n_frames = self.n_frames(get_duration(y=y, sr=self.sr))
+
         mel = np.sqrt(melspectrogram(y=y, sr=self.sr,
                                      n_fft=self.n_fft,
                                      hop_length=self.hop_length,
                                      n_mels=self.n_mels,
                                      fmax=self.fmax)).astype(np.float32)
+
+        mel = fix_length(mel, n_frames)
+
         if self.log:
-            mel = librosa.amplitude_to_db(mel, ref=np.max)
+            mel = amplitude_to_db(mel, ref=np.max)
 
         return {'mag': mel.T[self.idx]}

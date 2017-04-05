@@ -148,7 +148,6 @@ class BaseTaskTransformer(Scope):
         target : ndarray, shape=(n_frames, n_values)
         '''
 
-        # FIXME: support sparse encoding
         frames = time_to_frames(events, sr=self.sr,
                                 hop_length=self.hop_length)
 
