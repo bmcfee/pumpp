@@ -4,6 +4,8 @@
 import numpy as np
 from librosa import fmt
 from librosa.feature import tempogram
+from librosa import get_duration
+from librosa.util import fix_length
 
 from .base import FeatureExtractor
 
@@ -48,10 +50,13 @@ class Tempogram(FeatureExtractor):
             data['tempogram'] : np.ndarray, shape=(n_frames, win_length)
                 The tempogram
         '''
+        n_frames = self.n_frames(get_duration(y=y, sr=self.sr))
+
         tgram = tempogram(y=y, sr=self.sr,
                           hop_length=self.hop_length,
                           win_length=self.win_length).astype(np.float32)
 
+        tgram = fix_length(tgram, n_frames)
         return {'tempogram': tgram.T[self.idx]}
 
 

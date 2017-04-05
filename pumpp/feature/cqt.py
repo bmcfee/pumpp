@@ -2,7 +2,9 @@
 '''CQT features'''
 
 import numpy as np
-from librosa import cqt, magphase, note_to_hz, amplitude_to_db
+from librosa import cqt, magphase, note_to_hz
+from librosa import amplitude_to_db, get_duration
+from librosa.util import fix_length
 
 from .base import FeatureExtractor
 from ..exceptions import ParameterError
@@ -73,13 +75,16 @@ class CQT(FeatureExtractor):
             data['phase']: np.ndarray, shape = mag.shape
                 The CQT phase
         '''
-        cqtm, phase = magphase(cqt(y=y,
-                                   sr=self.sr,
-                                   hop_length=self.hop_length,
-                                   fmin=self.fmin,
-                                   n_bins=(self.n_octaves *
-                                           self.over_sample * 12),
-                                   bins_per_octave=(self.over_sample * 12)))
+        n_frames = self.n_frames(get_duration(y=y, sr=self.sr))
+
+        C = cqt(y=y, sr=self.sr, hop_length=self.hop_length,
+                fmin=self.fmin,
+                n_bins=(self.n_octaves * self.over_sample * 12),
+                bins_per_octave=(self.over_sample * 12))
+
+        C = fix_length(C, n_frames)
+
+        cqtm, phase = magphase(C)
         if self.log:
             cqtm = amplitude_to_db(cqtm, ref=np.max)
 
@@ -242,14 +247,17 @@ class HCQT(FeatureExtractor):
         '''
         cqtm, phase = [], []
 
+        n_frames = self.n_frames(get_duration(y=y, sr=self.sr))
+
         for h in self.harmonics:
-            C, P = magphase(cqt(y=y,
-                                sr=self.sr,
-                                hop_length=self.hop_length,
-                                fmin=self.fmin * h,
-                                n_bins=(self.n_octaves *
-                                        self.over_sample * 12),
-                                bins_per_octave=(self.over_sample * 12)))
+            C = cqt(y=y, sr=self.sr, hop_length=self.hop_length,
+                    fmin=self.fmin * h,
+                    n_bins=(self.n_octaves * self.over_sample * 12),
+                    bins_per_octave=(self.over_sample * 12))
+
+            C = fix_length(C, n_frames)
+
+            C, P = magphase(C)
             if self.log:
                 C = amplitude_to_db(C, ref=np.max)
             cqtm.append(C)

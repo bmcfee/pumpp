@@ -2,7 +2,9 @@
 """STFT feature extractors"""
 
 import numpy as np
-import librosa
+from librosa import stft, magphase
+from librosa import amplitude_to_db, get_duration
+from librosa.util import fix_length
 
 from .base import FeatureExtractor
 
@@ -63,12 +65,16 @@ class STFT(FeatureExtractor):
             data['phase'] : np.ndarray, shape=(n_frames, 1 + n_fft//2)
                 STFT phase
         '''
-        mag, phase = librosa.magphase(librosa.stft(y,
-                                                   hop_length=self.hop_length,
-                                                   n_fft=self.n_fft,
-                                                   dtype=np.float32))
+        n_frames = self.n_frames(get_duration(y=y, sr=self.sr))
+
+        D = stft(y, hop_length=self.hop_length,
+                 n_fft=self.n_fft, dtype=np.float32)
+
+        D = fix_length(D, n_frames)
+
+        mag, phase = magphase(D)
         if self.log:
-            mag = librosa.amplitude_to_db(mag, ref=np.max)
+            mag = amplitude_to_db(mag, ref=np.max)
 
         return {'mag': mag.T[self.idx],
                 'phase': np.angle(phase.T)[self.idx]}
