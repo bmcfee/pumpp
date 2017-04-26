@@ -62,6 +62,7 @@ def test_pump(audio_f, jam, y, sr, sr2, hop_length):
         data = P.transform(audio_f=audio_f, jam=jam, y=y, sr=sr2)
     else:
         data = P.transform(audio_f=audio_f, jam=jam, y=y, sr=sr2)
+        data2 = P(audio_f=audio_f, jam=jam, y=y, sr=sr2)
 
         # Fields we should have:
         assert set(data.keys()) == set(['stft/mag', 'stft/phase',
@@ -82,6 +83,10 @@ def test_pump(audio_f, jam, y, sr, sr2, hop_length):
         # Audio features can be off by at most a frame
         assert (np.abs(data['stft/mag'].shape[1] - data['beat/beat'].shape[1])
                 * hop_length / float(sr)) <= 0.05
+
+        assert data.keys() == data2.keys()
+        for k in data:
+            assert np.allclose(data[k], data2[k])
 
 
 @pytest.mark.parametrize('audio_f', ['tests/data/test.ogg'])

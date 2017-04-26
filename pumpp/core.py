@@ -36,7 +36,18 @@ class Pump(object):
     >>> p_cqt = pumpp.feature.CQT('cqt', sr=44100, hop_length=1024)
     >>> p_chord = pumpp.task.ChordTagTransformer(sr=44100, hop_length=1024)
     >>> pump = pumpp.Pump(p_cqt, p_chord)
-    >>> data = pump.transform('/my/audio/file.mp3', '/my/jams/annotation.jams')
+    >>> data = pump.transform(audio_f='/my/audio/file.mp3',
+    ...                       jam='/my/jams/annotation.jams')
+
+    Or use the call interface:
+
+    >>> data = pump(audio_f='/my/audio/file.mp3',
+    ...             jam='/my/jams/annotation.jams')
+
+    Or apply to audio in memory, and without existing annotations:
+
+    >>> y, sr = librosa.load('/my/audio/file.mp3')
+    >>> data = pump(y=y, sr=sr)
 
     Access all the fields produced by this pump:
 
@@ -204,3 +215,6 @@ class Pump(object):
 
     def __getitem__(self, key):
         return self.opmap.get(key)
+
+    def __call__(self, *args, **kwargs):
+        return self.transform(*args, **kwargs)
