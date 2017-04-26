@@ -19,49 +19,6 @@ from .feature import FeatureExtractor
 from .sampler import Sampler
 
 
-def transform(audio_f, jam, *ops):
-    '''Apply a set of operations to a track
-
-    Parameters
-    ----------
-    audio_f : str
-        The path to the audio file
-
-    jam : str, jams.JAMS, or file-like
-        A JAMS object, or path to a JAMS file.
-
-        If not provided, an empty jams object will be created.
-
-    ops : list of task.BaseTaskTransform or feature.FeatureExtractor
-        The operators to apply to the input data
-
-    Returns
-    -------
-    data : dict
-        Extracted features and annotation encodings
-    '''
-
-    # Load the audio
-    y, sr = librosa.load(audio_f, sr=None, mono=True)
-
-    if jam is None:
-        jam = jams.JAMS()
-        jam.file_metadata.duration = librosa.get_duration(y=y, sr=sr)
-
-    # Load the jams
-    if not isinstance(jam, jams.JAMS):
-        jam = jams.load(jam)
-
-    data = dict()
-
-    for op in ops:
-        if isinstance(op, BaseTaskTransformer):
-            data.update(op.transform(jam))
-        elif isinstance(op, FeatureExtractor):
-            data.update(op.transform(y, sr))
-    return data
-
-
 class Pump(object):
     '''Top-level pump object.
 
@@ -79,7 +36,18 @@ class Pump(object):
     >>> p_cqt = pumpp.feature.CQT('cqt', sr=44100, hop_length=1024)
     >>> p_chord = pumpp.task.ChordTagTransformer(sr=44100, hop_length=1024)
     >>> pump = pumpp.Pump(p_cqt, p_chord)
-    >>> data = pump.transform('/my/audio/file.mp3', '/my/jams/annotation.jams')
+    >>> data = pump.transform(audio_f='/my/audio/file.mp3',
+    ...                       jam='/my/jams/annotation.jams')
+
+    Or use the call interface:
+
+    >>> data = pump(audio_f='/my/audio/file.mp3',
+    ...             jam='/my/jams/annotation.jams')
+
+    Or apply to audio in memory, and without existing annotations:
+
+    >>> y, sr = librosa.load('/my/audio/file.mp3')
+    >>> data = pump(y=y, sr=sr)
 
     Access all the fields produced by this pump:
 
@@ -92,10 +60,6 @@ class Pump(object):
 
     >>> pump['chord'].fields
     {'chord/chord': Tensor(shape=(None, 170), dtype=<class 'bool'>)}
-
-    See Also
-    --------
-    transform
     '''
 
     def __init__(self, *ops):
@@ -124,12 +88,13 @@ class Pump(object):
                                  .format(op))
 
         if op.name in self.opmap:
-            raise ParameterError('Duplicate operator name detected: {}'.format(op))
+            raise ParameterError('Duplicate operator name detected: '
+                                 '{}'.format(op))
 
         self.opmap[op.name] = op
         self.ops.append(op)
 
-    def transform(self, audio_f, jam=None):
+    def transform(self, audio_f=None, jam=None, y=None, sr=None):
         '''Apply the transformations to an audio file, and optionally JAMS object.
 
         Parameters
@@ -142,13 +107,51 @@ class Pump(object):
 
             If provided, this will provide data for task transformers.
 
+        y : np.ndarray
+        sr : number > 0
+            If provided, operate directly on an existing audio buffer `y` at
+            sampling rate `sr` rather than load from `audio_f`.
+
         Returns
         -------
         data : dict
             Data dictionary containing the transformed audio (and annotations)
+
+        Raises
+        ------
+        ParameterError
+            At least one of `audio_f` or `(y, sr)` must be provided.
+
         '''
 
-        return transform(audio_f, jam, *self.ops)
+        if y is None:
+            if audio_f is None:
+                raise ParameterError('At least one of `y` or `audio_f` '
+                                     'must be provided')
+
+            # Load the audio
+            y, sr = librosa.load(audio_f, sr=sr, mono=True)
+
+        if sr is None:
+            raise ParameterError('If audio is provided as `y`, you must '
+                                 'specify the sampling rate as sr=')
+
+        if jam is None:
+            jam = jams.JAMS()
+            jam.file_metadata.duration = librosa.get_duration(y=y, sr=sr)
+
+        # Load the jams
+        if not isinstance(jam, jams.JAMS):
+            jam = jams.load(jam)
+
+        data = dict()
+
+        for op in self.ops:
+            if isinstance(op, BaseTaskTransformer):
+                data.update(op.transform(jam))
+            elif isinstance(op, FeatureExtractor):
+                data.update(op.transform(y, sr))
+        return data
 
     def sampler(self, n_samples, duration, random_state=None):
         '''Construct a sampler object for this pump's operators.
@@ -212,3 +215,6 @@ class Pump(object):
 
     def __getitem__(self, key):
         return self.opmap.get(key)
+
+    def __call__(self, *args, **kwargs):
+        return self.transform(*args, **kwargs)
