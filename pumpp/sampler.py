@@ -97,7 +97,7 @@ class Sampler(object):
         Parameters
         ----------
         data : dict
-            A data dict as produced by pumpp.transform
+            A data dict as produced by pumpp.Pump.transform
 
         interval : slice
             The time interval to sample

@@ -40,11 +40,15 @@ be easily consumed by statistical algorithms.  Some desired features:
 >>> p_chord = pumpp.task.SimpleChordTransformer(sr=sr, hop_length=hop_length)
 
 >>> # Collect the operators in a pump
->>> P = pumpp.Pump(p_cqt, p_beat, p_chord)
+>>> pump = pumpp.Pump(p_cqt, p_beat, p_chord)
 
 >>> # Apply the extractors to generate training data
->>> data = P.transform(audio_f, jams_f)
+>>> data = pump(audio_f=audio_f, jam=jams_fjams_f)
 
 >>> # Or test data
->>> test_data = P.transform('/my/test/audio.ogg')
+>>> test_data = pump(audio_f='/my/test/audio.ogg')
+
+>>> # Or in-memory
+>>> y, sr = librosa.load(audio_f)
+>>> test_data = pump(y=y, sr=sr)
 ```
