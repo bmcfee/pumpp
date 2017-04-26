@@ -5,8 +5,10 @@
 import pytest
 import numpy as np
 
-import pumpp
+import librosa
 import jams
+
+import pumpp
 
 
 @pytest.fixture(params=[11025, 22050])
@@ -26,8 +28,10 @@ def jam(request):
     return request.param
 
 
-@pytest.mark.parametrize('audio_f', ['tests/data/test.ogg'])
-def test_transform(audio_f, jam, sr, hop_length):
+@pytest.mark.parametrize('audio_f', [None, 'tests/data/test.ogg'])
+@pytest.mark.parametrize('y', [None, 'tests/data/test.ogg'])
+@pytest.mark.parametrize('sr2', [None, 22050, 44100])
+def test_pump(audio_f, jam, y, sr, sr2, hop_length):
 
     ops = [pumpp.feature.STFT(name='stft', sr=sr,
                               hop_length=hop_length,
@@ -43,62 +47,41 @@ def test_transform(audio_f, jam, sr, hop_length):
                                              namespace='tag_open',
                                              labels=['rock', 'jazz'])]
 
-    data = pumpp.transform(audio_f, jam, *ops)
+    P = pumpp.Pump(*ops)
+    if audio_f is None and y is None:
+        # no input
+        with pytest.raises(pumpp.ParameterError):
+            data = P.transform(audio_f=audio_f, jam=jam, y=y, sr=sr2)
+    elif y is not None and sr2 is None:
+        # input buffer, but no sampling rate
+        y = librosa.load(y, sr=sr2)[0]
+        with pytest.raises(pumpp.ParameterError):
+            data = P.transform(audio_f=audio_f, jam=jam, y=y, sr=sr2)
+    elif y is not None:
+        y = librosa.load(y, sr=sr2)[0]
+        data = P.transform(audio_f=audio_f, jam=jam, y=y, sr=sr2)
+    else:
+        data = P.transform(audio_f=audio_f, jam=jam, y=y, sr=sr2)
 
-    # Fields we should have:
-    assert set(data.keys()) == set(['stft/mag', 'stft/phase',
-                                    'beat/beat', 'beat/downbeat',
-                                    'beat/_valid',
-                                    'beat/mask_downbeat',
-                                    'chord/pitch', 'chord/root', 'chord/bass',
-                                    'chord/_valid',
-                                    'tags/tags', 'tags/_valid'])
+        # Fields we should have:
+        assert set(data.keys()) == set(['stft/mag', 'stft/phase',
+                                        'beat/beat', 'beat/downbeat',
+                                        'beat/_valid',
+                                        'beat/mask_downbeat',
+                                        'chord/pitch', 'chord/root',
+                                        'chord/bass',
+                                        'chord/_valid',
+                                        'tags/tags', 'tags/_valid'])
 
-    # time shapes should be the same for annotations
-    assert data['beat/beat'].shape[1] == data['beat/downbeat'].shape[1]
-    assert data['beat/beat'].shape[1] == data['chord/pitch'].shape[1]
-    assert data['beat/beat'].shape[1] == data['chord/root'].shape[1]
-    assert data['beat/beat'].shape[1] == data['chord/bass'].shape[1]
+        # time shapes should be the same for annotations
+        assert data['beat/beat'].shape[1] == data['beat/downbeat'].shape[1]
+        assert data['beat/beat'].shape[1] == data['chord/pitch'].shape[1]
+        assert data['beat/beat'].shape[1] == data['chord/root'].shape[1]
+        assert data['beat/beat'].shape[1] == data['chord/bass'].shape[1]
 
-    # Audio features can be off by at most a frame
-    assert (np.abs(data['stft/mag'].shape[1] - data['beat/beat'].shape[1])
-            * hop_length / float(sr)) <= 0.05
-    pass
-
-
-@pytest.mark.parametrize('audio_f', ['tests/data/test.ogg'])
-def test_pump(audio_f, jam, sr, hop_length):
-
-    ops = [pumpp.feature.STFT(name='stft', sr=sr,
-                              hop_length=hop_length,
-                              n_fft=2*hop_length),
-
-           pumpp.task.BeatTransformer(name='beat', sr=sr,
-                                      hop_length=hop_length),
-
-           pumpp.task.ChordTransformer(name='chord', sr=sr,
-                                       hop_length=hop_length),
-
-           pumpp.task.StaticLabelTransformer(name='tags',
-                                             namespace='tag_open',
-                                             labels=['rock', 'jazz'])]
-
-    data1 = pumpp.transform(audio_f, jam, *ops)
-
-    pump = pumpp.Pump(*ops)
-    data2 = pump.transform(audio_f, jam)
-
-    assert data1.keys() == data2.keys()
-
-    for key in data1:
-        assert np.allclose(data1[key], data2[key])
-
-    fields = dict()
-    for op in ops:
-        fields.update(**op.fields)
-        assert pump[op.name] == op
-
-    assert pump.fields == fields
+        # Audio features can be off by at most a frame
+        assert (np.abs(data['stft/mag'].shape[1] - data['beat/beat'].shape[1])
+                * hop_length / float(sr)) <= 0.05
 
 
 @pytest.mark.parametrize('audio_f', ['tests/data/test.ogg'])

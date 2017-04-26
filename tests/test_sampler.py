@@ -52,7 +52,8 @@ def data(ops):
     audio_f = 'tests/data/test.ogg'
     jams_f = 'tests/data/test.jams'
 
-    return pumpp.transform(audio_f, jams_f, *ops)
+    P = pumpp.Pump(*ops)
+    return P.transform(audio_f=audio_f, jam=jams_f)
 
 
 @pytest.fixture(params=[4, 16, None], scope='module')
