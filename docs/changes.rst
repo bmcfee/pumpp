@@ -1,6 +1,13 @@
 Changes
 -------
 
+0.2.0
+=====
+- `#65`_ Removed old-style (function) transform API in favor of object interface
+- `#65`_ Support in-memory analysis
+
+.. _#65: https://github.com/bmcfee/pumpp/pull/65
+
 0.1.5
 =====
 - `#61`_ Fixed an alignment bug in feature extractors
