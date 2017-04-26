@@ -48,6 +48,7 @@ def test_pump(audio_f, jam, y, sr, sr2, hop_length):
                                              labels=['rock', 'jazz'])]
 
     P = pumpp.Pump(*ops)
+
     if audio_f is None and y is None:
         # no input
         with pytest.raises(pumpp.ParameterError):
@@ -61,18 +62,26 @@ def test_pump(audio_f, jam, y, sr, sr2, hop_length):
         y = librosa.load(y, sr=sr2)[0]
         data = P.transform(audio_f=audio_f, jam=jam, y=y, sr=sr2)
     else:
+
+        fields = set(['stft/mag',
+                      'stft/phase',
+                      'beat/beat',
+                      'beat/downbeat',
+                      'beat/mask_downbeat',
+                      'chord/pitch',
+                      'chord/root',
+                      'chord/bass',
+                      'tags/tags'])
+
+        valids = set(['beat/_valid', 'chord/_valid', 'tags/_valid'])
+
+        assert set(P.fields.keys()) == fields
+
         data = P.transform(audio_f=audio_f, jam=jam, y=y, sr=sr2)
         data2 = P(audio_f=audio_f, jam=jam, y=y, sr=sr2)
 
         # Fields we should have:
-        assert set(data.keys()) == set(['stft/mag', 'stft/phase',
-                                        'beat/beat', 'beat/downbeat',
-                                        'beat/_valid',
-                                        'beat/mask_downbeat',
-                                        'chord/pitch', 'chord/root',
-                                        'chord/bass',
-                                        'chord/_valid',
-                                        'tags/tags', 'tags/_valid'])
+        assert set(data.keys()) == fields | valids
 
         # time shapes should be the same for annotations
         assert data['beat/beat'].shape[1] == data['beat/downbeat'].shape[1]

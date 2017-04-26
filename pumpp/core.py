@@ -7,7 +7,6 @@ Core functionality
     :toctree: generated/
 
     Pump
-    transform
 '''
 
 import librosa
