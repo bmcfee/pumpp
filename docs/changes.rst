@@ -1,6 +1,15 @@
 Changes
 -------
 
+0.2.1
+=====
+
+- `#68`_ Fixed a frame alignment error in task transformers
+- `#66`_ Remove warnings for improperly cast STFT data
+
+.. _#68: https://github.com/bmcfee/pumpp/pull/68
+.. _#66: https://github.com/bmcfee/pumpp/pull/66
+
 0.2.0
 =====
 - `#65`_ Removed old-style (function) transform API in favor of object interface
