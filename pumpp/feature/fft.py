@@ -68,7 +68,7 @@ class STFT(FeatureExtractor):
         n_frames = self.n_frames(get_duration(y=y, sr=self.sr))
 
         D = stft(y, hop_length=self.hop_length,
-                 n_fft=self.n_fft, dtype=np.float32)
+                 n_fft=self.n_fft)
 
         D = fix_length(D, n_frames)
 
@@ -76,8 +76,8 @@ class STFT(FeatureExtractor):
         if self.log:
             mag = amplitude_to_db(mag, ref=np.max)
 
-        return {'mag': mag.T[self.idx],
-                'phase': np.angle(phase.T)[self.idx]}
+        return {'mag': mag.T[self.idx].astype(np.float32),
+                'phase': np.angle(phase.T)[self.idx].astype(np.float32)}
 
 
 class STFTPhaseDiff(STFT):
