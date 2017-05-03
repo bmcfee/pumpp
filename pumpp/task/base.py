@@ -154,7 +154,11 @@ class BaseTaskTransformer(Scope):
         n_total = int(time_to_frames(duration, sr=self.sr,
                                      hop_length=self.hop_length))
 
-        target = np.empty((max(n_total, 1+int(frames.max())), values.shape[1]),
+        n_alloc = n_total
+        if np.any(frames):
+            n_alloc = max(n_total, 1 + int(frames.max()))
+
+        target = np.empty((n_alloc, values.shape[1]),
                           dtype=dtype)
 
         target.fill(fill_value(dtype))
@@ -206,7 +210,12 @@ class BaseTaskTransformer(Scope):
 
         values = values.astype(dtype)
 
-        target = np.empty((max(n_total, 1+int(frames.max())), values.shape[1]),
+        n_alloc = n_total
+        if np.any(frames):
+            n_alloc = max(n_total, 1 + int(frames.max()))
+
+        target = np.empty((n_alloc, values.shape[1]),
+
                           dtype=dtype)
 
         target.fill(fill)
