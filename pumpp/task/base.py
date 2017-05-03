@@ -154,14 +154,15 @@ class BaseTaskTransformer(Scope):
         n_total = int(time_to_frames(duration, sr=self.sr,
                                      hop_length=self.hop_length))
 
-        target = np.empty((n_total, values.shape[1]), dtype=dtype)
+        target = np.empty((max(n_total, 1+int(frames.max())), values.shape[1]),
+                          dtype=dtype)
 
         target.fill(fill_value(dtype))
         values = values.astype(dtype)
         for column, event in zip(values, frames):
             target[event] += column
 
-        return target
+        return target[:n_total]
 
     def encode_intervals(self, duration, intervals, values, dtype=np.bool,
                          multi=True, fill=None):
@@ -205,7 +206,8 @@ class BaseTaskTransformer(Scope):
 
         values = values.astype(dtype)
 
-        target = np.empty((n_total, values.shape[1]), dtype=dtype)
+        target = np.empty((max(n_total, 1+int(frames.max())), values.shape[1]),
+                          dtype=dtype)
 
         target.fill(fill)
 
@@ -215,7 +217,7 @@ class BaseTaskTransformer(Scope):
             else:
                 target[interval[0]:interval[1]] = column
 
-        return target
+        return target[:n_total]
 
     def decode_events(self, encoded):
         '''Decode labeled events into (time, value) pairs
