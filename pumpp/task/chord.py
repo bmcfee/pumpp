@@ -142,7 +142,7 @@ class ChordTransformer(BaseTaskTransformer):
             sounding.
         '''
         # Construct a blank annotation with mask = 0
-        intervals, chords = ann.data.to_interval_values()
+        intervals, chords = ann.to_interval_values()
 
         # Get the dtype for root/bass
         if self.sparse:
@@ -465,7 +465,7 @@ class ChordTagTransformer(BaseTaskTransformer):
                 A time-varying binary encoding of the chords
         '''
 
-        intervals, values = ann.data.to_interval_values()
+        intervals, values = ann.to_interval_values()
 
         chords = []
         for v in values:

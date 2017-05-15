@@ -60,7 +60,7 @@ class BeatTransformer(BaseTaskTransformer):
 
         mask_downbeat = False
 
-        intervals, values = ann.data.to_interval_values()
+        intervals, values = ann.to_interval_values()
         values = np.asarray(values)
 
         beat_events = intervals[:, 0]
