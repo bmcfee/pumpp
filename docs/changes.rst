@@ -1,6 +1,13 @@
 Changes
 -------
 
+0.2.2
+=====
+
+- `#70`_ Future-proofing against jams 0.3
+
+.. _#70: https://github.com/bmcfee/pumpp/pull/70
+
 0.2.1
 =====
 
