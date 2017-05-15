@@ -457,8 +457,8 @@ def test_task_vector_present(target_dimension, data_dimension, name):
                                          name=name)
 
     ann = jams.Annotation(namespace='vector')
-    ann.append(time=0, duration=1,
-               value=list(np.random.randn(data_dimension)))
+    value = list(np.random.randn(data_dimension))
+    ann.append(time=0, duration=1, value=value)
 
     jam.annotations.append(ann)
 
@@ -471,7 +471,7 @@ def test_task_vector_present(target_dimension, data_dimension, name):
     assert output[var_name].shape[1] == target_dimension
 
     # Make sure it's empty
-    assert np.allclose(output[var_name], ann.data.loc[0].value)
+    assert np.allclose(output[var_name], value)
 
     for key in trans.fields:
         assert shape_match(output[key].shape, trans.fields[key].shape)

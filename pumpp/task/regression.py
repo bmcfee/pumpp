@@ -82,7 +82,8 @@ class VectorTransformer(BaseTaskTransformer):
         DataError
             If the input dimension does not match
         '''
-        vector = np.asarray(ann.data.value.iloc[0], dtype=self.dtype)
+        _, values = ann.to_interval_values()
+        vector = np.asarray(values[0], dtype=self.dtype)
         if len(vector) != self.dimension:
             raise DataError('vector dimension({:0}) '
                             '!= self.dimension({:1})'

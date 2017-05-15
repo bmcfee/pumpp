@@ -85,7 +85,7 @@ class DynamicLabelTransformer(BaseTaskTransformer):
             data['tags'] : np.ndarray, shape=(n, n_labels)
                 A time-varying binary encoding of the labels
         '''
-        intervals, values = ann.data.to_interval_values()
+        intervals, values = ann.to_interval_values()
 
         # Suppress all intervals not in the encoder
         tags = []
@@ -167,7 +167,7 @@ class StaticLabelTransformer(BaseTaskTransformer):
                 A static binary encoding of the labels
         '''
         intervals = np.asarray([[0, 1]])
-        values = list(ann.data.value)
+        values = list([obs.value for obs in ann])
         intervals = np.tile(intervals, [len(values), 1])
 
         # Suppress all intervals not in the encoder
