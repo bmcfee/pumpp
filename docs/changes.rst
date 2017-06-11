@@ -1,6 +1,13 @@
 Changes
 -------
 
+0.2.3
+=====
+- `#74`_ Implemented segmentation agreement task
+
+.. _#74: https://github.com/bmcfee/pumpp/pull/74
+
+
 0.2.2
 =====
 
