@@ -591,6 +591,72 @@ def test_task_beat_absent(SR, HOP_LENGTH):
         assert type_match(output[key].dtype, trans.fields[key].dtype)
 
 
+def test_task_structure_fields():
+
+    trans = pumpp.task.StructureTransformer(name='struct')
+
+    assert set(trans.fields.keys()) == set(['struct/agree'])
+
+    assert trans.fields['struct/agree'].shape == (None, None)
+    assert trans.fields['struct/agree'].dtype is np.bool
+
+
+def test_task_structure_present(SR, HOP_LENGTH):
+    jam = jams.JAMS(file_metadata=dict(duration=4.0))
+
+    ann = jams.Annotation(namespace='segment_open')
+
+    ann.append(time=0, duration=1.0, value='alpha')
+    ann.append(time=1.0, duration=0.5, value='beta')
+    ann.append(time=1.5, duration=1.5, value='alpha')
+    ann.append(time=3, duration=1.0, value='gamma')
+
+    jam.annotations.append(ann)
+    trans = pumpp.task.StructureTransformer(name='struct',
+                                            sr=SR,
+                                            hop_length=HOP_LENGTH)
+
+    output = trans.transform(jam)
+
+    # Mask should be true
+    assert np.all(output['struct/_valid'] == [0, 4 * trans.sr //
+                                              trans.hop_length])
+
+    y = output['struct/agree']
+
+    # Check the shape
+    assert y.shape == (1, 4 * (SR // HOP_LENGTH), 4 * (SR // HOP_LENGTH))
+
+    for key in trans.fields:
+        assert shape_match(output[key].shape[1:], trans.fields[key].shape)
+        assert type_match(output[key].dtype, trans.fields[key].dtype)
+
+
+def test_task_structure_absent(SR, HOP_LENGTH):
+    jam = jams.JAMS(file_metadata=dict(duration=4.0))
+
+    trans = pumpp.task.StructureTransformer(name='struct',
+                                            sr=SR,
+                                            hop_length=HOP_LENGTH)
+
+    output = trans.transform(jam)
+
+    # Mask should be true
+    assert not np.any(output['struct/_valid'])
+
+    y = output['struct/agree']
+
+    # Check the shape
+    assert y.shape == (1, 4 * (SR // HOP_LENGTH), 4 * (SR // HOP_LENGTH))
+
+    # With a null structure annotation, all frames are similar
+    assert np.all(y)
+
+    for key in trans.fields:
+        assert shape_match(output[key].shape[1:], trans.fields[key].shape)
+        assert type_match(output[key].dtype, trans.fields[key].dtype)
+
+
 def test_transform_noprefix():
 
     labels = ['foo', 'bar', 'baz']

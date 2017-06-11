@@ -75,6 +75,21 @@ def ann_chord():
     return ann
 
 
+@pytest.fixture()
+def ann_segment():
+
+    ann = jams.Annotation(namespace='segment_open', duration=5)
+
+    for t, c in [(0, 'A'),
+                 (1, 'B'),
+                 (2, 'A'),
+                 (3, 'B'),
+                 (4, 'C')]:
+        ann.append(time=t, duration=1, value=c)
+
+    return ann
+
+
 def test_decode_tags_dynamic_hard(sr, hop_length, ann_tag):
 
     # This test encodes an annotation, decodes it, and then re-encodes it
@@ -320,3 +335,16 @@ def test_decode_chordtag_soft_dense_sparse(sr, hop_length, ann_chord):
     dense_positions = np.where(data['chord'])[1]
     sparse_positions = data2['chord'][:, 0]
     assert np.allclose(dense_positions, sparse_positions)
+
+
+@pytest.mark.xfail(raises=NotImplementedError)
+def test_decode_structure(sr, hop_length, ann_segment):
+
+    tc = pumpp.task.StructureTransformer('struct', sr=sr,
+                                         hop_length=hop_length)
+
+    data = tc.transform_annotation(ann_segment, ann_segment.duration)
+    inverse = tc.inverse(data['agree'], duration=ann_segment.duration)
+    data2 = tc.transform_annotation(inverse, ann_segment.duration)
+
+    assert np.allclose(data['agree'], data2['agree'])

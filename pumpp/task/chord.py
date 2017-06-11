@@ -64,7 +64,7 @@ class ChordTransformer(BaseTaskTransformer):
 
     See Also
     --------
-    SimpleTransformer
+    SimpleChordTransformer
     '''
     def __init__(self, name='chord', sr=22050, hop_length=512, sparse=False):
         '''Initialize a chord task transformer'''
