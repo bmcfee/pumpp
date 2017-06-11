@@ -14,6 +14,7 @@ Task transformations
     VectorTransformer
     DynamicLabelTransformer
     StaticLabelTransformer
+    StructureTransformer
 '''
 
 from .base import *
@@ -21,3 +22,4 @@ from .chord import *
 from .event import *
 from .regression import *
 from .tags import *
+from .structure import *
