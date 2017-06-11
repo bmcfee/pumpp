@@ -75,6 +75,6 @@ class StructureTransformer(BaseTaskTransformer):
         # Make the agreement matrix
         return {'agree': np.equal.outer(labels, labels)}
 
-    def inverse(self, pitch, root, bass, duration=None):
+    def inverse(self, agree, duration=None):
 
         raise NotImplementedError('Segment agreement cannot be inverted')
