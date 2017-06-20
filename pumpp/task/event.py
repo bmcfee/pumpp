@@ -5,10 +5,12 @@
 import numpy as np
 
 import jams
+from mir_eval.util import boundaries_to_intervals, adjust_intervals
+from sklearn.preprocessing import LabelBinarizer, LabelEncoder
 
 from .base import BaseTaskTransformer
 
-__all__ = ['BeatTransformer']
+__all__ = ['BeatTransformer', 'BeatPositionTransformer']
 
 
 class BeatTransformer(BaseTaskTransformer):
@@ -109,5 +111,147 @@ class BeatTransformer(BaseTaskTransformer):
             else:
                 value += 1
             ann.append(time=beat, duration=0, value=value)
+
+        return ann
+
+
+class BeatPositionTransformer(BaseTaskTransformer):
+    '''Encode beat- and downbeat-annotations as labeled intervals.
+
+    This transformer assumes that the `value` field of a beat annotation
+    encodes its metrical position (1, 2, 3, 4, ...).
+
+    A `value` of 0 indicates that the beat does not belong to a bar,
+    and should be used to indicate pickup beats.
+
+    Beat position strings are coded as SUBDIVISION/POSITION
+
+    For example, in 4/4 time, the 2 beat would be coded as "04/02".
+    '''
+    def __init__(self, name, namespace, max_divisions=12,
+                 sr=22050, hop_length=512, sparse=False):
+
+        super(BeatPositionTransformer, self).__init__(name=name,
+                                                      namespace='beat',
+                                                      sr=sr,
+                                                      hop_length=hop_length)
+
+        # Make the vocab set
+        self.max_divisions = max_divisions
+        labels = self.vocabulary()
+        self.sparse = sparse
+
+        if self.sparse:
+            self.encoder = LabelEncoder()
+        else:
+            self.encoder = LabelBinarizer()
+        self.encoder.fit(labels)
+        self._classes = set(self.encoder.classes_)
+
+        if self.sparse:
+            self.register('position', [None, 1], np.int)
+        else:
+            self.register('position', [None, len(self._classes)], np.bool)
+
+    def vocabulary(self):
+        states = ['X']
+        for d in range(1, self.max_divisions + 1):
+            for n in range(1, d + 1):
+                states.append('{:02d}/{:02d}'.format(d, n))
+        return states
+
+    def transform_annotation(self, ann, duration):
+        '''Transform an annotation to the beat-position encoding
+
+        Parameters
+        ----------
+        ann : jams.Annotation
+            The annotation to convert
+
+        duration : number > 0
+            The duration of the track
+
+        Returns
+        -------
+        data : dict
+            data['position'] : np.ndarray, shape=(n, n_labels) or (n, 1)
+                A time-varying label encoding of beat position
+        '''
+
+        # 1. get all the events
+        # 2. find all the downbeats
+        # 3. map each downbeat to a subdivision counter
+        #       number of beats until the next downbeat
+        # 4. pad out events to intervals
+        # 5. encode each beat interval to its position
+
+        boundaries, values = ann.to_interval_values()
+        # Convert to intervals and span the duration
+        # FIXME: padding at the end of track does not propagate the right label
+        # this is an artifact of inferring end-of-track from boundaries though
+        intervals = boundaries_to_intervals(boundaries[:, 0])
+        intervals, values = adjust_intervals(intervals, values,
+                                             t_min=0,
+                                             t_max=duration,
+                                             start_label=0,
+                                             end_label=0)
+
+        values = np.asarray(values, dtype=int)
+        downbeats = np.flatnonzero(values == 1)
+
+        position = []
+        for i, v in enumerate(values):
+            # If the value is a 0, mark it as X and move on
+            if v == 0:
+                position.extend(self.encoder.transform(['X']))
+                continue
+
+            # Otherwise, let's try to find the surrounding downbeats
+            prev_idx = np.searchsorted(downbeats, i, side='right') - 1
+            next_idx = 1 + prev_idx
+
+            if prev_idx >= 0 and next_idx < len(downbeats):
+                # In this case, the subdivision is well-defined
+                subdivision = downbeats[next_idx] - downbeats[prev_idx]
+            elif prev_idx < 0 and next_idx < len(downbeats):
+                subdivision = downbeats[0]
+            elif next_idx >= len(downbeats):
+                subdivision = len(values) - downbeats[prev_idx] - 1
+
+            if subdivision > self.max_divisions:
+                position.extend(self.encoder.transform(['X']))
+            else:
+                position.extend(self.encoder.transform(['{:02d}/{:02d}'.format(subdivision, v)]))
+
+        dtype = self.fields[self.scope('position')].dtype
+
+        position = np.asarray(position)
+        if self.sparse:
+            position = position[:, np.newaxis]
+
+        target = self.encode_intervals(duration, intervals, position,
+                                       multi=False, dtype=dtype)
+        return {'position': target}
+
+    def inverse(self, encoded, duration=None):
+        '''Inverse transformation'''
+
+        ann = jams.Annotation(self.namespace, duration=duration)
+
+        for start, end, value in self.decode_intervals(encoded,
+                                                       duration=duration,
+                                                       multi=False,
+                                                       sparse=self.sparse):
+            if self.sparse:
+                value_dec = self.encoder.inverse_transform(value)
+            else:
+                value_dec = self.encoder.inverse_transform(np.atleast_2d(value))
+
+            for vd in value_dec:
+                if vd == 'X':
+                    ann.append(time=start, duration=end-start, value=0)
+                else:
+                    pos = vd[1+vd.rindex('/'):]
+                    ann.append(time=start, duration=end-start, value=int(pos))
 
         return ann
