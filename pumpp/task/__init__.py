@@ -8,6 +8,7 @@ Task transformations
 
     BaseTaskTransformer
     BeatTransformer
+    BeatPositionTransformer
     ChordTransformer
     SimpleChordTransformer
     ChordTagTransformer
@@ -19,7 +20,7 @@ Task transformations
 
 from .base import *
 from .chord import *
-from .event import *
+from .beat import *
 from .regression import *
 from .tags import *
 from .structure import *
