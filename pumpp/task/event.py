@@ -243,22 +243,4 @@ class BeatPositionTransformer(BaseTaskTransformer):
     def inverse(self, encoded, duration=None):
         '''Inverse transformation'''
 
-        ann = jams.Annotation(self.namespace, duration=duration)
-
-        for start, end, value in self.decode_intervals(encoded,
-                                                       duration=duration,
-                                                       multi=False,
-                                                       sparse=self.sparse):
-            if self.sparse:
-                value_dec = self.encoder.inverse_transform(value)
-            else:
-                value_dec = self.encoder.inverse_transform(np.atleast_2d(value))
-
-            for vd in value_dec:
-                if vd == 'X':
-                    ann.append(time=start, duration=end-start, value=0)
-                else:
-                    pos = vd[1+vd.rindex('/'):]
-                    ann.append(time=start, duration=end-start, value=int(pos))
-
-        return ann
+        raise NotImplementedError

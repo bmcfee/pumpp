@@ -348,3 +348,17 @@ def test_decode_structure(sr, hop_length, ann_segment):
     data2 = tc.transform_annotation(inverse, ann_segment.duration)
 
     assert np.allclose(data['agree'], data2['agree'])
+
+
+@pytest.mark.xfail(raises=NotImplementedError)
+def test_decode_beatpos(sr, hop_length, ann_beat):
+
+    tc = pumpp.task.BeatPositionTransformer('beat', sr=sr,
+                                            max_divisions=12,
+                                            hop_length=hop_length)
+
+    data = tc.transform_annotation(ann_beat, ann_beat.duration)
+    inverse = tc.inverse(data['position'], duration=ann_beat.duration)
+    data2 = tc.transform_annotation(inverse, ann_beat.duration)
+
+    assert np.allclose(data['position'], data2['position'])
