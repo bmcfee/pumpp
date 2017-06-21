@@ -29,6 +29,11 @@ def SPARSE(request):
     return request.param
 
 
+@pytest.fixture(params=[4, 5, 6])
+def MAX_DIVISIONS(request):
+    return request.param
+
+
 def shape_match(sh1, sh2):
 
     for i, j in zip(sh1, sh2):
@@ -750,7 +755,9 @@ def test_transform_coerce():
                                             raises=pumpp.ParameterError)])
 def test_task_chord_tag_fields(vocab, vocab_size, SPARSE):
 
-    trans = pumpp.task.ChordTagTransformer(name='mychord', vocab=vocab, sparse=SPARSE)
+    trans = pumpp.task.ChordTagTransformer(name='mychord',
+                                           vocab=vocab,
+                                           sparse=SPARSE)
 
     assert set(trans.fields.keys()) == set(['mychord/chord'])
 
@@ -878,7 +885,6 @@ def test_task_chord_tag_absent(SR, HOP_LENGTH, VOCAB, SPARSE):
 def test_task_beatpos_fields(max_divisions, n_states, SPARSE):
 
     trans = pumpp.task.BeatPositionTransformer(name='mybeat',
-                                               namespace='beat',
                                                max_divisions=max_divisions,
                                                sparse=SPARSE)
 
@@ -890,3 +896,73 @@ def test_task_beatpos_fields(max_divisions, n_states, SPARSE):
     else:
         assert trans.fields['mybeat/position'].shape == (None, n_states)
         assert trans.fields['mybeat/position'].dtype is np.bool
+
+
+def test_task_beatpos_absent(SR, HOP_LENGTH, MAX_DIVISIONS, SPARSE):
+    jam = jams.JAMS(file_metadata=dict(duration=4.0))
+    trans = pumpp.task.BeatPositionTransformer(name='beat',
+                                               max_divisions=MAX_DIVISIONS,
+                                               sr=SR, hop_length=HOP_LENGTH,
+                                               sparse=SPARSE)
+
+    output = trans.transform(jam)
+
+    assert not np.any(output['beat/_valid'])
+
+    Y_pred = trans.encoder.inverse_transform(output['beat/position'][0])
+
+    assert all([_ == 'X' for _ in Y_pred])
+
+    for key in trans.fields:
+        assert shape_match(output[key].shape[1:], trans.fields[key].shape)
+        assert type_match(output[key].dtype, trans.fields[key].dtype)
+
+
+def test_task_beatpos_present(SR, HOP_LENGTH, MAX_DIVISIONS, SPARSE):
+
+    jam = jams.JAMS(file_metadata=dict(duration=30.0))
+
+    ann = jams.Annotation(namespace='beat')
+
+    Y_true = [0, 0, 0,              # 0:3 = X
+              1, 2, 3,              # 3:6 = 1/2/3
+              1, 2, 3, 4,           # 6:10 = 1/2/3/4
+              1, 2, 3, 4, 5,        # 10:15 = X or 1/2/3/4/5
+              1, 2, 3, 4, 5, 6,     # 15:21 = X, since there's no last downbeat
+              0, 0, 0]              # 21:24 = X
+
+    Y_true_out = ['X'] * len(Y_true)
+    if MAX_DIVISIONS >= 3:
+        Y_true_out[3:6] = ['{:02d}/{:02d}'.format(3, i+1) for i in range(3)]
+    if MAX_DIVISIONS >= 4:
+        Y_true_out[6:10] = ['{:02d}/{:02d}'.format(4, i+1) for i in range(4)]
+    if MAX_DIVISIONS >= 5:
+        Y_true_out[10:15] = ['{:02d}/{:02d}'.format(5, i+1) for i in range(5)]
+
+    for i, y in enumerate(Y_true):
+        ann.append(time=i, duration=0, value=y)
+
+    jam.annotations.append(ann)
+
+    trans = pumpp.task.BeatPositionTransformer(name='beat',
+                                               max_divisions=MAX_DIVISIONS,
+                                               sr=SR, hop_length=HOP_LENGTH,
+                                               sparse=SPARSE)
+
+    output = trans.transform(jam)
+
+    assert np.all(output['beat/_valid'] == [0, 30 *
+                                            trans.sr // trans.hop_length])
+
+    Y_pred = trans.encoder.inverse_transform(output['beat/position'][0])
+
+    if SPARSE:
+        Y_pred = Y_pred[:, 0]
+
+    # This trimming is here because duration is inferred from the track,
+    # not the ytrue_out
+    Y_expected = np.repeat(Y_true_out,
+                           (SR // HOP_LENGTH),
+                           axis=0).astype(Y_pred.dtype)
+    for i, (y1, y2) in enumerate(zip(Y_pred, Y_expected)):
+        assert y1 == y2

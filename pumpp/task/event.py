@@ -129,7 +129,7 @@ class BeatPositionTransformer(BaseTaskTransformer):
 
     For example, in 4/4 time, the 2 beat would be coded as "04/02".
     '''
-    def __init__(self, name, namespace, max_divisions=12,
+    def __init__(self, name, max_divisions=12,
                  sr=22050, hop_length=512, sparse=False):
 
         super(BeatPositionTransformer, self).__init__(name=name,
@@ -191,9 +191,12 @@ class BeatPositionTransformer(BaseTaskTransformer):
 
         boundaries, values = ann.to_interval_values()
         # Convert to intervals and span the duration
-        # FIXME: padding at the end of track does not propagate the right label
+        # padding at the end of track does not propagate the right label
         # this is an artifact of inferring end-of-track from boundaries though
-        intervals = boundaries_to_intervals(boundaries[:, 0])
+        boundaries = list(boundaries[:, 0])
+        if boundaries and boundaries[-1] < duration:
+            boundaries.append(duration)
+        intervals = boundaries_to_intervals(boundaries)
         intervals, values = adjust_intervals(intervals, values,
                                              t_min=0,
                                              t_max=duration,
@@ -222,7 +225,7 @@ class BeatPositionTransformer(BaseTaskTransformer):
             elif next_idx >= len(downbeats):
                 subdivision = len(values) - downbeats[prev_idx] - 1
 
-            if subdivision > self.max_divisions:
+            if subdivision > self.max_divisions or subdivision < 1:
                 position.extend(self.encoder.transform(['X']))
             else:
                 position.extend(self.encoder.transform(['{:02d}/{:02d}'.format(subdivision, v)]))
