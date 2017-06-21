@@ -1,6 +1,13 @@
 Changes
 -------
 
+0.2.4
+=====
+- `#76`_ Implemented the beat-position task
+
+.. _#76: https://github.com/bmcfee/pumpp/pull/76
+
+
 0.2.3
 =====
 - `#74`_ Implemented segmentation agreement task
