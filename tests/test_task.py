@@ -866,3 +866,27 @@ def test_task_chord_tag_absent(SR, HOP_LENGTH, VOCAB, SPARSE):
     for key in trans.fields:
         assert shape_match(output[key].shape[1:], trans.fields[key].shape)
         assert type_match(output[key].dtype, trans.fields[key].dtype)
+
+
+@pytest.mark.parametrize('max_divisions, n_states',
+                         [(1, 1+1),
+                          (2, 1+1+2),
+                          (3, 1+1+2+3),
+                          (4, 1+1+2+3+4),
+                          pytest.mark.xfail((None, 1),
+                                            raises=pumpp.ParameterError)])
+def test_task_beatpos_fields(max_divisions, n_states, SPARSE):
+
+    trans = pumpp.task.BeatPositionTransformer(name='mybeat',
+                                               namespace='beat',
+                                               max_divisions=max_divisions,
+                                               sparse=SPARSE)
+
+    assert set(trans.fields.keys()) == set(['mybeat/position'])
+
+    if SPARSE:
+        assert trans.fields['mybeat/position'].shape == (None, 1)
+        assert np.issubdtype(trans.fields['mybeat/position'].dtype, np.int)
+    else:
+        assert trans.fields['mybeat/position'].shape == (None, n_states)
+        assert trans.fields['mybeat/position'].dtype is np.bool

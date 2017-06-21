@@ -9,6 +9,7 @@ from mir_eval.util import boundaries_to_intervals, adjust_intervals
 from sklearn.preprocessing import LabelBinarizer, LabelEncoder
 
 from .base import BaseTaskTransformer
+from ..exceptions import ParameterError
 
 __all__ = ['BeatTransformer', 'BeatPositionTransformer']
 
@@ -137,6 +138,9 @@ class BeatPositionTransformer(BaseTaskTransformer):
                                                       hop_length=hop_length)
 
         # Make the vocab set
+        if not isinstance(max_divisions, int) or max_divisions < 1:
+            raise ParameterError('Invalid max_divisions={}'.format(max_divisions))
+
         self.max_divisions = max_divisions
         labels = self.vocabulary()
         self.sparse = sparse
