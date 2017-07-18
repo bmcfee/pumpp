@@ -112,8 +112,8 @@ class Sampler(Slicer):
             index[0] = self.rng.randint(0, data[key].shape[0])
             index[0] = slice(index[0], index[0] + 1)
 
-            if self._time.get(key, None) is not None:
-                index[self._time[key]] = interval
+            for tdim in self._time[key]:
+                index[tdim] = interval
 
             data_slice[key] = data[key][index]
 

@@ -141,9 +141,11 @@ class Slicer(object):
             raise ParameterError('Operator {} must be a TaskTransformer '
                                  'or FeatureExtractor'.format(operator))
         for key in operator.fields:
-            self._time[key] = None
-            if None in operator.fields[key].shape:
-                self._time[key] = 1 + operator.fields[key].shape.index(None)
+            self._time[key] = []
+            # We add 1 to the dimension here to account for batching
+            for tdim, idx in enumerate(operator.fields[key].shape, 1):
+                if idx is None:
+                    self._time[key].append(tdim)
 
     def data_duration(self, data):
         '''Compute the valid data duration of a dict
@@ -161,8 +163,8 @@ class Slicer(object):
         # Find all the time-like indices of the data
         lengths = []
         for key in self._time:
-            if self._time[key] is not None:
-                lengths.append(data[key].shape[self._time[key]])
+            for idx in self._time.get(key, []):
+                lengths.append(data[key].shape[idx])
 
         return min(lengths)
 
@@ -185,8 +187,8 @@ class Slicer(object):
         data_out = dict()
         for key in data:
             idx = [slice(None)] * data[key].ndim
-            if key in self._time and self._time[key] is not None:
-                idx[self._time[key]] = slice(duration)
+            for tdim in self._time.get(key, []):
+                idx[tdim] = slice(duration)
             data_out[key] = data[key][idx]
 
         return data_out

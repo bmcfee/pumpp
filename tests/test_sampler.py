@@ -98,8 +98,8 @@ def test_sampler(data, ops, n_samples, duration, rng):
         # Now test that shape is preserved in the right way
         for key in datum:
             ref_shape = list(data[key].shape)
-            if sampler._time.get(key, None) is not None:
-                ref_shape[sampler._time[key]] = duration
+            for tdim in sampler._time[key]:
+                ref_shape[tdim] = duration
 
             # Check that all keys have length=1
             assert datum[key].shape[0] == 1
@@ -127,8 +127,8 @@ def test_sequential_sampler(data, ops, duration, stride, rng):
         # Now test that shape is preserved in the right way
         for key in datum:
             ref_shape = list(data[key].shape)
-            if sampler._time.get(key, None) is not None:
-                ref_shape[sampler._time[key]] = duration
+            for tdim in sampler._time[key]:
+                ref_shape[tdim] = duration
 
             # Check that all keys have length=1
             assert datum[key].shape[0] == 1
@@ -144,6 +144,7 @@ def test_slicer():
     scope2 = pumpp.base.Scope('test2')
     scope2.register('first', (None, 5), np.int)
     scope2.register('second', (20, None), np.int)
+    scope2.register('square', (None, None, 3), np.int)
 
     slicer = pumpp.base.Slicer(scope1, scope2)
 
@@ -152,7 +153,8 @@ def test_slicer():
                'test1/second': np.random.randint(0, 7, size=(1, 2, 100)),
                'test1/none': np.random.randint(0, 7, size=(1, 16, 16)),
                'test2/first': np.random.randint(0, 7, size=(1, 9, 5)),
-               'test2/second': np.random.randint(0, 7, (1, 20, 105))}
+               'test2/second': np.random.randint(0, 7, (1, 20, 105)),
+               'test2/square': np.random.randint(0, 7, (1, 20, 20, 3))}
 
     data_out = slicer.crop(data_in)
     assert set(data_out.keys()) == set(data_in.keys())
@@ -171,6 +173,9 @@ def test_slicer():
 
     assert data_out['test2/second'].shape == (1, 20, 8)
     assert np.all(data_out['test2/second'] == data_in['test2/second'][:, :, :8])
+
+    assert data_out['test2/square'].shape == (1, 8, 8, 3)
+    assert np.all(data_out['test2/square'] == data_in['test2/square'][:, :8, :8, :])
 
 
 @pytest.mark.xfail(raises=pumpp.ParameterError)
