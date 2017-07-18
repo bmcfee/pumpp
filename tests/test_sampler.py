@@ -154,8 +154,7 @@ def test_slicer():
                'test1/none': np.random.randint(0, 7, size=(1, 16, 16)),
                'test2/first': np.random.randint(0, 7, size=(1, 9, 5)),
                'test2/second': np.random.randint(0, 7, (1, 20, 105)),
-               'test2/square': np.random.randint(0, 7, (1, 20, 20, 3)),
-               }
+               'test2/square': np.random.randint(0, 7, (1, 20, 20, 3))}
 
     data_out = slicer.crop(data_in)
     assert set(data_out.keys()) == set(data_in.keys())
