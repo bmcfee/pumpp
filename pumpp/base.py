@@ -5,13 +5,13 @@
 from collections import namedtuple, Iterable
 import numpy as np
 
-from .exceptions import *
+from .exceptions import ParameterError
 __all__ = ['Tensor', 'Scope']
 
 # This type is used for storing shape information
 Tensor = namedtuple('Tensor', ['shape', 'dtype'])
 '''
-Apparently you can document namedtuples here
+Multi-dimensional array descriptions: `shape` and `dtype`
 '''
 
 
