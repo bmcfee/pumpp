@@ -16,66 +16,10 @@ from itertools import count
 import six
 import numpy as np
 
-from .base import Scope
+from .base import Slicer
 from .exceptions import ParameterError
 
-__all__ = ['Sampler', 'SequentialSampler', 'Slicer']
-
-
-class Slicer(object):
-    '''Slicer can compute the duration of data with time-like fields,
-    and slice down to the common time index.
-
-    This class serves as a base for Sampler and Pump, and should not
-    be used directly.
-
-    Parameters
-    ----------
-    ops : one or more Scope (TaskTransformer or FeatureExtractor)
-    '''
-    def __init__(self, *ops):
-
-        self._time = dict()
-
-        for operator in ops:
-            self.add(operator)
-
-    def add(self, operator):
-        '''Add an operator to the Slicer
-
-        Parameters
-        ----------
-        operator : Scope (TaskTransformer or FeatureExtractor)
-            The new operator to add
-        '''
-        if not isinstance(operator, Scope):
-            raise ParameterError('Operator {} must be a TaskTransformer '
-                                 'or FeatureExtractor'.format(operator))
-        for key in operator.fields:
-            self._time[key] = None
-            if None in operator.fields[key].shape:
-                self._time[key] = 1 + operator.fields[key].shape.index(None)
-
-    def data_duration(self, data):
-        '''Compute the valid data duration of a dict
-
-        Parameters
-        ----------
-        data : dict
-            As produced by pumpp.transform
-
-        Returns
-        -------
-        length : int
-            The minimum temporal extent of a dynamic observation in data
-        '''
-        # Find all the time-like indices of the data
-        lengths = []
-        for key in self._time:
-            if self._time[key] is not None:
-                lengths.append(data[key].shape[self._time[key]])
-
-        return min(lengths)
+__all__ = ['Sampler', 'SequentialSampler']
 
 
 class Sampler(Slicer):

@@ -133,3 +133,41 @@ def test_sequential_sampler(data, ops, duration, stride, rng):
             # Check that all keys have length=1
             assert datum[key].shape[0] == 1
             assert list(datum[key].shape[1:]) == ref_shape[1:]
+
+
+def test_slicer():
+    scope1 = pumpp.base.Scope('test1')
+    scope1.register('first', (None, 10), np.int)
+    scope1.register('second', (2, None), np.int)
+    scope1.register('none', (16, 16), np.int)
+
+    scope2 = pumpp.base.Scope('test2')
+    scope2.register('first', (None, 5), np.int)
+    scope2.register('second', (20, None), np.int)
+
+    slicer = pumpp.base.Slicer(scope1, scope2)
+
+    # Minimum time for all of these is 8
+    data_in = {'test1/first': np.random.randint(0, 7, size=(1, 8, 10)),
+               'test1/second': np.random.randint(0, 7, size=(1, 2, 100)),
+               'test1/none': np.random.randint(0, 7, size=(1, 16, 16)),
+               'test2/first': np.random.randint(0, 7, size=(1, 9, 5)),
+               'test2/second': np.random.randint(0, 7, (1, 20, 105))}
+
+    data_out = slicer.crop(data_in)
+    assert set(data_out.keys()) == set(data_in.keys())
+
+    assert data_out['test1/first'].shape == (1, 8, 10)
+    assert np.all(data_out['test1/first'] == data_in['test1/first'][:, :8, :])
+
+    assert data_out['test1/second'].shape == (1, 2, 8)
+    assert np.all(data_out['test1/second'] == data_in['test1/second'][:, :, :8])
+
+    assert data_out['test1/none'].shape == (1, 16, 16)
+    assert np.all(data_out['test1/none'] == data_in['test1/none'])
+
+    assert data_out['test2/first'].shape == (1, 8, 5)
+    assert np.all(data_out['test2/first'] == data_in['test2/first'][:, :8, :])
+
+    assert data_out['test2/second'].shape == (1, 20, 8)
+    assert np.all(data_out['test2/second'] == data_in['test2/second'][:, :, :8])
