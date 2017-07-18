@@ -31,7 +31,8 @@ def jam(request):
 @pytest.mark.parametrize('audio_f', [None, 'tests/data/test.ogg'])
 @pytest.mark.parametrize('y', [None, 'tests/data/test.ogg'])
 @pytest.mark.parametrize('sr2', [None, 22050, 44100])
-def test_pump(audio_f, jam, y, sr, sr2, hop_length):
+@pytest.mark.parametrize('crop', [False, True])
+def test_pump(audio_f, jam, y, sr, sr2, hop_length, crop):
 
     ops = [pumpp.feature.STFT(name='stft', sr=sr,
                               hop_length=hop_length,
@@ -77,8 +78,8 @@ def test_pump(audio_f, jam, y, sr, sr2, hop_length):
 
         assert set(P.fields.keys()) == fields
 
-        data = P.transform(audio_f=audio_f, jam=jam, y=y, sr=sr2)
-        data2 = P(audio_f=audio_f, jam=jam, y=y, sr=sr2)
+        data = P.transform(audio_f=audio_f, jam=jam, y=y, sr=sr2, crop=crop)
+        data2 = P(audio_f=audio_f, jam=jam, y=y, sr=sr2, crop=crop)
 
         # Fields we should have:
         assert set(data.keys()) == fields | valids
@@ -90,8 +91,12 @@ def test_pump(audio_f, jam, y, sr, sr2, hop_length):
         assert data['beat/beat'].shape[1] == data['chord/bass'].shape[1]
 
         # Audio features can be off by at most a frame
-        assert (np.abs(data['stft/mag'].shape[1] - data['beat/beat'].shape[1])
-                * hop_length / float(sr)) <= 0.05
+        if crop:
+            assert data['stft/mag'].shape[1] == data['beat/beat'].shape[1]
+            assert data['stft/mag'].shape[1] == data['chord/pitch'].shape[1]
+        else:
+            assert (np.abs(data['stft/mag'].shape[1] - data['beat/beat'].shape[1])
+                    * hop_length / float(sr)) <= 0.05
 
         assert data.keys() == data2.keys()
         for k in data:

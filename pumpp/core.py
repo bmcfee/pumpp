@@ -12,13 +12,14 @@ Core functionality
 import librosa
 import jams
 
+from .base import Slicer
 from .exceptions import ParameterError
 from .task import BaseTaskTransformer
 from .feature import FeatureExtractor
 from .sampler import Sampler
 
 
-class Pump(object):
+class Pump(Slicer):
     '''Top-level pump object.
 
     This class is used to collect feature and task transformers
@@ -65,15 +66,14 @@ class Pump(object):
 
         self.ops = []
         self.opmap = dict()
-        for op in ops:
-            self.add(op)
+        super(Pump, self).__init__(*ops)
 
-    def add(self, op):
+    def add(self, operator):
         '''Add an operation to this pump.
 
         Parameters
         ----------
-        op : BaseTaskTransformer, FeatureExtractor
+        operator : BaseTaskTransformer, FeatureExtractor
             The operation to add
 
         Raises
@@ -81,19 +81,20 @@ class Pump(object):
         ParameterError
             if `op` is not of a correct type
         '''
-        if not isinstance(op, (BaseTaskTransformer, FeatureExtractor)):
-            raise ParameterError('op={} must be one of '
+        if not isinstance(operator, (BaseTaskTransformer, FeatureExtractor)):
+            raise ParameterError('operator={} must be one of '
                                  '(BaseTaskTransformer, FeatureExtractor)'
-                                 .format(op))
+                                 .format(operator))
 
-        if op.name in self.opmap:
+        if operator.name in self.opmap:
             raise ParameterError('Duplicate operator name detected: '
-                                 '{}'.format(op))
+                                 '{}'.format(operator))
 
-        self.opmap[op.name] = op
-        self.ops.append(op)
+        super(Pump, self).add(operator)
+        self.opmap[operator.name] = operator
+        self.ops.append(operator)
 
-    def transform(self, audio_f=None, jam=None, y=None, sr=None):
+    def transform(self, audio_f=None, jam=None, y=None, sr=None, crop=False):
         '''Apply the transformations to an audio file, and optionally JAMS object.
 
         Parameters
@@ -110,6 +111,10 @@ class Pump(object):
         sr : number > 0
             If provided, operate directly on an existing audio buffer `y` at
             sampling rate `sr` rather than load from `audio_f`.
+
+        crop : bool
+            If `True`, then data are cropped to a common time index across all
+            fields.  Otherwise, data may have different time extents.
 
         Returns
         -------
@@ -145,11 +150,13 @@ class Pump(object):
 
         data = dict()
 
-        for op in self.ops:
-            if isinstance(op, BaseTaskTransformer):
-                data.update(op.transform(jam))
-            elif isinstance(op, FeatureExtractor):
-                data.update(op.transform(y, sr))
+        for operator in self.ops:
+            if isinstance(operator, BaseTaskTransformer):
+                data.update(operator.transform(jam))
+            elif isinstance(operator, FeatureExtractor):
+                data.update(operator.transform(y, sr))
+        if crop:
+            data = self.crop(data)
         return data
 
     def sampler(self, n_samples, duration, random_state=None):
@@ -189,9 +196,10 @@ class Pump(object):
 
     @property
     def fields(self):
+        '''A dictionary of fields constructed by this pump'''
         out = dict()
-        for op in self.ops:
-            out.update(**op.fields)
+        for operator in self.ops:
+            out.update(**operator.fields)
 
         return out
 
@@ -206,11 +214,11 @@ class Pump(object):
             fields.
         '''
 
-        L = dict()
-        for op in self.ops:
-            if hasattr(op, 'layers'):
-                L.update(op.layers())
-        return L
+        layermap = dict()
+        for operator in self.ops:
+            if hasattr(operator, 'layers'):
+                layermap.update(operator.layers())
+        return layermap
 
     def __getitem__(self, key):
         return self.opmap.get(key)

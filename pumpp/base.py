@@ -183,9 +183,9 @@ class Slicer(object):
 
         duration = self.data_duration(data)
         data_out = dict()
-        for key in self._time:
+        for key in data:
             idx = [slice(None)] * data[key].ndim
-            if self._time[key] is not None:
+            if key in self._time and self._time[key] is not None:
                 idx[self._time[key]] = slice(duration)
             data_out[key] = data[key][idx]
 
