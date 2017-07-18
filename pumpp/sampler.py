@@ -8,6 +8,7 @@ Data subsampling
 
     Sampler
     SequentialSampler
+    Slicer
 '''
 
 from itertools import count
@@ -15,12 +16,13 @@ from itertools import count
 import six
 import numpy as np
 
+from .base import Slicer
 from .exceptions import ParameterError
 
 __all__ = ['Sampler', 'SequentialSampler']
 
 
-class Sampler(object):
+class Sampler(Slicer):
     '''Generate samples uniformly at random from a pumpp data dict.
 
     Attributes
@@ -66,6 +68,8 @@ class Sampler(object):
     '''
     def __init__(self, n_samples, duration, *ops, **kwargs):
 
+        super(Sampler, self).__init__(*ops)
+
         self.n_samples = n_samples
         self.duration = duration
 
@@ -79,17 +83,6 @@ class Sampler(object):
             self.rng = random_state
         else:
             raise ParameterError('Invalid random_state={}'.format(random_state))
-
-        fields = dict()
-        for op in ops:
-            fields.update(op.fields)
-
-        # Pre-determine which fields have time-like indices
-        self._time = {key: None for key in fields}
-        for key in fields:
-            if None in fields[key].shape:
-                # Add one for the batching index
-                self._time[key] = 1 + fields[key].shape.index(None)
 
     def sample(self, data, interval):
         '''Sample a patch from the data object
@@ -125,27 +118,6 @@ class Sampler(object):
             data_slice[key] = data[key][index]
 
         return data_slice
-
-    def data_duration(self, data):
-        '''Compute the valid data duration of a dict
-
-        Parameters
-        ----------
-        data : dict
-            As produced by pumpp.transform
-
-        Returns
-        -------
-        length : int
-            The minimum temporal extent of a dynamic observation in data
-        '''
-        # Find all the time-like indices of the data
-        lengths = []
-        for key in self._time:
-            if self._time[key] is not None:
-                lengths.append(data[key].shape[self._time[key]])
-
-        return min(lengths)
 
     def indices(self, data):
         '''Generate patch indices
@@ -185,7 +157,7 @@ class Sampler(object):
         else:
             counter = count(0)
 
-        for i, start in six.moves.zip(counter, self.indices(data)):
+        for _, start in six.moves.zip(counter, self.indices(data)):
             yield self.sample(data, slice(start, start + self.duration))
 
 

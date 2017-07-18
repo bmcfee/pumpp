@@ -5,13 +5,13 @@
 from collections import namedtuple, Iterable
 import numpy as np
 
-from .exceptions import *
-__all__ = ['Tensor', 'Scope']
+from .exceptions import ParameterError
+__all__ = ['Tensor', 'Scope', 'Slicer']
 
 # This type is used for storing shape information
 Tensor = namedtuple('Tensor', ['shape', 'dtype'])
 '''
-Apparently you can document namedtuples here
+Multi-dimensional array descriptions: `shape` and `dtype`
 '''
 
 
@@ -108,4 +108,85 @@ class Scope(object):
         for key in set().union(*data):
             data_out[self.scope(key)] = np.stack([np.asarray(d[key]) for d in data],
                                                  axis=0)
+        return data_out
+
+
+class Slicer(object):
+    '''Slicer can compute the duration of data with time-like fields,
+    and slice down to the common time index.
+
+    This class serves as a base for Sampler and Pump, and should not
+    be used directly.
+
+    Parameters
+    ----------
+    ops : one or more Scope (TaskTransformer or FeatureExtractor)
+    '''
+    def __init__(self, *ops):
+
+        self._time = dict()
+
+        for operator in ops:
+            self.add(operator)
+
+    def add(self, operator):
+        '''Add an operator to the Slicer
+
+        Parameters
+        ----------
+        operator : Scope (TaskTransformer or FeatureExtractor)
+            The new operator to add
+        '''
+        if not isinstance(operator, Scope):
+            raise ParameterError('Operator {} must be a TaskTransformer '
+                                 'or FeatureExtractor'.format(operator))
+        for key in operator.fields:
+            self._time[key] = None
+            if None in operator.fields[key].shape:
+                self._time[key] = 1 + operator.fields[key].shape.index(None)
+
+    def data_duration(self, data):
+        '''Compute the valid data duration of a dict
+
+        Parameters
+        ----------
+        data : dict
+            As produced by pumpp.transform
+
+        Returns
+        -------
+        length : int
+            The minimum temporal extent of a dynamic observation in data
+        '''
+        # Find all the time-like indices of the data
+        lengths = []
+        for key in self._time:
+            if self._time[key] is not None:
+                lengths.append(data[key].shape[self._time[key]])
+
+        return min(lengths)
+
+    def crop(self, data):
+        '''Crop a data dictionary down to its common time
+
+        Parameters
+        ----------
+        data : dict
+            As produced by pumpp.transform
+
+        Returns
+        -------
+        data_cropped : dict
+            Like `data` but with all time-like axes truncated to the
+            minimum common duration
+        '''
+
+        duration = self.data_duration(data)
+        data_out = dict()
+        for key in data:
+            idx = [slice(None)] * data[key].ndim
+            if key in self._time and self._time[key] is not None:
+                idx[self._time[key]] = slice(duration)
+            data_out[key] = data[key][idx]
+
         return data_out
