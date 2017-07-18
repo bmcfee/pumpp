@@ -171,3 +171,8 @@ def test_slicer():
 
     assert data_out['test2/second'].shape == (1, 20, 8)
     assert np.all(data_out['test2/second'] == data_in['test2/second'][:, :, :8])
+
+
+@pytest.mark.xfail(raises=pumpp.ParameterError)
+def test_slicer_fail():
+    pumpp.base.Slicer('not a scope')
