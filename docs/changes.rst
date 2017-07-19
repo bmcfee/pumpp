@@ -1,6 +1,20 @@
 Changes
 -------
 
+0.3.0
+=====
+- `#85`_ Fixed a bug in BeatPosition transforms
+- `#84`_ Fixed a bug in the documentation build on readthedocs
+- `#83`_ Fixed an off-by-one error in sampler
+- `#81`_ Support multiple time-like dimensions in sampling
+- `#80`_ Added `crop=` parameter to `Pump.transform`, which can slice temporal data down to a common duration.
+
+.. _#85: https://github.com/bmcfee/pumpp/pull/85
+.. _#84: https://github.com/bmcfee/pumpp/pull/84
+.. _#83: https://github.com/bmcfee/pumpp/pull/83
+.. _#81: https://github.com/bmcfee/pumpp/pull/81
+.. _#80: https://github.com/bmcfee/pumpp/pull/80
+
 0.2.4
 =====
 - `#76`_ Implemented the beat-position task
