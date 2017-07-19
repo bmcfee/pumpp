@@ -924,7 +924,7 @@ def test_task_beatpos_present(SR, HOP_LENGTH, MAX_DIVISIONS, SPARSE):
 
     ann = jams.Annotation(namespace='beat')
 
-    Y_true = [0, 0, 0,              # 0:3 = X
+    Y_true = [0, 2, 3,              # 0 = X, 1:3 = 2/3
               1, 2, 3,              # 3:6 = 1/2/3
               1, 2, 3, 4,           # 6:10 = 1/2/3/4
               1, 2, 3, 4, 5,        # 10:15 = X or 1/2/3/4/5
@@ -933,6 +933,7 @@ def test_task_beatpos_present(SR, HOP_LENGTH, MAX_DIVISIONS, SPARSE):
 
     Y_true_out = ['X'] * len(Y_true)
     if MAX_DIVISIONS >= 3:
+        Y_true_out[1:3] = ['{:02d}/{:02d}'.format(3, i+1) for i in range(1, 3)]
         Y_true_out[3:6] = ['{:02d}/{:02d}'.format(3, i+1) for i in range(3)]
     if MAX_DIVISIONS >= 4:
         Y_true_out[6:10] = ['{:02d}/{:02d}'.format(4, i+1) for i in range(4)]
