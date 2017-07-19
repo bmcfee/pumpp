@@ -136,7 +136,7 @@ class Sampler(Slicer):
 
         while True:
             # Generate a sampling interval
-            yield self.rng.randint(0, duration - self.duration)
+            yield self.rng.randint(0, duration - self.duration + 1)
 
     def __call__(self, data):
         '''Generate samples from a data dict.
