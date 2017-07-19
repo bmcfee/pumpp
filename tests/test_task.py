@@ -967,3 +967,45 @@ def test_task_beatpos_present(SR, HOP_LENGTH, MAX_DIVISIONS, SPARSE):
                            axis=0).astype(Y_pred.dtype)
     for i, (y1, y2) in enumerate(zip(Y_pred, Y_expected)):
         assert y1 == y2
+
+def test_task_beatpos_tail(SR, HOP_LENGTH, SPARSE):
+    # This test checks for implicit end-of-bar encodings
+    jam = jams.JAMS(file_metadata=dict(duration=10.0))
+
+    ann = jams.Annotation(namespace='beat')
+
+    Y_true = [0, 2, 3,
+              1, 2, 3,
+              1, 2, 3]
+
+    Y_true_out = ['X', '03/02', '03/03',
+                  '03/01', '03/02', '03/03',
+                  '03/01', '03/02', '03/03']
+
+    for i, y in enumerate(Y_true):
+        ann.append(time=i, duration=0, value=y)
+
+    jam.annotations.append(ann)
+
+    trans = pumpp.task.BeatPositionTransformer(name='beat',
+                                               max_divisions=4,
+                                               sr=SR, hop_length=HOP_LENGTH,
+                                               sparse=SPARSE)
+
+    output = trans.transform(jam)
+
+    assert np.all(output['beat/_valid'] == [0, 10 *
+                                            trans.sr // trans.hop_length])
+
+    Y_pred = trans.encoder.inverse_transform(output['beat/position'][0])
+
+    if SPARSE:
+        Y_pred = Y_pred[:, 0]
+
+    # This trimming is here because duration is inferred from the track,
+    # not the ytrue_out
+    Y_expected = np.repeat(Y_true_out,
+                           (SR // HOP_LENGTH),
+                           axis=0).astype(Y_pred.dtype)
+    for i, (y1, y2) in enumerate(zip(Y_pred, Y_expected)):
+        assert y1 == y2

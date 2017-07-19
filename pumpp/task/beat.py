@@ -223,7 +223,7 @@ class BeatPositionTransformer(BaseTaskTransformer):
             elif prev_idx < 0 and next_idx < len(downbeats):
                 subdivision = np.max(values[:downbeats[0]+1])
             elif next_idx >= len(downbeats):
-                subdivision = len(values) - downbeats[prev_idx] - 1
+                subdivision = len(values) - downbeats[prev_idx]
 
             if subdivision > self.max_divisions or subdivision < 1:
                 position.extend(self.encoder.transform(['X']))
