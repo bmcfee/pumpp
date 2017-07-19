@@ -62,7 +62,8 @@ author = 'Brian McFee'
 import mock
 MOCK_MODULES = ['numpy', 'scipy', 'scipy.sparse',
                 'sklearn', 'sklearn.preprocessing',
-                'mir_eval', 'jams', 'librosa', 'librosa.util', 'librosa.feature']
+                'mir_eval', 'mir_eval.util',
+                'jams', 'librosa', 'librosa.util', 'librosa.feature']
 sys.modules.update((mod_name, mock.Mock()) for mod_name in MOCK_MODULES)
 
 # The version info for the project you're documenting, acts as replacement for
