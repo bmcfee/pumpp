@@ -181,3 +181,41 @@ def test_slicer():
 @pytest.mark.xfail(raises=pumpp.ParameterError)
 def test_slicer_fail():
     pumpp.base.Slicer('not a scope')
+
+
+@pytest.mark.parametrize('durations',
+                        [(8, 16), (16, 16),
+                         pytest.mark.xfail((0, 8), raises=pumpp.ParameterError),
+                         pytest.mark.xfail((8, 4), raises=pumpp.ParameterError)])
+def test_vlsampler(data, ops, n_samples, durations, rng):
+
+    MAX_SAMPLES = 30
+    min_duration, max_duration = durations
+    sampler = pumpp.VariableLengthSampler(n_samples, min_duration,
+                                          max_duration,
+                                          *ops, random_state=rng)
+
+    # Build the set of reference keys that we want to track
+    ref_keys = set()
+    for op in ops:
+        ref_keys |= set(op.fields.keys())
+
+    n = 0
+    for datum, n in zip(sampler(data), range(MAX_SAMPLES)):
+        # First, test that we have the right fields
+        assert set(datum.keys()) == ref_keys
+
+        # Now test that shape is preserved in the right way
+        for key in datum:
+            for tdim in sampler._time[key]:
+                assert datum[key].shape[tdim] >= min_duration
+                assert datum[key].shape[tdim] <= max_duration
+
+            # Check that all keys have length=1
+            assert datum[key].shape[0] == 1
+
+    # Test that we got the right number of samples out
+    if n_samples is None:
+        assert n == MAX_SAMPLES - 1
+    else:
+        assert n == n_samples - 1

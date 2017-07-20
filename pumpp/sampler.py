@@ -8,7 +8,7 @@ Data subsampling
 
     Sampler
     SequentialSampler
-    Slicer
+    VariableLEngthSampler
 '''
 
 from itertools import count
@@ -19,7 +19,7 @@ import numpy as np
 from .base import Slicer
 from .exceptions import ParameterError
 
-__all__ = ['Sampler', 'SequentialSampler']
+__all__ = ['Sampler', 'SequentialSampler', 'VariableLengthSampler']
 
 
 class Sampler(Slicer):
@@ -220,3 +220,98 @@ class SequentialSampler(Sampler):
 
         for start in range(0, duration - self.duration, self.stride):
             yield start
+
+
+class VariableLengthSampler(Sampler):
+    '''Sample random patches like a `Sampler`, but allow for
+    output patches to be less than the target duration when the
+    data is too short.
+
+    Attributes
+    ----------
+    n_samples : int or None
+        the number of samples to generate.
+        If `None`, generate indefinitely.
+
+    min_duration : int > 0
+        The minimum duration (in frames) of each sample
+
+    max_duration : int > 0
+        the maximum duration (in frames) of each sample
+
+    random_state : None, int, or np.random.RandomState
+        If int, random_state is the seed used by the random number
+        generator;
+
+        If RandomState instance, random_state is the random number
+        generator;
+
+        If None, the random number generator is the RandomState instance
+        used by np.random.
+
+    ops : array of pumpp.feature.FeatureExtractor or pumpp.task.BaseTaskTransformer
+        The operators to include when sampling data.
+
+
+    See Also
+    --------
+    Sampler
+    '''
+    def __init__(self, n_samples, min_duration, max_duration, *ops, **kwargs):
+        super(VariableLengthSampler, self).__init__(n_samples, max_duration,
+                                                    *ops, **kwargs)
+
+        if min_duration < 1:
+            raise ParameterError('min_duration={} must be '
+                                 'at least 1.'.format(min_duration))
+
+        if max_duration < min_duration:
+            raise ParameterError('max_duration={} must be at least '
+                                 'min_duration={}'.format(max_duration,
+                                                          min_duration))
+
+        self.min_duration = min_duration
+
+    def indices(self, data):
+        '''Generate patch indices
+
+        Parameters
+        ----------
+        data : dict of np.ndarray
+            As produced by pumpp.transform
+
+        Yields
+        ------
+        start : int >= 0
+            The start index of a sample patch
+        '''
+        duration = self.data_duration(data)
+
+        while True:
+            # Generate a sampling interval
+            yield self.rng.randint(0, duration - self.min_duration + 1)
+
+    def __call__(self, data):
+        '''Generate samples from a data dict.
+
+        Parameters
+        ----------
+        data : dict
+            As produced by pumpp.transform
+
+        Yields
+        ------
+        data_sample : dict
+            A sequence of patch samples from `data`,
+            as parameterized by the sampler object.
+        '''
+        if self.n_samples:
+            counter = six.moves.range(self.n_samples)
+        else:
+            counter = count(0)
+
+        duration = self.data_duration(data)
+
+        for _, start in six.moves.zip(counter, self.indices(data)):
+            yield self.sample(data,
+                              slice(start, min(duration, start + self.duration)))
