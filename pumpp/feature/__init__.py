@@ -20,6 +20,7 @@ Feature extractors
     Mel
     Tempogram
     TempoScale
+    TimePosition
 '''
 
 from .base import *
@@ -27,3 +28,4 @@ from .cqt import *
 from .fft import *
 from .mel import *
 from .rhythm import *
+from .time import *

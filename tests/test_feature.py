@@ -531,3 +531,38 @@ def test_feature_hcqtphasediff(audio, SR, HOP_LENGTH, over_sample, n_octaves,
     for key in ext.fields:
         assert shape_match(output[key].shape[1:], ext.fields[key].shape)
         assert type_match(output[key].dtype, ext.fields[key].dtype)
+
+
+# Time Features
+
+def test_feature_time_fields(SR, HOP_LENGTH, conv):
+
+    ext = pumpp.feature.TimePosition(name='time',
+                                     sr=SR,
+                                     hop_length=HOP_LENGTH,
+                                     conv=conv)
+
+    assert set(ext.fields.keys()) == set(['time/absolute', 'time/relative'])
+
+    __check_shape(ext.fields, 'time/absolute', 2, conv)
+    __check_shape(ext.fields, 'time/relative', 2, conv)
+
+    assert ext.fields['time/absolute'].dtype is np.float32
+    assert ext.fields['time/relative'].dtype is np.float32
+
+
+def test_feature_time(audio, SR, HOP_LENGTH, conv):
+
+    ext = pumpp.feature.TimePosition(name='time',
+                                     sr=SR,
+                                     hop_length=HOP_LENGTH,
+                                     conv=conv)
+
+    output = ext.transform(**audio)
+
+    # Check the fields
+    assert set(output.keys()) == set(ext.fields.keys())
+
+    for key in ext.fields:
+        assert shape_match(output[key].shape[1:], ext.fields[key].shape)
+        assert type_match(output[key].dtype, ext.fields[key].dtype)
