@@ -53,7 +53,7 @@ class TimePosition(FeatureExtractor):
 
         relative = np.zeros((n_frames, 2), dtype=np.float32)
         relative[:, 0] = np.cos(np.pi * np.linspace(0, 1, num=n_frames))
-        relative[:, 0] = np.sin(np.pi * np.linspace(0, 1, num=n_frames))
+        relative[:, 1] = np.sin(np.pi * np.linspace(0, 1, num=n_frames))
 
         absolute = relative * np.sqrt(duration)
 
