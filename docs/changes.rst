@@ -1,6 +1,14 @@
 Changes
 -------
 
+0.3.1
+=====
+- `#88`_ Added time-position coding
+- `#87`_ Added variable-length sampler
+
+.. _#88: https://github.com/bmcfee/pumpp/pull/88
+.. _#87: https://github.com/bmcfee/pumpp/pull/87
+
 0.3.0
 =====
 - `#85`_ Fixed a bug in BeatPosition transforms
