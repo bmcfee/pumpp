@@ -78,3 +78,19 @@ class StructureTransformer(BaseTaskTransformer):
     def inverse(self, agree, duration=None):
 
         raise NotImplementedError('Segment agreement cannot be inverted')
+
+    def sync(self, data, intervals):
+
+        data_out = {}
+        ivals = self._interval_slice(intervals)
+        for field in self.fields:
+            new_shape = list(data[field].shape)
+            new_shape[1:] = (len(ivals), len(ivals))
+            data_out[field] = np.zeros(new_shape, data[field].dtype)
+            for i in range(len(ivals)):
+                for j in range(i, len(ivals)):
+                    data_out[field][:, i, j] = (np.mean(data[field][:, ivals[i], ivals[j]],
+                                                        axis=(1, 2)) >= 0.5)
+                    data_out[field][:, j, i] = data_out[field][:, i, j]
+
+        return data_out
