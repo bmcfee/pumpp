@@ -103,7 +103,7 @@ class Sampler(Slicer):
         data_slice = dict()
 
         for key in data:
-            if '_valid' in key:
+            if key not in self._time:
                 continue
 
             index = [slice(None)] * data[key].ndim

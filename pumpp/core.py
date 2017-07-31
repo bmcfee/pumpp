@@ -213,15 +213,6 @@ class Pump(Slicer):
                        random_state=random_state,
                        *self.ops)
 
-    @property
-    def fields(self):
-        '''A dictionary of fields constructed by this pump'''
-        out = dict()
-        for operator in self.ops:
-            out.update(**operator.fields)
-
-        return out
-
     def layers(self):
         '''Construct Keras input layers for all feature transformers
         in the pump.
@@ -244,3 +235,12 @@ class Pump(Slicer):
 
     def __call__(self, *args, **kwargs):
         return self.transform(*args, **kwargs)
+
+    @property
+    def fields(self):
+        '''A dictionary of fields constructed by this pump'''
+        out = dict()
+        for operator in self.ops:
+            out.update(**operator.fields)
+
+        return out
