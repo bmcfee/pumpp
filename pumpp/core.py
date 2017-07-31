@@ -16,6 +16,7 @@ from .base import Slicer
 from .exceptions import ParameterError
 from .task import BaseTaskTransformer
 from .feature import FeatureExtractor
+from .time import TimeSync
 from .sampler import Sampler
 
 
@@ -66,6 +67,7 @@ class Pump(Slicer):
 
         self.ops = []
         self.opmap = dict()
+        self.timer = None
         super(Pump, self).__init__(*ops)
 
     def add(self, operator):
@@ -93,6 +95,19 @@ class Pump(Slicer):
         super(Pump, self).add(operator)
         self.opmap[operator.name] = operator
         self.ops.append(operator)
+
+    def set_timer(self, timer):
+        '''Add a time synchronizer object to the pump.
+
+        Parameters
+        ----------
+        timer : pumpp.time.TimeSync
+            The synchronizer object (e.g., BeatSync)
+        '''
+        if not isinstance(timer, TimeSync):
+            raise TypeError('{} must be of type pumpp.time.TimeSync'.format(timer))
+
+        self.timer = timer
 
     def transform(self, audio_f=None, jam=None, y=None, sr=None, crop=False):
         '''Apply the transformations to an audio file, and optionally JAMS object.
@@ -157,6 +172,10 @@ class Pump(Slicer):
                 data.update(operator.transform(y, sr))
         if crop:
             data = self.crop(data)
+
+        if self.timer:
+            data.update(self.timer.transform(y, sr, data, self.ops))
+
         return data
 
     def sampler(self, n_samples, duration, random_state=None):
