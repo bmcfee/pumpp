@@ -68,6 +68,12 @@ class FeatureExtractor(Scope):
         elif self.conv in ('channels_first', 'th'):
             return (np.newaxis, slice(None), slice(None))
 
+    @property
+    def time_idx(self):
+        if self.conv in ('channels_first', 'th'):
+            return 1
+        return 0
+
     def transform(self, y, sr):
         '''Transform an audio signal
 
@@ -163,3 +169,29 @@ class FeatureExtractor(Scope):
 
         return int(time_to_frames(duration, sr=self.sr,
                                   hop_length=self.hop_length))
+
+    def time_to_frames(self, times):
+        '''Get the frame indices corresponding to an array of times
+
+        Parameters
+        ----------
+        times : np.ndarray, dtype=float, >= 0
+            Time indices
+
+        Returns
+        -------
+        frames : np.ndarray, dtype=int
+            Frame indices corresponding to `times`
+        '''
+        return time_to_frames(times, sr=self.sr,
+                              hop_length=self.hop_length)
+
+    def sync(self, data, intervals):
+        '''Synchronize the data along the target intervals'''
+        raise NotImplementedError
+
+    def _interval_slice(self, intervals):
+        '''Convert a set of interval times to frame slices'''
+
+        ival_frames = self.time_to_frames(intervals)
+        return [slice(*ival) for ival in ival_frames]

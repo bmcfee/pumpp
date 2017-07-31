@@ -4,7 +4,7 @@
 import numpy as np
 from librosa import stft, magphase
 from librosa import amplitude_to_db, get_duration
-from librosa.util import fix_length
+from librosa.util import fix_length, sync
 
 from .base import FeatureExtractor
 
@@ -143,3 +143,13 @@ class STFTMag(STFT):
         data.pop('phase')
 
         return data
+
+    def sync(self, data, intervals):
+        '''Synchronize the data along the target intervals'''
+
+        data_out = {}
+        ivals = self._interval_slice(intervals)
+        for field in self.fields:
+            data_out[field] = sync(data[field], ivals, axis=1+self.time_idx,
+                                   aggregate=np.mean)
+        return data_out

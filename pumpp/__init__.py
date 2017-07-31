@@ -7,4 +7,5 @@ from .core import *
 from .exceptions import *
 from . import feature
 from . import task
+from . import time
 from .sampler import *

@@ -4,6 +4,7 @@
 import numpy as np
 
 from librosa import get_duration
+from librosa.util import sync
 
 from .base import FeatureExtractor
 
@@ -59,3 +60,13 @@ class TimePosition(FeatureExtractor):
 
         return {'relative': relative[self.idx],
                 'absolute': absolute[self.idx]}
+
+    def sync(self, data, intervals):
+        '''Synchronize the data along the target intervals'''
+
+        data_out = {}
+        ivals = self._interval_slice(intervals)
+        for field in self.fields:
+            data_out[field] = sync(data[field], ivals, axis=1+self.time_idx,
+                                   aggregate=np.mean)
+        return data_out

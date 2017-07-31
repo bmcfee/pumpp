@@ -5,7 +5,7 @@ import numpy as np
 from librosa import fmt
 from librosa.feature import tempogram
 from librosa import get_duration
-from librosa.util import fix_length
+from librosa.util import fix_length, sync
 
 from .base import FeatureExtractor
 
@@ -59,6 +59,16 @@ class Tempogram(FeatureExtractor):
         tgram = fix_length(tgram, n_frames)
         return {'tempogram': tgram.T[self.idx]}
 
+    def sync(self, data, intervals):
+        '''Synchronize the data along the target intervals'''
+
+        data_out = {}
+        ivals = self._interval_slice(intervals)
+        for field in self.fields:
+            data_out[field] = sync(data[field], ivals, axis=1+self.time_idx,
+                                   aggregate=np.mean)
+        return data_out
+
 
 class TempoScale(Tempogram):
     '''Tempogram scale transform.
@@ -109,3 +119,13 @@ class TempoScale(Tempogram):
                                         axis=1,
                                         n_fmt=self.n_fmt)).astype(np.float32)[self.idx]
         return data
+
+    def sync(self, data, intervals):
+        '''Synchronize the data along the target intervals'''
+
+        data_out = {}
+        ivals = self._interval_slice(intervals)
+        for field in self.fields:
+            data_out[field] = sync(data[field], ivals, axis=1+self.time_idx,
+                                   aggregate=np.mean)
+        return data_out
