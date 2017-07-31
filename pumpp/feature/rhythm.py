@@ -4,7 +4,7 @@
 import numpy as np
 from librosa import fmt
 from librosa.feature import tempogram
-from librosa import get_duration
+from librosa import get_duration, amplitude_to_db
 from librosa.util import fix_length, sync
 
 from .base import FeatureExtractor
@@ -92,11 +92,12 @@ class TempoScale(Tempogram):
     n_fmt : int > 0
         Number of scale coefficients to retain
     '''
-    def __init__(self, name, sr, hop_length, win_length, n_fmt=128, conv=None):
+    def __init__(self, name, sr, hop_length, win_length, n_fmt=128, log=False, conv=None):
         super(TempoScale, self).__init__(name, sr, hop_length, win_length,
                                          conv=conv)
 
         self.n_fmt = n_fmt
+        self.log = log
         self.pop('tempogram')
         self.register('temposcale', 1 + n_fmt // 2, np.float32)
 
@@ -115,9 +116,13 @@ class TempoScale(Tempogram):
                 The scale transform magnitude coefficients
         '''
         data = super(TempoScale, self).transform_audio(y)
+
         data['temposcale'] = np.abs(fmt(data.pop('tempogram'),
                                         axis=1,
                                         n_fmt=self.n_fmt)).astype(np.float32)[self.idx]
+        if self.log:
+            data['temposcale'] = amplitude_to_db(data['temposcale'], ref=np.max)
+
         return data
 
     def sync(self, data, intervals):
