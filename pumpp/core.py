@@ -109,7 +109,7 @@ class Pump(Slicer):
 
         self.timer = timer
 
-    def transform(self, audio_f=None, jam=None, y=None, sr=None, crop=False):
+    def transform(self, audio_f=None, jam=None, y=None, sr=None, crop=False, sync_only=False):
         '''Apply the transformations to an audio file, and optionally JAMS object.
 
         Parameters
@@ -130,6 +130,10 @@ class Pump(Slicer):
         crop : bool
             If `True`, then data are cropped to a common time index across all
             fields.  Otherwise, data may have different time extents.
+
+        sync_only : bool
+            If `True`, and a time-synchronizer is provided, only return
+            time-synchronous features.
 
         Returns
         -------
@@ -174,7 +178,11 @@ class Pump(Slicer):
             data = self.crop(data)
 
         if self.timer:
-            data.update(self.timer.transform(y, sr, data, self.ops))
+            data_sync = self.timer.transform(y, sr, data, self.ops)
+            if sync_only:
+                return data_sync
+            else:
+                data.update(data_sync)
 
         return data
 
