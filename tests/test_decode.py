@@ -250,6 +250,8 @@ def test_decode_chordtag_hard_dense(sr, hop_length, ann_chord):
     data = tc.transform_annotation(ann_chord, ann_chord.duration)
 
     inverse = tc.inverse(data['chord'], duration=ann_chord.duration)
+    for obs in inverse:
+        assert 0 <= obs.confidence <= 1.
     data2 = tc.transform_annotation(inverse, ann_chord.duration)
 
     assert np.allclose(data['chord'], data2['chord'])
@@ -267,6 +269,10 @@ def test_decode_chordtag_soft_dense(sr, hop_length, ann_chord):
 
     chord_predict = data['chord'] * 0.51 + 0.1
     inverse = tc.inverse(chord_predict, duration=ann_chord.duration)
+
+    for obs in inverse:
+        assert 0 <= obs.confidence <= 1.
+
     data2 = tc.transform_annotation(inverse, ann_chord.duration)
 
     assert np.allclose(data['chord'], data2['chord'])
@@ -283,6 +289,8 @@ def test_decode_chordtag_hard_sparse_sparse(sr, hop_length, ann_chord):
     data = tc.transform_annotation(ann_chord, ann_chord.duration)
 
     inverse = tc.inverse(data['chord'], duration=ann_chord.duration)
+    for obs in inverse:
+        assert 0 <= obs.confidence <= 1.
     data2 = tc.transform_annotation(inverse, ann_chord.duration)
 
     assert np.allclose(data['chord'], data2['chord'])
@@ -305,6 +313,8 @@ def test_decode_chordtag_hard_dense_sparse(sr, hop_length, ann_chord):
 
     # Invert using the sparse encoder
     inverse = tcs.inverse(data['chord'], duration=ann_chord.duration)
+    for obs in inverse:
+        assert 0 <= obs.confidence <= 1.
     data2 = tcs.transform_annotation(inverse, ann_chord.duration)
 
     dense_positions = np.where(data['chord'])[1]
@@ -330,6 +340,8 @@ def test_decode_chordtag_soft_dense_sparse(sr, hop_length, ann_chord):
     chord_predict = data['chord'] * 0.51 + 0.1
     # Invert using the sparse encoder
     inverse = tcs.inverse(chord_predict, duration=ann_chord.duration)
+    for obs in inverse:
+        assert 0 <= obs.confidence <= 1.
     data2 = tcs.transform_annotation(inverse, ann_chord.duration)
 
     dense_positions = np.where(data['chord'])[1]
