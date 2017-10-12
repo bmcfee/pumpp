@@ -212,3 +212,45 @@ def test_pump_layers(sr, hop_length):
         assert L1[k].dtype == L2[k].dtype
         for d1, d2 in zip(L1[k].shape, L2[k].shape):
             assert str(d1) == str(d2)
+
+
+def test_pump_str(sr, hop_length):
+
+    ops = [pumpp.feature.STFT(name='stft', sr=sr,
+                              hop_length=hop_length,
+                              n_fft=2*hop_length),
+
+           pumpp.task.BeatTransformer(name='beat', sr=sr,
+                                      hop_length=hop_length),
+
+           pumpp.task.ChordTransformer(name='chord', sr=sr,
+                                       hop_length=hop_length),
+
+           pumpp.task.StaticLabelTransformer(name='tags',
+                                             namespace='tag_open',
+                                             labels=['rock', 'jazz'])]
+
+    pump = pumpp.Pump(*ops)
+
+    assert isinstance(str(pump), str)
+
+
+def test_pump_repr_html(sr, hop_length):
+
+    ops = [pumpp.feature.STFT(name='stft', sr=sr,
+                              hop_length=hop_length,
+                              n_fft=2*hop_length),
+
+           pumpp.task.BeatTransformer(name='beat', sr=sr,
+                                      hop_length=hop_length),
+
+           pumpp.task.ChordTransformer(name='chord', sr=sr,
+                                       hop_length=hop_length),
+
+           pumpp.task.StaticLabelTransformer(name='tags',
+                                             namespace='tag_open',
+                                             labels=['rock', 'jazz'])]
+
+    pump = pumpp.Pump(*ops)
+
+    assert isinstance(pump._repr_html_(), str)
