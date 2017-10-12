@@ -162,6 +162,8 @@ def test_decode_beat_hard(sr, hop_length, ann_beat):
 
     data = tc.transform_annotation(ann_beat, ann_beat.duration)
     inverse = tc.inverse(data['beat'], duration=ann_beat.duration)
+    for obs in inverse:
+        assert 0. <= obs.confidence <= 1.
     data2 = tc.transform_annotation(inverse, ann_beat.duration)
 
     assert np.allclose(data['beat'], data2['beat'])
@@ -175,6 +177,8 @@ def test_decode_beat_soft(sr, hop_length, ann_beat):
     beat_pred = data['beat'] * 0.51 + 0.1
 
     inverse = tc.inverse(beat_pred, duration=ann_beat.duration)
+    for obs in inverse:
+        assert 0. <= obs.confidence <= 1.
     data2 = tc.transform_annotation(inverse, ann_beat.duration)
 
     assert np.allclose(data['beat'], data2['beat'])
@@ -187,6 +191,8 @@ def test_decode_beat_downbeat_hard(sr, hop_length, ann_beat):
     data = tc.transform_annotation(ann_beat, ann_beat.duration)
     inverse = tc.inverse(data['beat'], downbeat=data['downbeat'],
                          duration=ann_beat.duration)
+    for obs in inverse:
+        assert 0. <= obs.confidence <= 1.
     data2 = tc.transform_annotation(inverse, ann_beat.duration)
 
     assert np.allclose(data['beat'], data2['beat'])
@@ -201,6 +207,8 @@ def test_decode_beat_downbeat_soft(sr, hop_length, ann_beat):
     dbeat_pred = data['downbeat'] * 0.51 + 0.1
     inverse = tc.inverse(beat_pred, downbeat=dbeat_pred,
                          duration=ann_beat.duration)
+    for obs in inverse:
+        assert 0. <= obs.confidence <= 1.
     data2 = tc.transform_annotation(inverse, ann_beat.duration)
 
     assert np.allclose(data['beat'], data2['beat'])
