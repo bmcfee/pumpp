@@ -11,6 +11,7 @@ Core functionality
 
 import librosa
 import jams
+import six
 
 from .base import Slicer
 from .exceptions import ParameterError
@@ -225,3 +226,28 @@ class Pump(Slicer):
 
     def __call__(self, *args, **kwargs):
         return self.transform(*args, **kwargs)
+
+    def __str__(self):
+        rstr = '<Pump [{:d} operators, {:d} fields]>'.format(len(self.ops),
+                                                             len(self.fields))
+        for key in self.opmap:
+            rstr += "\n  - '{}': {}".format(key, type(self.opmap[key]))
+            for field in self.opmap[key].fields:
+                rstr += "\n    - '{}': {}".format(field, self.opmap[key].fields[field])
+        return rstr
+
+    def _repr_html_(self):
+
+        rstr = '<dl class="row">'
+        for key in self.opmap:
+            rstr += '\n  <dt class="col-sm-3">{:s}</dt>'.format(key)
+            rstr += '\n  <dd class="col-sm-9">{}'.format(self.opmap[key])
+
+            rstr += '<ul>'
+            for fkey, field in six.iteritems(self.opmap[key].fields):
+                rstr += '\n  <li>{:s} [shape={}, dtype={}]</li>'.format(fkey,
+                                                                        field.shape,
+                                                                        field.dtype.__name__)
+            rstr += '</ul></dd>'
+        rstr += '</dl>'
+        return rstr
