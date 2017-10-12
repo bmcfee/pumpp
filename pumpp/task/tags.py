@@ -5,6 +5,8 @@
 import numpy as np
 from sklearn.preprocessing import MultiLabelBinarizer
 
+from librosa import time_to_frames
+
 import jams
 
 from .base import BaseTaskTransformer
@@ -106,10 +108,20 @@ class DynamicLabelTransformer(BaseTaskTransformer):
         ann = jams.Annotation(namespace=self.namespace, duration=duration)
         for start, end, value in self.decode_intervals(encoded,
                                                        duration=duration):
+            # Map start:end to frames
+            f_start, f_end = time_to_frames([start, end],
+                                            sr=self.sr,
+                                            hop_length=self.hop_length)
+
+            confidence = np.mean(encoded[f_start:f_end+1, value])
+
             value_dec = self.encoder.inverse_transform(np.atleast_2d(value))[0]
 
             for vd in value_dec:
-                ann.append(time=start, duration=end-start, value=vd)
+                ann.append(time=start,
+                           duration=end-start,
+                           value=vd,
+                           confidence=confidence)
 
         return ann
 
@@ -185,9 +197,14 @@ class StaticLabelTransformer(BaseTaskTransformer):
         ann = jams.Annotation(namespace=self.namespace, duration=duration)
 
         if np.isrealobj(encoded):
-            encoded = (encoded >= 0.5)
+            detected = (encoded >= 0.5)
+        else:
+            detected = encoded
 
-        for vd in self.encoder.inverse_transform(np.atleast_2d(encoded))[0]:
-            ann.append(time=0, duration=duration, value=vd)
-
+        for vd in self.encoder.inverse_transform(np.atleast_2d(detected))[0]:
+            vid = np.flatnonzero(self.encoder.transform(np.atleast_2d(vd)))
+            ann.append(time=0,
+                       duration=duration,
+                       value=vd,
+                       confidence=encoded[vid])
         return ann

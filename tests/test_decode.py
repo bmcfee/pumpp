@@ -101,6 +101,8 @@ def test_decode_tags_dynamic_hard(sr, hop_length, ann_tag):
     data = tc.transform_annotation(ann_tag, ann_tag.duration)
 
     inverse = tc.inverse(data['tags'], duration=ann_tag.duration)
+    for obs in inverse:
+        assert 0. <= obs.confidence <= 1.
     data2 = tc.transform_annotation(inverse, ann_tag.duration)
 
     assert np.allclose(data['tags'], data2['tags'])
@@ -119,6 +121,8 @@ def test_decode_tags_dynamic_soft(sr, hop_length, ann_tag):
     # Soften the data, but preserve the decisions
     tags_predict = data['tags'] * 0.51 + 0.1
     inverse = tc.inverse(tags_predict, duration=ann_tag.duration)
+    for obs in inverse:
+        assert 0. <= obs.confidence <= 1.
     data2 = tc.transform_annotation(inverse, ann_tag.duration)
 
     assert np.allclose(data['tags'], data2['tags'])
@@ -130,6 +134,8 @@ def test_decode_tags_static_hard(ann_tag):
 
     data = tc.transform_annotation(ann_tag, ann_tag.duration)
     inverse = tc.inverse(data['tags'], ann_tag.duration)
+    for obs in inverse:
+        assert 0. <= obs.confidence <= 1.
     data2 = tc.transform_annotation(inverse, ann_tag.duration)
 
     assert np.allclose(data['tags'], data2['tags'])
@@ -143,6 +149,8 @@ def test_decode_tags_static_soft(ann_tag):
     tags_predict = data['tags'] * 0.51 + 0.1
 
     inverse = tc.inverse(tags_predict, ann_tag.duration)
+    for obs in inverse:
+        assert 0. <= obs.confidence <= 1.
     data2 = tc.transform_annotation(inverse, ann_tag.duration)
 
     assert np.allclose(data['tags'], data2['tags'])
