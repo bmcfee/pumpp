@@ -9,6 +9,7 @@ import numpy as np
 from sklearn.preprocessing import LabelBinarizer, LabelEncoder
 from sklearn.preprocessing import MultiLabelBinarizer
 
+from librosa import time_to_frames
 import mir_eval
 import jams
 
@@ -492,12 +493,30 @@ class ChordTagTransformer(BaseTaskTransformer):
                                                        duration=duration,
                                                        multi=False,
                                                        sparse=self.sparse):
+
+            # Map start:end to frames
+            f_start, f_end = time_to_frames([start, end],
+                                            sr=self.sr,
+                                            hop_length=self.hop_length)
+
+            # Reverse the index
             if self.sparse:
+                # Compute the confidence
+                if encoded.shape[1] == 1:
+                    # This case is for full-confidence prediction (just the index)
+                    confidence = 1.
+                else:
+                    confidence = np.mean(encoded[f_start:f_end+1, value])
+
                 value_dec = self.encoder.inverse_transform(value)
             else:
+                confidence = np.mean(encoded[f_start:f_end+1, np.argmax(value)])
                 value_dec = self.encoder.inverse_transform(np.atleast_2d(value))
 
             for vd in value_dec:
-                ann.append(time=start, duration=end-start, value=vd)
+                ann.append(time=start,
+                           duration=end-start,
+                           value=vd,
+                           confidence=float(confidence))
 
         return ann

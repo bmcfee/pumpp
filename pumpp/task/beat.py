@@ -4,6 +4,7 @@
 
 import numpy as np
 
+from librosa import time_to_frames
 import jams
 from mir_eval.util import boundaries_to_intervals, adjust_intervals
 from sklearn.preprocessing import LabelBinarizer, LabelEncoder
@@ -95,7 +96,11 @@ class BeatTransformer(BaseTaskTransformer):
 
         ann = jams.Annotation(namespace=self.namespace, duration=duration)
 
-        beat_times = [t for t, _ in self.decode_events(encoded) if _]
+        beat_times = np.asarray([t for t, _ in self.decode_events(encoded) if _])
+        beat_frames = time_to_frames(beat_times,
+                                     sr=self.sr,
+                                     hop_length=self.hop_length)
+
         if downbeat is not None:
             downbeat_times = set([t for t, _ in self.decode_events(downbeat)
                                   if _])
@@ -106,12 +111,16 @@ class BeatTransformer(BaseTaskTransformer):
             pickup_beats = 0
 
         value = - pickup_beats - 1
-        for beat in beat_times:
-            if beat in downbeat_times:
+        for beat_t, beat_f in zip(beat_times, beat_frames):
+            if beat_t in downbeat_times:
                 value = 1
             else:
                 value += 1
-            ann.append(time=beat, duration=0, value=value)
+            confidence = encoded[beat_f]
+            ann.append(time=beat_t,
+                       duration=0,
+                       value=value,
+                       confidence=confidence)
 
         return ann
 
