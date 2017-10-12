@@ -1,6 +1,14 @@
 Changes
 -------
 
+0.3.2
+=====
+- `#91`_ JAMS annotations are now populated with confidence fields
+- `#92`_ Pump objects can pretty-print in jupyter notebooks
+
+.. _#91: https://github.com/bmcfee/pumpp/pull/91
+.. _#92: https://github.com/bmcfee/pumpp/pull/92
+
 0.3.1
 =====
 - `#88`_ Added time-position coding
