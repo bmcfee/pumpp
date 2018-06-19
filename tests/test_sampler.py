@@ -219,3 +219,37 @@ def test_vlsampler(data, ops, n_samples, durations, rng):
         assert n == MAX_SAMPLES - 1
     else:
         assert n == n_samples - 1
+
+
+@pytest.mark.xfail(raises=pumpp.DataError)
+def test_sampler_short_error(data, ops):
+
+    MAX_SAMPLES = 2
+    sampler = pumpp.Sampler(MAX_SAMPLES, 5000, *ops)
+
+    # Build the set of reference keys that we want to track
+    ref_keys = set()
+    for op in ops:
+        ref_keys |= set(op.fields.keys())
+
+    for datum, n in zip(sampler(data), range(MAX_SAMPLES)):
+        # First, test that we have the right fields
+        assert set(datum.keys()) == ref_keys
+
+        # Now test that shape is preserved in the right way
+        for key in datum:
+            ref_shape = list(data[key].shape)
+            for tdim in sampler._time[key]:
+                ref_shape[tdim] = duration
+
+            # Check that all keys have length=1
+            assert datum[key].shape[0] == 1
+            assert list(datum[key].shape[1:]) == ref_shape[1:]
+
+    # Test that we got the right number of samples out
+    if n_samples is None:
+        assert n == MAX_SAMPLES - 1
+    else:
+        assert n == n_samples - 1
+
+
