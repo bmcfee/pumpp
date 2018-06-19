@@ -17,7 +17,7 @@ import six
 import numpy as np
 
 from .base import Slicer
-from .exceptions import ParameterError
+from .exceptions import ParameterError, DataError
 
 __all__ = ['Sampler', 'SequentialSampler', 'VariableLengthSampler']
 
@@ -133,6 +133,10 @@ class Sampler(Slicer):
             The start index of a sample patch
         '''
         duration = self.data_duration(data)
+
+        if self.duration > duration:
+            raise DataError('Data duration={} is less than '
+                            'sample duration={}'.format(duration, self.duration))
 
         while True:
             # Generate a sampling interval
