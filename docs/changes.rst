@@ -1,6 +1,12 @@
 Changes
 -------
 
+0.3.3
+=====
+- `#95`_ Data durations are now checked before sampling
+
+.. _#95: https://github.com/bmcfee/pumpp/pull/95
+
 0.3.2
 =====
 - `#91`_ JAMS annotations are now populated with confidence fields
