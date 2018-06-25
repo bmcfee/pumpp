@@ -8,7 +8,7 @@ Data subsampling
 
     Sampler
     SequentialSampler
-    VariableLEngthSampler
+    VariableLengthSampler
 '''
 
 from itertools import count
