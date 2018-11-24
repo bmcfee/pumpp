@@ -7,6 +7,7 @@ import numpy as np
 import pytest
 
 import pumpp
+xfail = pytest.mark.xfail
 
 
 # Make a fixture with some audio and task output
@@ -67,15 +68,14 @@ def duration(request):
 
 
 @pytest.fixture(params=[None, 16, 256,
-                        pytest.mark.xfail(-1, raises=pumpp.ParameterError)],
+                        pytest.param(-1, marks=xfail(raises=pumpp.ParameterError))],
                 scope='module')
 def stride(request):
     return request.param
 
 
 @pytest.fixture(params=[None, 20170401, np.random.RandomState(100),
-                        pytest.mark.xfail('bad rng',
-                                          raises=pumpp.ParameterError)],
+                        pytest.param('bad rng', marks=xfail(raises=pumpp.ParameterError))],
                 scope='module')
 def rng(request):
     return request.param
@@ -185,8 +185,8 @@ def test_slicer_fail():
 
 @pytest.mark.parametrize('durations',
                         [(8, 16), (16, 16),
-                         pytest.mark.xfail((0, 8), raises=pumpp.ParameterError),
-                         pytest.mark.xfail((8, 4), raises=pumpp.ParameterError)])
+                         pytest.param((0, 8), marks=xfail(raises=pumpp.ParameterError)),
+                         pytest.param((8, 4), marks=xfail(raises=pumpp.ParameterError))])
 def test_vlsampler(data, ops, n_samples, durations, rng):
 
     MAX_SAMPLES = 30
