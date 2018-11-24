@@ -189,6 +189,6 @@ class Slicer(object):
             idx = [slice(None)] * data[key].ndim
             for tdim in self._time.get(key, []):
                 idx[tdim] = slice(duration)
-            data_out[key] = data[key][idx]
+            data_out[key] = data[key][tuple(idx)]
 
         return data_out
