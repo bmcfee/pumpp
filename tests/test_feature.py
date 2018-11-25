@@ -17,7 +17,7 @@ xfail = pytest.mark.xfail
 def audio(request):
     y, sr_out = librosa.load(librosa.util.example_audio_file(),
                              sr=request.param,
-                             duration=5)
+                             duration=2)
     return {'y': y, 'sr': sr_out}
 
 
