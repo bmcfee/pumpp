@@ -842,9 +842,6 @@ def test_task_chord_tag_present(SR, HOP_LENGTH, VOCAB, SPARSE):
 
     # Decode the label encoding
     Y_pred = trans.encoder.inverse_transform(output['chord/chord'][0])
-    if SPARSE:
-        # Sparse label encoders use an extra output dimension
-        Y_pred = Y_pred[:, 0]
 
     Y_expected = np.repeat(Y_true_out, (SR // HOP_LENGTH), axis=0)
 
@@ -957,9 +954,6 @@ def test_task_beatpos_present(SR, HOP_LENGTH, MAX_DIVISIONS, SPARSE):
 
     Y_pred = trans.encoder.inverse_transform(output['beat/position'][0])
 
-    if SPARSE:
-        Y_pred = Y_pred[:, 0]
-
     # This trimming is here because duration is inferred from the track,
     # not the ytrue_out
     Y_expected = np.repeat(Y_true_out,
@@ -998,9 +992,6 @@ def test_task_beatpos_tail(SR, HOP_LENGTH, SPARSE):
                                             trans.sr // trans.hop_length])
 
     Y_pred = trans.encoder.inverse_transform(output['beat/position'][0])
-
-    if SPARSE:
-        Y_pred = Y_pred[:, 0]
 
     # This trimming is here because duration is inferred from the track,
     # not the ytrue_out
