@@ -115,7 +115,7 @@ class Sampler(Slicer):
             for tdim in self._time[key]:
                 index[tdim] = interval
 
-            data_slice[key] = data[key][index]
+            data_slice[key] = data[key][tuple(index)]
 
         return data_slice
 

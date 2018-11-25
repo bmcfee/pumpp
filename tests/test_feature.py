@@ -10,12 +10,14 @@ import pumpp
 
 from test_task import shape_match, type_match
 
+xfail = pytest.mark.xfail
+
 
 @pytest.fixture(params=[None, 22050, 16000], scope='module')
 def audio(request):
     y, sr_out = librosa.load(librosa.util.example_audio_file(),
                              sr=request.param,
-                             duration=5)
+                             duration=2)
     return {'y': y, 'sr': sr_out}
 
 
@@ -60,8 +62,7 @@ def n_octaves(request):
 
 
 @pytest.fixture(params=[None, 'tf', 'th', 'channels_last', 'channels_first',
-                        pytest.mark.xfail('bad mode',
-                                          raises=pumpp.ParameterError)])
+                        pytest.param('bad mode', marks=xfail(raises=pumpp.ParameterError))])
 def conv(request):
     return request.param
 
@@ -72,18 +73,15 @@ def log(request):
 
 
 @pytest.fixture(params=['tf', 'th', 'channels_last', 'channels_first',
-                        pytest.mark.xfail(None,
-                                          raises=pumpp.ParameterError),
-                        pytest.mark.xfail('bad mode',
-                                          raises=pumpp.ParameterError)])
+                        pytest.param(None, marks=xfail(raises=pumpp.ParameterError)),
+                        pytest.param('bad mode', marks=xfail(raises=pumpp.ParameterError))])
 def hconv(request):
     return request.param
 
 
 @pytest.fixture(params=[None, [1], [1, 2], [1, 2, 3],
-                        pytest.mark.xfail([-1], raises=pumpp.ParameterError),
-                        pytest.mark.xfail('bad harmonics',
-                                          raises=pumpp.ParameterError)])
+                        pytest.param([-1], marks=xfail(raises=pumpp.ParameterError)),
+                        pytest.param('bad harmonics', marks=xfail(raises=pumpp.ParameterError))])
 def harmonics(request):
     return request.param
 

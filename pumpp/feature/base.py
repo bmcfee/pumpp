@@ -123,6 +123,8 @@ class FeatureExtractor(Scope):
         zero_idx[axis] = slice(1)
         else_idx = [slice(None)] * phase.ndim
         else_idx[axis] = slice(1, None)
+        zero_idx = tuple(zero_idx)
+        else_idx = tuple(else_idx)
         dphase[zero_idx] = phase[zero_idx]
         dphase[else_idx] = np.diff(np.unwrap(phase, axis=axis), axis=axis)
         return dphase
