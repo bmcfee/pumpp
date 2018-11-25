@@ -8,6 +8,8 @@ import jams
 
 import pumpp
 
+xfail = pytest.mark.xfail
+
 
 @pytest.fixture()
 def SR():
@@ -451,7 +453,7 @@ def test_task_vector_absent(dimension, name):
 @pytest.mark.parametrize('name', ['collab', 'vector'])
 @pytest.mark.parametrize('target_dimension, data_dimension',
                          [(1, 1), (2, 2), (4, 4),
-                          pytest.mark.xfail((2, 3), raises=pumpp.DataError)])
+                          pytest.param((2, 3), marks=xfail(raises=pumpp.DataError))])
 def test_task_vector_present(target_dimension, data_dimension, name):
     var_name = '{:s}/vector'.format(name)
     mask_name = '{:s}/_valid'.format(name)
@@ -745,14 +747,10 @@ def test_transform_coerce():
                           ('356s', 98),
                           ('3567', 146),
                           ('3567s', 170),
-                          pytest.mark.xfail(('bad vocab', 1),
-                                            raises=pumpp.ParameterError),
-                          pytest.mark.xfail(('5', 1),
-                                            raises=pumpp.ParameterError),
-                          pytest.mark.xfail(('36', 1),
-                                            raises=pumpp.ParameterError),
-                          pytest.mark.xfail(('357', 1),
-                                            raises=pumpp.ParameterError)])
+                          pytest.param(('bad vocab', 1), marks=xfail(raises=pumpp.ParameterError)),
+                          pytest.param(('5', 1), marks=xfail(raises=pumpp.ParameterError)),
+                          pytest.param(('36', 1), marks=xfail(raises=pumpp.ParameterError)),
+                          pytest.param(('357', 1), marks=xfail(raises=pumpp.ParameterError))])
 def test_task_chord_tag_fields(vocab, vocab_size, SPARSE):
 
     trans = pumpp.task.ChordTagTransformer(name='mychord',
@@ -877,8 +875,7 @@ def test_task_chord_tag_absent(SR, HOP_LENGTH, VOCAB, SPARSE):
                           (2, 1+1+2),
                           (3, 1+1+2+3),
                           (4, 1+1+2+3+4),
-                          pytest.mark.xfail((None, 1),
-                                            raises=pumpp.ParameterError)])
+                          pytest.param((None, 1), marks=xfail(raises=pumpp.ParameterError))])
 def test_task_beatpos_fields(max_divisions, n_states, SPARSE):
 
     trans = pumpp.task.BeatPositionTransformer(name='mybeat',
