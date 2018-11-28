@@ -49,7 +49,7 @@ def shape_match(sh1, sh2):
 
 def type_match(x, y):
 
-    return np.issubdtype(x, y) and np.issubdtype(y, x)
+    return np.issubdtype(np.dtype(x), np.dtype(y)) and np.issubdtype(np.dtype(y), np.dtype(x))
 
 
 def test_task_chord_fields(SPARSE):
@@ -65,9 +65,9 @@ def test_task_chord_fields(SPARSE):
 
     if SPARSE:
         assert trans.fields['mychord/root'].shape == (None, 1)
-        assert np.issubdtype(trans.fields['mychord/root'].dtype, np.int)
+        assert np.issubdtype(trans.fields['mychord/root'].dtype, np.integer)
         assert trans.fields['mychord/bass'].shape == (None, 1)
-        assert np.issubdtype(trans.fields['mychord/bass'].dtype, np.int)
+        assert np.issubdtype(trans.fields['mychord/bass'].dtype, np.integer)
     else:
         assert trans.fields['mychord/root'].shape == (None, 13)
         assert trans.fields['mychord/root'].dtype is np.bool
@@ -761,7 +761,7 @@ def test_task_chord_tag_fields(vocab, vocab_size, SPARSE):
 
     if SPARSE:
         assert trans.fields['mychord/chord'].shape == (None, 1)
-        assert np.issubdtype(trans.fields['mychord/chord'].dtype, np.int)
+        assert np.issubdtype(trans.fields['mychord/chord'].dtype, np.integer)
     else:
         assert trans.fields['mychord/chord'].shape == (None, vocab_size)
         assert trans.fields['mychord/chord'].dtype is np.bool
@@ -886,7 +886,7 @@ def test_task_beatpos_fields(max_divisions, n_states, SPARSE):
 
     if SPARSE:
         assert trans.fields['mybeat/position'].shape == (None, 1)
-        assert np.issubdtype(trans.fields['mybeat/position'].dtype, np.int)
+        assert np.issubdtype(trans.fields['mybeat/position'].dtype, np.integer)
     else:
         assert trans.fields['mybeat/position'].shape == (None, n_states)
         assert trans.fields['mybeat/position'].dtype is np.bool
