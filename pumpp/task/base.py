@@ -4,7 +4,7 @@
 
 import numpy as np
 from librosa import time_to_frames, times_like
-from librosa.sequence import viterbi_binary
+from librosa.sequence import viterbi_binary, viterbi_discriminative
 import jams
 
 from ..base import Scope
@@ -247,7 +247,6 @@ class BaseTaskTransformer(Scope):
         p_state : None or np.ndarray [shape=(m,)]
             Optional marginal probability for each event
 
-
         p_init : None or np.ndarray [shape=(m,)]
             Optional marginal probability for each event
 
@@ -276,7 +275,8 @@ class BaseTaskTransformer(Scope):
 
         return zip(times, encoded)
 
-    def decode_intervals(self, encoded, duration=None, multi=True, sparse=False):
+    def decode_intervals(self, encoded, duration=None, multi=True, sparse=False,
+                         transition=None, p_state=None, p_init=None):
         '''Decode labeled intervals into (start, end, value) triples
 
         Parameters
@@ -299,6 +299,18 @@ class BaseTaskTransformer(Scope):
 
             Only applies when `multi=False`.
 
+        transition : None or np.ndarray [shape=(m, m) or (2, 2) or (m, 2, 2)]
+            Optional transition matrix for each interval, used for Viterbi
+            decoding.  If `multi=True`, then transition should be `(2, 2)` or
+            `(m, 2, 2)`-shaped.  If `multi=False`, then transition should be
+            `(m, m)`-shaped.
+
+        p_state : None or np.ndarray [shape=(m,)]
+            Optional marginal probability for each label.
+
+        p_init : None or np.ndarray [shape=(m,)]
+            Optional marginal probability for each label.
+
         Returns
         -------
         [(start, end, value)] : iterable of tuples
@@ -308,13 +320,30 @@ class BaseTaskTransformer(Scope):
         '''
         if np.isrealobj(encoded):
             if multi:
-                encoded = encoded >= 0.5
+                if transition is None:
+                    encoded = encoded >= 0.5
+                else:
+                    encoded = viterbi_binary(encoded.T, transition,
+                                             p_init=p_init, p_state=p_state).T
             elif sparse and encoded.shape[1] > 1:
                 # map to argmax if it's densely encoded (logits)
-                encoded = np.argmax(encoded, axis=1)[:, np.newaxis]
+                if transition is None:
+                    encoded = np.argmax(encoded, axis=1)[:, np.newaxis]
+                else:
+                    encoded = viterbi_discriminative(encoded.T, transition,
+                                                     p_init=p_init,
+                                                     p_state=p_state)[:, np.newaxis]
             elif not sparse:
                 # if dense and multi, map to one-hot encoding
-                encoded = (encoded == np.max(encoded, axis=1, keepdims=True))
+                if transition is None:
+                    encoded = (encoded == np.max(encoded, axis=1, keepdims=True))
+                else:
+                    encoded_ = viterbi_discriminative(encoded.T, transition,
+                                                      p_init=p_init,
+                                                      p_state=p_state)[:, np.newaxis]
+                    # Map to one-hot encoding
+                    encoded = np.zeros(encoded.shape, dtype=bool)
+                    encoded[np.arange(len(encoded_)), encoded_] = True
 
         if duration is None:
             # 1+ is fair here, because encode_intervals already pads
