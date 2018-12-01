@@ -6,6 +6,7 @@ import numpy as np
 from sklearn.preprocessing import MultiLabelBinarizer
 
 from librosa import time_to_frames
+from librosa.sequence import transition_loop
 
 import jams
 
@@ -72,8 +73,8 @@ class DynamicLabelTransformer(BaseTaskTransformer):
             if np.isscalar(p_self):
                 p_self = p_self * np.ones(len(self._classes))
 
-            for i in range(self._classes):
-                self.transition[i] = librosa.sequence.transition_loop(2, p_self[i])
+            for i in range(len(self._classes)):
+                self.transition[i] = transition_loop(2, p_self[i])
 
         if p_init is not None:
             if len(p_init) != len(self._classes):

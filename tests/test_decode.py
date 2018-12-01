@@ -96,6 +96,32 @@ def p_state_chord(request):
         return None
 
 
+@pytest.fixture(params=[None, False, True])
+def p_self_tags(request):
+    if request.param is None:
+        return None
+    if request.param:
+        return 0.5 * np.ones(10)  # 10 tags in GTZAN
+    else:
+        return 0.5
+
+
+@pytest.fixture(params=[False, True])
+def p_init_tags(request):
+    if request.param:
+        return 0.5 * np.ones(10)
+    else:
+        return None
+
+
+@pytest.fixture(params=[False, True])
+def p_state_tags(request):
+    if request.param:
+        return 0.5 * np.ones(10)
+    else:
+        return None
+
+
 @pytest.fixture()
 def ann_segment():
 
@@ -111,13 +137,16 @@ def ann_segment():
     return ann
 
 
-def test_decode_tags_dynamic_hard(sr, hop_length, ann_tag):
+def test_decode_tags_dynamic_hard(sr, hop_length, ann_tag, p_self_tags, p_init_tags, p_state_tags):
 
     # This test encodes an annotation, decodes it, and then re-encodes it
     # It passes if the re-encoded version matches the initial encoding
     tc = pumpp.task.DynamicLabelTransformer('genre', 'tag_gtzan',
                                             hop_length=hop_length,
-                                            sr=sr)
+                                            sr=sr,
+                                            p_self=p_self_tags,
+                                            p_init=p_init_tags,
+                                            p_state=p_state_tags)
 
     data = tc.transform_annotation(ann_tag, ann_tag.duration)
 
@@ -129,13 +158,16 @@ def test_decode_tags_dynamic_hard(sr, hop_length, ann_tag):
     assert np.allclose(data['tags'], data2['tags'])
 
 
-def test_decode_tags_dynamic_soft(sr, hop_length, ann_tag):
+def test_decode_tags_dynamic_soft(sr, hop_length, ann_tag, p_self_tags, p_init_tags, p_state_tags):
 
     # This test encodes an annotation, decodes it, and then re-encodes it
     # It passes if the re-encoded version matches the initial encoding
     tc = pumpp.task.DynamicLabelTransformer('genre', 'tag_gtzan',
                                             hop_length=hop_length,
-                                            sr=sr)
+                                            sr=sr,
+                                            p_self=p_self_tags,
+                                            p_init=p_init_tags,
+                                            p_state=p_state_tags)
 
     data = tc.transform_annotation(ann_tag, ann_tag.duration)
 
@@ -167,7 +199,7 @@ def test_decode_tags_static_soft(ann_tag):
     tc = pumpp.task.StaticLabelTransformer('genre', 'tag_gtzan')
 
     data = tc.transform_annotation(ann_tag, ann_tag.duration)
-    tags_predict = 0.9 * data['tags'] + 0.1 * np.ones_like(data['tags']) / data['tags'].shape[1]
+    tags_predict = data['tags'] * 0.51 + 0.1
 
     inverse = tc.inverse(tags_predict, ann_tag.duration)
     for obs in inverse:
