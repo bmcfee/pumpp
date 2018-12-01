@@ -140,7 +140,7 @@ def test_decode_tags_dynamic_soft(sr, hop_length, ann_tag):
     data = tc.transform_annotation(ann_tag, ann_tag.duration)
 
     # Soften the data, but preserve the decisions
-    tags_predict = data['tags'] * 0.51 + 0.1
+    tags_predict = 0.9 * data['tags'] + 0.1 * np.ones_like(data['tags']) / data['tags'].shape[1]
     inverse = tc.inverse(tags_predict, duration=ann_tag.duration)
     for obs in inverse:
         assert 0. <= obs.confidence <= 1.
@@ -167,7 +167,7 @@ def test_decode_tags_static_soft(ann_tag):
     tc = pumpp.task.StaticLabelTransformer('genre', 'tag_gtzan')
 
     data = tc.transform_annotation(ann_tag, ann_tag.duration)
-    tags_predict = data['tags'] * 0.51 + 0.1
+    tags_predict = 0.9 * data['tags'] + 0.1 * np.ones_like(data['tags']) / data['tags'].shape[1]
 
     inverse = tc.inverse(tags_predict, ann_tag.duration)
     for obs in inverse:
@@ -421,14 +421,4 @@ def test_decode_beatpos(sr, hop_length, ann_beat):
     data2 = tc.transform_annotation(inverse, ann_beat.duration)
 
     assert np.allclose(data['position'], data2['position'])
-
-
-# TODO
-#   add some base tests for viterbi decoding in the following cases
-#   events
-#
-#   intervals
-#       +- multi
-#           w/wo independent transitions / inits / states
-#       +- sparse
 
