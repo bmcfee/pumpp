@@ -806,7 +806,7 @@ def test_task_chord_tag_present(SR, HOP_LENGTH, VOCAB, SPARSE):
         Y_true_out[11] = 'X'       # sus2 -> X
         Y_true_out[12] = 'X'       # sus4 -> X
     if '6' not in VOCAB:
-        Y_true_out[1] = 'C:min'    # min6 -> maj
+        Y_true_out[1] = 'C:min'    # min6 -> min
         Y_true_out[2] = 'C:maj'    # maj6 -> maj
     if '7' not in VOCAB:
         Y_true_out[5] = 'C#:dim'   # dim7 -> dim
@@ -844,6 +844,16 @@ def test_task_chord_tag_present(SR, HOP_LENGTH, VOCAB, SPARSE):
     Y_expected = np.repeat(Y_true_out, (SR // HOP_LENGTH), axis=0)
 
     assert np.all(Y_pred == Y_expected)
+
+
+@pytest.mark.xfail(raises=pumpp.ParameterError)
+def test_task_chord_tag_badinit():
+    trans = pumpp.task.ChordTagTransformer(name='chord', vocab='3567s', p_init=np.ones(5))
+
+
+@pytest.mark.xfail(raises=pumpp.ParameterError)
+def test_task_chord_tag_badstate():
+    trans = pumpp.task.ChordTagTransformer(name='chord', vocab='3567s', p_state=np.ones(5))
 
 
 def test_task_chord_tag_absent(SR, HOP_LENGTH, VOCAB, SPARSE):
@@ -958,6 +968,7 @@ def test_task_beatpos_present(SR, HOP_LENGTH, MAX_DIVISIONS, SPARSE):
                            axis=0).astype(Y_pred.dtype)
     for i, (y1, y2) in enumerate(zip(Y_pred, Y_expected)):
         assert y1 == y2
+
 
 def test_task_beatpos_tail(SR, HOP_LENGTH, SPARSE):
     # This test checks for implicit end-of-bar encodings
