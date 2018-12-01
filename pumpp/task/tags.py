@@ -71,10 +71,12 @@ class DynamicLabelTransformer(BaseTaskTransformer):
         else:
             self.transition = np.empty((len(self._classes), 2, 2))
             if np.isscalar(p_self):
-                p_self = p_self * np.ones(len(self._classes))
-
-            for i in range(len(self._classes)):
-                self.transition[i] = transition_loop(2, p_self[i])
+                self.transition = transition_loop(2, p_self)
+            elif len(p_self) != len(self._classes):
+                raise ParameterError('Invalid p_self.shape={} for vocabulary {} size={}'.format(p_self.shape, vocab, len(self._classes)))
+            else:
+                for i in range(len(self._classes)):
+                    self.transition[i] = transition_loop(2, p_self[i])
 
         if p_init is not None:
             if len(p_init) != len(self._classes):
