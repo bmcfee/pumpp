@@ -334,6 +334,24 @@ def test_task_dlabel_auto(SR, HOP_LENGTH):
         assert type_match(output[key].dtype, trans.fields[key].dtype)
 
 
+@pytest.mark.xfail(raises=pumpp.ParameterError)
+def test_task_dlabel_badself():
+    pumpp.task.DynamicLabelTransformer(name='genre', namespace='tag_gtzan',
+                                       p_self=np.ones(5))
+
+
+@pytest.mark.xfail(raises=pumpp.ParameterError)
+def test_task_dlabel_badinit():
+    pumpp.task.DynamicLabelTransformer(name='genre', namespace='tag_gtzan',
+                                       p_init=np.ones(5))
+
+
+@pytest.mark.xfail(raises=pumpp.ParameterError)
+def test_task_dlabel_badstate():
+    pumpp.task.DynamicLabelTransformer(name='genre', namespace='tag_gtzan',
+                                       p_state=np.ones(5))
+
+
 def test_task_slabel_absent():
     labels = ['alpha', 'beta', 'psycho', 'aqua', 'disco']
 
@@ -848,12 +866,12 @@ def test_task_chord_tag_present(SR, HOP_LENGTH, VOCAB, SPARSE):
 
 @pytest.mark.xfail(raises=pumpp.ParameterError)
 def test_task_chord_tag_badinit():
-    trans = pumpp.task.ChordTagTransformer(name='chord', vocab='3567s', p_init=np.ones(5))
+    pumpp.task.ChordTagTransformer(name='chord', vocab='3567s', p_init=np.ones(5))
 
 
 @pytest.mark.xfail(raises=pumpp.ParameterError)
 def test_task_chord_tag_badstate():
-    trans = pumpp.task.ChordTagTransformer(name='chord', vocab='3567s', p_state=np.ones(5))
+    pumpp.task.ChordTagTransformer(name='chord', vocab='3567s', p_state=np.ones(5))
 
 
 def test_task_chord_tag_absent(SR, HOP_LENGTH, VOCAB, SPARSE):

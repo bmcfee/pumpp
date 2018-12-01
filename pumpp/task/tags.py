@@ -11,6 +11,7 @@ from librosa.sequence import transition_loop
 import jams
 
 from .base import BaseTaskTransformer
+from ..exceptions import ParameterError
 
 __all__ = ['DynamicLabelTransformer', 'StaticLabelTransformer']
 
@@ -73,23 +74,23 @@ class DynamicLabelTransformer(BaseTaskTransformer):
             if np.isscalar(p_self):
                 self.transition = transition_loop(2, p_self)
             elif len(p_self) != len(self._classes):
-                raise ParameterError('Invalid p_self.shape={} for vocabulary {} size={}'.format(p_self.shape, vocab, len(self._classes)))
+                raise ParameterError('Invalid p_self.shape={} for vocabulary size={}'.format(p_self.shape, len(self._classes)))
             else:
                 for i in range(len(self._classes)):
                     self.transition[i] = transition_loop(2, p_self[i])
 
         if p_init is not None:
             if len(p_init) != len(self._classes):
-                raise ParameterError('Invalid p_init.shape={} for vocabulary {} size={}'.format(p_init.shape, vocab, len(self._classes)))
+                raise ParameterError('Invalid p_init.shape={} for vocabulary size={}'.format(p_init.shape, len(self._classes)))
 
         self.p_init = p_init
 
         if p_state is not None:
             if len(p_state) != len(self._classes):
-                raise ParameterError('Invalid p_state.shape={} for vocabulary {} size={}'.format(p_state.shape, vocab, len(self._classes)))
+                raise ParameterError('Invalid p_state.shape={} for vocabulary size={}'.format(p_state.shape, len(self._classes)))
 
         self.p_state = p_state
-        
+
         self.register('tags', [None, len(self._classes)], np.bool)
 
     def empty(self, duration):
