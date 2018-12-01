@@ -122,6 +122,46 @@ def p_state_tags(request):
         return None
 
 
+@pytest.fixture(params=[None, False, True])
+def p_self_beat(request):
+    if request.param is None:
+        return None
+    elif request.param:
+        return np.asarray([0.5, 0.0])
+    else:
+        return 0.5
+
+
+@pytest.fixture(params=[None, False, True])
+def p_self_down(request):
+    if request.param is None:
+        return None
+    elif request.param:
+        return np.asarray([0.5, 0.0])
+    else:
+        return 0.5
+
+
+@pytest.fixture(params=[None, 0.5])
+def p_init_beat(request):
+    return request.param
+
+
+@pytest.fixture(params=[None, 0.5])
+def p_init_down(request):
+    return request.param
+
+
+@pytest.fixture(params=[None, 0.5])
+def p_state_beat(request):
+    return request.param
+
+
+@pytest.fixture(params=[None, 0.5])
+def p_state_down(request):
+    return request.param
+
+
 @pytest.fixture()
 def ann_segment():
 
@@ -209,9 +249,14 @@ def test_decode_tags_static_soft(ann_tag):
     assert np.allclose(data['tags'], data2['tags'])
 
 
-def test_decode_beat_hard(sr, hop_length, ann_beat):
+def test_decode_beat_hard(sr, hop_length, ann_beat,
+                          p_self_beat, p_init_beat, p_state_beat):
 
-    tc = pumpp.task.BeatTransformer('beat', sr=sr, hop_length=hop_length)
+    tc = pumpp.task.BeatTransformer('beat', sr=sr,
+                                    hop_length=hop_length,
+                                    p_self_beat=p_self_beat,
+                                    p_init_beat=p_init_beat,
+                                    p_state_beat=p_state_beat)
 
     data = tc.transform_annotation(ann_beat, ann_beat.duration)
     inverse = tc.inverse(data['beat'], duration=ann_beat.duration)
@@ -222,12 +267,17 @@ def test_decode_beat_hard(sr, hop_length, ann_beat):
     assert np.allclose(data['beat'], data2['beat'])
 
 
-def test_decode_beat_soft(sr, hop_length, ann_beat):
+def test_decode_beat_soft(sr, hop_length, ann_beat,
+                          p_self_beat, p_init_beat, p_state_beat):
 
-    tc = pumpp.task.BeatTransformer('beat', sr=sr, hop_length=hop_length)
+    tc = pumpp.task.BeatTransformer('beat', sr=sr,
+                                    hop_length=hop_length,
+                                    p_self_beat=p_self_beat,
+                                    p_init_beat=p_init_beat,
+                                    p_state_beat=p_state_beat)
 
     data = tc.transform_annotation(ann_beat, ann_beat.duration)
-    beat_pred = data['beat'] * 0.51 + 0.1
+    beat_pred = 0.9 * data['beat'] + 0.1 * np.ones_like(data['beat']) / data['beat'].shape[-1]
 
     inverse = tc.inverse(beat_pred, duration=ann_beat.duration)
     for obs in inverse:
@@ -237,9 +287,17 @@ def test_decode_beat_soft(sr, hop_length, ann_beat):
     assert np.allclose(data['beat'], data2['beat'])
 
 
-def test_decode_beat_downbeat_hard(sr, hop_length, ann_beat):
+def test_decode_beat_downbeat_hard(sr, hop_length, ann_beat,
+                                   p_self_beat, p_init_beat, p_state_beat,
+                                   p_self_down, p_init_down, p_state_down):
 
-    tc = pumpp.task.BeatTransformer('beat', sr=sr, hop_length=hop_length)
+    tc = pumpp.task.BeatTransformer('beat', sr=sr, hop_length=hop_length,
+                                    p_self_beat=p_self_beat,
+                                    p_init_beat=p_init_beat,
+                                    p_state_beat=p_state_beat,
+                                    p_self_down=p_self_down,
+                                    p_init_down=p_init_down,
+                                    p_state_down=p_state_down)
 
     data = tc.transform_annotation(ann_beat, ann_beat.duration)
     inverse = tc.inverse(data['beat'], downbeat=data['downbeat'],
@@ -251,13 +309,21 @@ def test_decode_beat_downbeat_hard(sr, hop_length, ann_beat):
     assert np.allclose(data['beat'], data2['beat'])
 
 
-def test_decode_beat_downbeat_soft(sr, hop_length, ann_beat):
+def test_decode_beat_downbeat_soft(sr, hop_length, ann_beat,
+                                   p_self_beat, p_init_beat, p_state_beat,
+                                   p_self_down, p_init_down, p_state_down):
 
-    tc = pumpp.task.BeatTransformer('beat', sr=sr, hop_length=hop_length)
+    tc = pumpp.task.BeatTransformer('beat', sr=sr, hop_length=hop_length,
+                                    p_self_beat=p_self_beat,
+                                    p_init_beat=p_init_beat,
+                                    p_state_beat=p_state_beat,
+                                    p_self_down=p_self_down,
+                                    p_init_down=p_init_down,
+                                    p_state_down=p_state_down)
 
     data = tc.transform_annotation(ann_beat, ann_beat.duration)
-    beat_pred = data['beat'] * 0.51 + 0.1
-    dbeat_pred = data['downbeat'] * 0.51 + 0.1
+    beat_pred = 0.9 * data['beat'] + 0.1 * np.ones_like(data['beat']) / data['beat'].shape[-1]
+    dbeat_pred = 0.9 * data['downbeat'] + 0.1 * np.ones_like(data['downbeat']) / data['downbeat'].shape[-1]
     inverse = tc.inverse(beat_pred, downbeat=dbeat_pred,
                          duration=ann_beat.duration)
     for obs in inverse:

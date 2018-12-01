@@ -616,6 +616,26 @@ def test_task_beat_absent(SR, HOP_LENGTH):
         assert type_match(output[key].dtype, trans.fields[key].dtype)
 
 
+@pytest.mark.xfail(raises=pumpp.ParameterError)
+def test_task_beat_badbeatinit():
+    pumpp.task.BeatTransformer(p_init_beat=np.ones(3))
+
+
+@pytest.mark.xfail(raises=pumpp.ParameterError)
+def test_task_beat_baddowninit():
+    pumpp.task.BeatTransformer(p_init_down=np.ones(3))
+
+
+@pytest.mark.xfail(raises=pumpp.ParameterError)
+def test_task_beat_badbeatstate():
+    pumpp.task.BeatTransformer(p_state_beat=np.ones(3))
+
+
+@pytest.mark.xfail(raises=pumpp.ParameterError)
+def test_task_beat_baddownstate():
+    pumpp.task.BeatTransformer(p_state_down=np.ones(3))
+
+
 def test_task_structure_fields():
 
     trans = pumpp.task.StructureTransformer(name='struct')
