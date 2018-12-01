@@ -75,6 +75,27 @@ def ann_chord():
     return ann
 
 
+@pytest.fixture(params=[None, 0.5])
+def p_self_chord(request):
+    return request.param
+
+
+@pytest.fixture(params=[False, True])
+def p_init_chord(request):
+    if request.param:
+        return np.ones(170) / 170
+    else:
+        return None
+
+
+@pytest.fixture(params=[False, True])
+def p_state_chord(request):
+    if request.param:
+        return np.ones(170) / 170
+    else:
+        return None
+
+
 @pytest.fixture()
 def ann_segment():
 
@@ -273,17 +294,20 @@ def test_decode_chordtag_hard_dense(sr, hop_length, ann_chord):
     assert np.allclose(data['chord'], data2['chord'])
 
 
-def test_decode_chordtag_soft_dense(sr, hop_length, ann_chord):
+def test_decode_chordtag_soft_dense(sr, hop_length, ann_chord, p_self_chord, p_init_chord, p_state_chord):
 
     # This test encodes an annotation, decodes it, and then re-encodes it
     # It passes if the re-encoded version matches the initial encoding
     tc = pumpp.task.ChordTagTransformer('chord', vocab='3567s',
                                         hop_length=hop_length,
-                                        sr=sr, sparse=False)
+                                        sr=sr, sparse=False,
+                                        p_self=p_self_chord,
+                                        p_init=p_init_chord,
+                                        p_state=p_state_chord)
 
     data = tc.transform_annotation(ann_chord, ann_chord.duration)
 
-    chord_predict = data['chord'] * 0.51 + 0.1
+    chord_predict = 0.9 * data['chord'] + 0.1 * np.ones_like(data['chord']) / data['chord'].shape[1]
     inverse = tc.inverse(chord_predict, duration=ann_chord.duration)
 
     for obs in inverse:
@@ -338,22 +362,29 @@ def test_decode_chordtag_hard_dense_sparse(sr, hop_length, ann_chord):
     assert np.allclose(dense_positions, sparse_positions)
 
 
-def test_decode_chordtag_soft_dense_sparse(sr, hop_length, ann_chord):
+def test_decode_chordtag_soft_dense_sparse(sr, hop_length, ann_chord, p_self_chord, p_init_chord, p_state_chord):
 
     # This test encodes an annotation, decodes it, and then re-encodes it
     # It passes if the re-encoded version matches the initial encoding
     tcd = pumpp.task.ChordTagTransformer('chord', vocab='3567s',
                                          hop_length=hop_length,
-                                         sr=sr, sparse=False)
+                                         sr=sr, sparse=False,
+                                         p_self=p_self_chord,
+                                         p_init=p_init_chord,
+                                         p_state=p_state_chord)
 
     tcs = pumpp.task.ChordTagTransformer('chord', vocab='3567s',
                                          hop_length=hop_length,
-                                         sr=sr, sparse=True)
+                                         sr=sr, sparse=True,
+                                         p_self=p_self_chord,
+                                         p_init=p_init_chord,
+                                         p_state=p_state_chord)
 
     # Make a soft, dense encoding of the data
     data = tcd.transform_annotation(ann_chord, ann_chord.duration)
 
-    chord_predict = data['chord'] * 0.51 + 0.1
+    chord_predict = 0.9 * data['chord'] + 0.1 * np.ones_like(data['chord']) / data['chord'].shape[1]
+
     # Invert using the sparse encoder
     inverse = tcs.inverse(chord_predict, duration=ann_chord.duration)
     for obs in inverse:
@@ -390,3 +421,14 @@ def test_decode_beatpos(sr, hop_length, ann_beat):
     data2 = tc.transform_annotation(inverse, ann_beat.duration)
 
     assert np.allclose(data['position'], data2['position'])
+
+
+# TODO
+#   add some base tests for viterbi decoding in the following cases
+#   events
+#
+#   intervals
+#       +- multi
+#           w/wo independent transitions / inits / states
+#       +- sparse
+

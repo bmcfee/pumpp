@@ -340,7 +340,7 @@ class BaseTaskTransformer(Scope):
                 else:
                     encoded_ = viterbi_discriminative(encoded.T, transition,
                                                       p_init=p_init,
-                                                      p_state=p_state)[:, np.newaxis]
+                                                      p_state=p_state)
                     # Map to one-hot encoding
                     encoded = np.zeros(encoded.shape, dtype=bool)
                     encoded[np.arange(len(encoded_)), encoded_] = True

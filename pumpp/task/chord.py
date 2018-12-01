@@ -10,6 +10,8 @@ from sklearn.preprocessing import LabelBinarizer, LabelEncoder
 from sklearn.preprocessing import MultiLabelBinarizer
 
 from librosa import time_to_frames
+from librosa.sequence import transition_loop
+
 import mir_eval
 import jams
 
@@ -63,11 +65,13 @@ class ChordTransformer(BaseTaskTransformer):
         If True, root and bass values are sparsely encoded as integers in [0, 12].
         If False, root and bass values are densely encoded as 13-dimensional booleans.
 
+
     See Also
     --------
     SimpleChordTransformer
     '''
-    def __init__(self, name='chord', sr=22050, hop_length=512, sparse=False):
+    def __init__(self, name='chord', sr=22050, hop_length=512, sparse=False,
+                 p_self=None, p_init=None, p_state=None):
         '''Initialize a chord task transformer'''
 
         super(ChordTransformer, self).__init__(name=name,
@@ -322,13 +326,23 @@ class ChordTagTransformer(BaseTaskTransformer):
     hop_length : int > 0
         Hop length for annotation frames
 
+    p_self : None, float in (0, 1), or np.ndarray [shape=(n_labels,)]
+        Optional self-loop probability(ies), used for Viterbi decoding
+
+    p_state : None or np.ndarray [shape=(m,)]
+        Optional marginal probability for each event
+
+    p_init : None or np.ndarray [shape=(m,)]
+        Optional marginal probability for each event
+
     See Also
     --------
     ChordTransformer
     SimpleChordTransformer
     '''
     def __init__(self, name='chord', vocab='3567s',
-                 sr=22050, hop_length=512, sparse=False):
+                 sr=22050, hop_length=512, sparse=False,
+                 p_self=None, p_init=None, p_state=None):
 
         super(ChordTagTransformer, self).__init__(name=name,
                                                   namespace='chord',
@@ -358,6 +372,14 @@ class ChordTagTransformer(BaseTaskTransformer):
             self.encoder = LabelBinarizer()
         self.encoder.fit(labels)
         self._classes = set(self.encoder.classes_)
+
+        if p_self is None:
+            self.transition = None
+        else:
+            self.transition = transition_loop(len(self._classes), p_self)
+
+        self.p_init = p_init
+        self.p_state = p_state
 
         # Construct the quality mask for chord encoding
         self.mask_ = 0b000000000000
@@ -492,7 +514,10 @@ class ChordTagTransformer(BaseTaskTransformer):
         for start, end, value in self.decode_intervals(encoded,
                                                        duration=duration,
                                                        multi=False,
-                                                       sparse=self.sparse):
+                                                       sparse=self.sparse,
+                                                       transition=self.transition,
+                                                       p_init=self.p_init,
+                                                       p_state=self.p_state):
 
             # Map start:end to frames
             f_start, f_end = time_to_frames([start, end],
