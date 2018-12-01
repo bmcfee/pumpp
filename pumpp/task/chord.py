@@ -65,13 +65,11 @@ class ChordTransformer(BaseTaskTransformer):
         If True, root and bass values are sparsely encoded as integers in [0, 12].
         If False, root and bass values are densely encoded as 13-dimensional booleans.
 
-
     See Also
     --------
     SimpleChordTransformer
     '''
-    def __init__(self, name='chord', sr=22050, hop_length=512, sparse=False,
-                 p_self=None, p_init=None, p_state=None):
+    def __init__(self, name='chord', sr=22050, hop_length=512, sparse=False):
         '''Initialize a chord task transformer'''
 
         super(ChordTransformer, self).__init__(name=name,
@@ -329,11 +327,21 @@ class ChordTagTransformer(BaseTaskTransformer):
     p_self : None, float in (0, 1), or np.ndarray [shape=(n_labels,)]
         Optional self-loop probability(ies), used for Viterbi decoding
 
-    p_state : None or np.ndarray [shape=(m,)]
-        Optional marginal probability for each event
+    p_state : None or np.ndarray [shape=(n_labels,)]
+        Optional marginal probability for each chord class
 
-    p_init : None or np.ndarray [shape=(m,)]
-        Optional marginal probability for each event
+    p_init : None or np.ndarray [shape=(n_labels,)]
+        Optional initial probability for each chord class
+
+    Notes
+    -----
+    The number of chord classes (`n_labels`) depends on the vocabulary:
+
+        - '3' => 2 + 12 * 2 = 26
+        - '35' => 2 + 12 * 4 = 50
+        - '356' => 2 + 12 * 6 = 74
+        - '3567' => 2 + 12 * 12 = 146
+        - '3567s' => 2 + 12 * 14 = 170
 
     See Also
     --------
@@ -378,7 +386,16 @@ class ChordTagTransformer(BaseTaskTransformer):
         else:
             self.transition = transition_loop(len(self._classes), p_self)
 
+        if p_init is not None:
+            if len(p_init) != len(self._classes):
+                raise ParameterError('Invalid p_init.shape={} for vocabulary {} size={}'.format(p_init.shape, vocab, len(self._classes)))
+
         self.p_init = p_init
+
+        if p_state is not None:
+            if len(p_state) != len(self._classes):
+                raise ParameterError('Invalid p_state.shape={} for vocabulary {} size={}'.format(p_state.shape, vocab, len(self._classes)))
+
         self.p_state = p_state
 
         # Construct the quality mask for chord encoding
