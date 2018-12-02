@@ -1,6 +1,14 @@
 Changes
 -------
 
+0.4.0
+=====
+- `#100`_ Added viterbi decoding options for tags, chords, and beat transformers
+- `#99`_ Updated test suite
+
+.. _#100: https://github.com/bmcfee/pumpp/pull/100
+.. _#99: https://github.com/bmcfee/pumpp/pull/99
+
 0.3.3
 =====
 - `#95`_ Data durations are now checked before sampling
