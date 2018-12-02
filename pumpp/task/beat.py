@@ -57,10 +57,7 @@ class BeatTransformer(BaseTaskTransformer):
                                               namespace='beat',
                                               sr=sr, hop_length=hop_length)
 
-        if p_self_beat is None:
-            self.beat_transition = None
-        else:
-            self.beat_transition = transition_loop(2, p_self_beat)
+        self.set_transition_beat(p_self_beat)
 
         if p_init_beat is not None:
             if not np.isscalar(p_init_beat):
@@ -74,10 +71,7 @@ class BeatTransformer(BaseTaskTransformer):
 
         self.beat_p_state = p_state_beat
 
-        if p_self_down is None:
-            self.down_transition = None
-        else:
-            self.down_transition = transition_loop(2, p_self_down)
+        self.set_transition_down(p_self_beat)
 
         if p_init_down is not None:
             if not np.isscalar(p_init_down):
@@ -94,6 +88,34 @@ class BeatTransformer(BaseTaskTransformer):
         self.register('beat', [None], np.bool)
         self.register('downbeat', [None], np.bool)
         self.register('mask_downbeat', [1], np.bool)
+
+    def set_transition_beat(self, p_self):
+        '''Set the beat-tracking transition matrix according to
+        self-loop probabilities.
+
+        Parameters
+        ----------
+        p_self : None, float in (0, 1), or np.ndarray [shape=(2,)]
+            Optional self-loop probability(ies), used for Viterbi decoding
+        '''
+        if p_self is None:
+            self.beat_transition = None
+        else:
+            self.beat_transition = transition_loop(2, p_self)
+
+    def set_transition_down(self, p_self):
+        '''Set the downbeat-tracking transition matrix according to
+        self-loop probabilities.
+
+        Parameters
+        ----------
+        p_self : None, float in (0, 1), or np.ndarray [shape=(2,)]
+            Optional self-loop probability(ies), used for Viterbi decoding
+        '''
+        if p_self is None:
+            self.down_transition = None
+        else:
+            self.down_transition = transition_loop(2, p_self)
 
     def transform_annotation(self, ann, duration):
         '''Apply the beat transformer

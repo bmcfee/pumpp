@@ -381,10 +381,7 @@ class ChordTagTransformer(BaseTaskTransformer):
         self.encoder.fit(labels)
         self._classes = set(self.encoder.classes_)
 
-        if p_self is None:
-            self.transition = None
-        else:
-            self.transition = transition_loop(len(self._classes), p_self)
+        self.set_transition(p_self)
 
         if p_init is not None:
             if len(p_init) != len(self._classes):
@@ -415,6 +412,19 @@ class ChordTagTransformer(BaseTaskTransformer):
             self.register('chord', [None, 1], np.int)
         else:
             self.register('chord', [None, len(self._classes)], np.bool)
+
+    def set_transition(self, p_self):
+        '''Set the transition matrix according to self-loop probabilities.
+
+        Parameters
+        ----------
+        p_self : None, float in (0, 1), or np.ndarray [shape=(n_labels,)]
+            Optional self-loop probability(ies), used for Viterbi decoding
+        '''
+        if p_self is None:
+            self.transition = None
+        else:
+            self.transition = transition_loop(len(self._classes), p_self)
 
     def empty(self, duration):
         '''Empty chord annotations
