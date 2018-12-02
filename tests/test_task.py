@@ -49,7 +49,7 @@ def shape_match(sh1, sh2):
 
 def type_match(x, y):
 
-    return np.issubdtype(x, y) and np.issubdtype(y, x)
+    return np.issubdtype(np.dtype(x), np.dtype(y)) and np.issubdtype(np.dtype(y), np.dtype(x))
 
 
 def test_task_chord_fields(SPARSE):
@@ -65,9 +65,9 @@ def test_task_chord_fields(SPARSE):
 
     if SPARSE:
         assert trans.fields['mychord/root'].shape == (None, 1)
-        assert np.issubdtype(trans.fields['mychord/root'].dtype, np.int)
+        assert np.issubdtype(trans.fields['mychord/root'].dtype, np.integer)
         assert trans.fields['mychord/bass'].shape == (None, 1)
-        assert np.issubdtype(trans.fields['mychord/bass'].dtype, np.int)
+        assert np.issubdtype(trans.fields['mychord/bass'].dtype, np.integer)
     else:
         assert trans.fields['mychord/root'].shape == (None, 13)
         assert trans.fields['mychord/root'].dtype is np.bool
@@ -334,6 +334,24 @@ def test_task_dlabel_auto(SR, HOP_LENGTH):
         assert type_match(output[key].dtype, trans.fields[key].dtype)
 
 
+@pytest.mark.xfail(raises=pumpp.ParameterError)
+def test_task_dlabel_badself():
+    pumpp.task.DynamicLabelTransformer(name='genre', namespace='tag_gtzan',
+                                       p_self=np.ones(5))
+
+
+@pytest.mark.xfail(raises=pumpp.ParameterError)
+def test_task_dlabel_badinit():
+    pumpp.task.DynamicLabelTransformer(name='genre', namespace='tag_gtzan',
+                                       p_init=np.ones(5))
+
+
+@pytest.mark.xfail(raises=pumpp.ParameterError)
+def test_task_dlabel_badstate():
+    pumpp.task.DynamicLabelTransformer(name='genre', namespace='tag_gtzan',
+                                       p_state=np.ones(5))
+
+
 def test_task_slabel_absent():
     labels = ['alpha', 'beta', 'psycho', 'aqua', 'disco']
 
@@ -598,6 +616,26 @@ def test_task_beat_absent(SR, HOP_LENGTH):
         assert type_match(output[key].dtype, trans.fields[key].dtype)
 
 
+@pytest.mark.xfail(raises=pumpp.ParameterError)
+def test_task_beat_badbeatinit():
+    pumpp.task.BeatTransformer(p_init_beat=np.ones(3))
+
+
+@pytest.mark.xfail(raises=pumpp.ParameterError)
+def test_task_beat_baddowninit():
+    pumpp.task.BeatTransformer(p_init_down=np.ones(3))
+
+
+@pytest.mark.xfail(raises=pumpp.ParameterError)
+def test_task_beat_badbeatstate():
+    pumpp.task.BeatTransformer(p_state_beat=np.ones(3))
+
+
+@pytest.mark.xfail(raises=pumpp.ParameterError)
+def test_task_beat_baddownstate():
+    pumpp.task.BeatTransformer(p_state_down=np.ones(3))
+
+
 def test_task_structure_fields():
 
     trans = pumpp.task.StructureTransformer(name='struct')
@@ -761,7 +799,7 @@ def test_task_chord_tag_fields(vocab, vocab_size, SPARSE):
 
     if SPARSE:
         assert trans.fields['mychord/chord'].shape == (None, 1)
-        assert np.issubdtype(trans.fields['mychord/chord'].dtype, np.int)
+        assert np.issubdtype(trans.fields['mychord/chord'].dtype, np.integer)
     else:
         assert trans.fields['mychord/chord'].shape == (None, vocab_size)
         assert trans.fields['mychord/chord'].dtype is np.bool
@@ -806,7 +844,7 @@ def test_task_chord_tag_present(SR, HOP_LENGTH, VOCAB, SPARSE):
         Y_true_out[11] = 'X'       # sus2 -> X
         Y_true_out[12] = 'X'       # sus4 -> X
     if '6' not in VOCAB:
-        Y_true_out[1] = 'C:min'    # min6 -> maj
+        Y_true_out[1] = 'C:min'    # min6 -> min
         Y_true_out[2] = 'C:maj'    # maj6 -> maj
     if '7' not in VOCAB:
         Y_true_out[5] = 'C#:dim'   # dim7 -> dim
@@ -844,6 +882,16 @@ def test_task_chord_tag_present(SR, HOP_LENGTH, VOCAB, SPARSE):
     Y_expected = np.repeat(Y_true_out, (SR // HOP_LENGTH), axis=0)
 
     assert np.all(Y_pred == Y_expected)
+
+
+@pytest.mark.xfail(raises=pumpp.ParameterError)
+def test_task_chord_tag_badinit():
+    pumpp.task.ChordTagTransformer(name='chord', vocab='3567s', p_init=np.ones(5))
+
+
+@pytest.mark.xfail(raises=pumpp.ParameterError)
+def test_task_chord_tag_badstate():
+    pumpp.task.ChordTagTransformer(name='chord', vocab='3567s', p_state=np.ones(5))
 
 
 def test_task_chord_tag_absent(SR, HOP_LENGTH, VOCAB, SPARSE):
@@ -886,7 +934,7 @@ def test_task_beatpos_fields(max_divisions, n_states, SPARSE):
 
     if SPARSE:
         assert trans.fields['mybeat/position'].shape == (None, 1)
-        assert np.issubdtype(trans.fields['mybeat/position'].dtype, np.int)
+        assert np.issubdtype(trans.fields['mybeat/position'].dtype, np.integer)
     else:
         assert trans.fields['mybeat/position'].shape == (None, n_states)
         assert trans.fields['mybeat/position'].dtype is np.bool
@@ -958,6 +1006,7 @@ def test_task_beatpos_present(SR, HOP_LENGTH, MAX_DIVISIONS, SPARSE):
                            axis=0).astype(Y_pred.dtype)
     for i, (y1, y2) in enumerate(zip(Y_pred, Y_expected)):
         assert y1 == y2
+
 
 def test_task_beatpos_tail(SR, HOP_LENGTH, SPARSE):
     # This test checks for implicit end-of-bar encodings

@@ -6,10 +6,12 @@ import numpy as np
 from sklearn.preprocessing import MultiLabelBinarizer
 
 from librosa import time_to_frames
+from librosa.sequence import transition_loop
 
 import jams
 
 from .base import BaseTaskTransformer
+from ..exceptions import ParameterError
 
 __all__ = ['DynamicLabelTransformer', 'StaticLabelTransformer']
 
@@ -37,11 +39,22 @@ class DynamicLabelTransformer(BaseTaskTransformer):
     hop_length : int > 0
         The hop length for annotation frames
 
+    p_self : None, float in (0, 1), or np.ndarray [shape=(n_labels,)]
+        Optional self-loop probability(ies), used for Viterbi decoding
+
+    p_state : None or np.ndarray [shape=(n_labels,)]
+        Optional marginal probability for each class
+
+    p_init : None or np.ndarray [shape=(n_labels,)]
+        Optional initial probability for each class
+
+
     See Also
     --------
     StaticLabelTransformer
     '''
-    def __init__(self, name, namespace, labels=None, sr=22050, hop_length=512):
+    def __init__(self, name, namespace, labels=None, sr=22050, hop_length=512,
+                 p_self=None, p_init=None, p_state=None):
         super(DynamicLabelTransformer, self).__init__(name=name,
                                                       namespace=namespace,
                                                       sr=sr,
@@ -54,7 +67,41 @@ class DynamicLabelTransformer(BaseTaskTransformer):
         self.encoder.fit([labels])
         self._classes = set(self.encoder.classes_)
 
+        self.set_transition(p_self)
+
+        if p_init is not None:
+            if len(p_init) != len(self._classes):
+                raise ParameterError('Invalid p_init.shape={} for vocabulary size={}'.format(p_init.shape, len(self._classes)))
+
+        self.p_init = p_init
+
+        if p_state is not None:
+            if len(p_state) != len(self._classes):
+                raise ParameterError('Invalid p_state.shape={} for vocabulary size={}'.format(p_state.shape, len(self._classes)))
+
+        self.p_state = p_state
+
         self.register('tags', [None, len(self._classes)], np.bool)
+
+    def set_transition(self, p_self):
+        '''Set the transition matrix according to self-loop probabilities.
+
+        Parameters
+        ----------
+        p_self : None, float in (0, 1), or np.ndarray [shape=(n_labels,)]
+            Optional self-loop probability(ies), used for Viterbi decoding
+        '''
+        if p_self is None:
+            self.transition = None
+        else:
+            self.transition = np.empty((len(self._classes), 2, 2))
+            if np.isscalar(p_self):
+                self.transition = transition_loop(2, p_self)
+            elif len(p_self) != len(self._classes):
+                raise ParameterError('Invalid p_self.shape={} for vocabulary size={}'.format(p_self.shape, len(self._classes)))
+            else:
+                for i in range(len(self._classes)):
+                    self.transition[i] = transition_loop(2, p_self[i])
 
     def empty(self, duration):
         '''Empty label annotations.
@@ -107,7 +154,10 @@ class DynamicLabelTransformer(BaseTaskTransformer):
 
         ann = jams.Annotation(namespace=self.namespace, duration=duration)
         for start, end, value in self.decode_intervals(encoded,
-                                                       duration=duration):
+                                                       duration=duration,
+                                                       transition=self.transition,
+                                                       p_init=self.p_init,
+                                                       p_state=self.p_state):
             # Map start:end to frames
             f_start, f_end = time_to_frames([start, end],
                                             sr=self.sr,

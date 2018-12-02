@@ -10,6 +10,8 @@ from sklearn.preprocessing import LabelBinarizer, LabelEncoder
 from sklearn.preprocessing import MultiLabelBinarizer
 
 from librosa import time_to_frames
+from librosa.sequence import transition_loop
+
 import mir_eval
 import jams
 
@@ -322,13 +324,33 @@ class ChordTagTransformer(BaseTaskTransformer):
     hop_length : int > 0
         Hop length for annotation frames
 
+    p_self : None, float in (0, 1), or np.ndarray [shape=(n_labels,)]
+        Optional self-loop probability(ies), used for Viterbi decoding
+
+    p_state : None or np.ndarray [shape=(n_labels,)]
+        Optional marginal probability for each chord class
+
+    p_init : None or np.ndarray [shape=(n_labels,)]
+        Optional initial probability for each chord class
+
+    Notes
+    -----
+    The number of chord classes (`n_labels`) depends on the vocabulary:
+
+        - '3' => 2 + 12 * 2 = 26
+        - '35' => 2 + 12 * 4 = 50
+        - '356' => 2 + 12 * 6 = 74
+        - '3567' => 2 + 12 * 12 = 146
+        - '3567s' => 2 + 12 * 14 = 170
+
     See Also
     --------
     ChordTransformer
     SimpleChordTransformer
     '''
     def __init__(self, name='chord', vocab='3567s',
-                 sr=22050, hop_length=512, sparse=False):
+                 sr=22050, hop_length=512, sparse=False,
+                 p_self=None, p_init=None, p_state=None):
 
         super(ChordTagTransformer, self).__init__(name=name,
                                                   namespace='chord',
@@ -359,6 +381,20 @@ class ChordTagTransformer(BaseTaskTransformer):
         self.encoder.fit(labels)
         self._classes = set(self.encoder.classes_)
 
+        self.set_transition(p_self)
+
+        if p_init is not None:
+            if len(p_init) != len(self._classes):
+                raise ParameterError('Invalid p_init.shape={} for vocabulary {} size={}'.format(p_init.shape, vocab, len(self._classes)))
+
+        self.p_init = p_init
+
+        if p_state is not None:
+            if len(p_state) != len(self._classes):
+                raise ParameterError('Invalid p_state.shape={} for vocabulary {} size={}'.format(p_state.shape, vocab, len(self._classes)))
+
+        self.p_state = p_state
+
         # Construct the quality mask for chord encoding
         self.mask_ = 0b000000000000
         if '3' in self.vocab:
@@ -376,6 +412,19 @@ class ChordTagTransformer(BaseTaskTransformer):
             self.register('chord', [None, 1], np.int)
         else:
             self.register('chord', [None, len(self._classes)], np.bool)
+
+    def set_transition(self, p_self):
+        '''Set the transition matrix according to self-loop probabilities.
+
+        Parameters
+        ----------
+        p_self : None, float in (0, 1), or np.ndarray [shape=(n_labels,)]
+            Optional self-loop probability(ies), used for Viterbi decoding
+        '''
+        if p_self is None:
+            self.transition = None
+        else:
+            self.transition = transition_loop(len(self._classes), p_self)
 
     def empty(self, duration):
         '''Empty chord annotations
@@ -492,7 +541,10 @@ class ChordTagTransformer(BaseTaskTransformer):
         for start, end, value in self.decode_intervals(encoded,
                                                        duration=duration,
                                                        multi=False,
-                                                       sparse=self.sparse):
+                                                       sparse=self.sparse,
+                                                       transition=self.transition,
+                                                       p_init=self.p_init,
+                                                       p_state=self.p_state):
 
             # Map start:end to frames
             f_start, f_end = time_to_frames([start, end],

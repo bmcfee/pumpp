@@ -75,6 +75,93 @@ def ann_chord():
     return ann
 
 
+@pytest.fixture(params=[None, 0.5])
+def p_self_chord(request):
+    return request.param
+
+
+@pytest.fixture(params=[False, True])
+def p_init_chord(request):
+    if request.param:
+        return np.ones(170) / 170
+    else:
+        return None
+
+
+@pytest.fixture(params=[False, True])
+def p_state_chord(request):
+    if request.param:
+        return np.ones(170) / 170
+    else:
+        return None
+
+
+@pytest.fixture(params=[None, False, True])
+def p_self_tags(request):
+    if request.param is None:
+        return None
+    if request.param:
+        return 0.5 * np.ones(10)  # 10 tags in GTZAN
+    else:
+        return 0.5
+
+
+@pytest.fixture(params=[False, True])
+def p_init_tags(request):
+    if request.param:
+        return 0.5 * np.ones(10)
+    else:
+        return None
+
+
+@pytest.fixture(params=[False, True])
+def p_state_tags(request):
+    if request.param:
+        return 0.5 * np.ones(10)
+    else:
+        return None
+
+
+@pytest.fixture(params=[None, False, True])
+def p_self_beat(request):
+    if request.param is None:
+        return None
+    elif request.param:
+        return np.asarray([0.5, 0.0])
+    else:
+        return 0.5
+
+
+@pytest.fixture(params=[None, False, True])
+def p_self_down(request):
+    if request.param is None:
+        return None
+    elif request.param:
+        return np.asarray([0.5, 0.0])
+    else:
+        return 0.5
+
+
+@pytest.fixture(params=[None, 0.5])
+def p_init_beat(request):
+    return request.param
+
+
+@pytest.fixture(params=[None, 0.5])
+def p_init_down(request):
+    return request.param
+
+
+@pytest.fixture(params=[None, 0.5])
+def p_state_beat(request):
+    return request.param
+
+
+@pytest.fixture(params=[None, 0.5])
+def p_state_down(request):
+    return request.param
+
+
 @pytest.fixture()
 def ann_segment():
 
@@ -90,13 +177,16 @@ def ann_segment():
     return ann
 
 
-def test_decode_tags_dynamic_hard(sr, hop_length, ann_tag):
+def test_decode_tags_dynamic_hard(sr, hop_length, ann_tag, p_self_tags, p_init_tags, p_state_tags):
 
     # This test encodes an annotation, decodes it, and then re-encodes it
     # It passes if the re-encoded version matches the initial encoding
     tc = pumpp.task.DynamicLabelTransformer('genre', 'tag_gtzan',
                                             hop_length=hop_length,
-                                            sr=sr)
+                                            sr=sr,
+                                            p_self=p_self_tags,
+                                            p_init=p_init_tags,
+                                            p_state=p_state_tags)
 
     data = tc.transform_annotation(ann_tag, ann_tag.duration)
 
@@ -108,18 +198,21 @@ def test_decode_tags_dynamic_hard(sr, hop_length, ann_tag):
     assert np.allclose(data['tags'], data2['tags'])
 
 
-def test_decode_tags_dynamic_soft(sr, hop_length, ann_tag):
+def test_decode_tags_dynamic_soft(sr, hop_length, ann_tag, p_self_tags, p_init_tags, p_state_tags):
 
     # This test encodes an annotation, decodes it, and then re-encodes it
     # It passes if the re-encoded version matches the initial encoding
     tc = pumpp.task.DynamicLabelTransformer('genre', 'tag_gtzan',
                                             hop_length=hop_length,
-                                            sr=sr)
+                                            sr=sr,
+                                            p_self=p_self_tags,
+                                            p_init=p_init_tags,
+                                            p_state=p_state_tags)
 
     data = tc.transform_annotation(ann_tag, ann_tag.duration)
 
     # Soften the data, but preserve the decisions
-    tags_predict = data['tags'] * 0.51 + 0.1
+    tags_predict = 0.9 * data['tags'] + 0.1 * np.ones_like(data['tags']) / data['tags'].shape[1]
     inverse = tc.inverse(tags_predict, duration=ann_tag.duration)
     for obs in inverse:
         assert 0. <= obs.confidence <= 1.
@@ -156,9 +249,14 @@ def test_decode_tags_static_soft(ann_tag):
     assert np.allclose(data['tags'], data2['tags'])
 
 
-def test_decode_beat_hard(sr, hop_length, ann_beat):
+def test_decode_beat_hard(sr, hop_length, ann_beat,
+                          p_self_beat, p_init_beat, p_state_beat):
 
-    tc = pumpp.task.BeatTransformer('beat', sr=sr, hop_length=hop_length)
+    tc = pumpp.task.BeatTransformer('beat', sr=sr,
+                                    hop_length=hop_length,
+                                    p_self_beat=p_self_beat,
+                                    p_init_beat=p_init_beat,
+                                    p_state_beat=p_state_beat)
 
     data = tc.transform_annotation(ann_beat, ann_beat.duration)
     inverse = tc.inverse(data['beat'], duration=ann_beat.duration)
@@ -169,12 +267,17 @@ def test_decode_beat_hard(sr, hop_length, ann_beat):
     assert np.allclose(data['beat'], data2['beat'])
 
 
-def test_decode_beat_soft(sr, hop_length, ann_beat):
+def test_decode_beat_soft(sr, hop_length, ann_beat,
+                          p_self_beat, p_init_beat, p_state_beat):
 
-    tc = pumpp.task.BeatTransformer('beat', sr=sr, hop_length=hop_length)
+    tc = pumpp.task.BeatTransformer('beat', sr=sr,
+                                    hop_length=hop_length,
+                                    p_self_beat=p_self_beat,
+                                    p_init_beat=p_init_beat,
+                                    p_state_beat=p_state_beat)
 
     data = tc.transform_annotation(ann_beat, ann_beat.duration)
-    beat_pred = data['beat'] * 0.51 + 0.1
+    beat_pred = 0.9 * data['beat'] + 0.1 * np.ones_like(data['beat']) / data['beat'].shape[-1]
 
     inverse = tc.inverse(beat_pred, duration=ann_beat.duration)
     for obs in inverse:
@@ -184,9 +287,17 @@ def test_decode_beat_soft(sr, hop_length, ann_beat):
     assert np.allclose(data['beat'], data2['beat'])
 
 
-def test_decode_beat_downbeat_hard(sr, hop_length, ann_beat):
+def test_decode_beat_downbeat_hard(sr, hop_length, ann_beat,
+                                   p_self_beat, p_init_beat, p_state_beat,
+                                   p_self_down, p_init_down, p_state_down):
 
-    tc = pumpp.task.BeatTransformer('beat', sr=sr, hop_length=hop_length)
+    tc = pumpp.task.BeatTransformer('beat', sr=sr, hop_length=hop_length,
+                                    p_self_beat=p_self_beat,
+                                    p_init_beat=p_init_beat,
+                                    p_state_beat=p_state_beat,
+                                    p_self_down=p_self_down,
+                                    p_init_down=p_init_down,
+                                    p_state_down=p_state_down)
 
     data = tc.transform_annotation(ann_beat, ann_beat.duration)
     inverse = tc.inverse(data['beat'], downbeat=data['downbeat'],
@@ -198,13 +309,21 @@ def test_decode_beat_downbeat_hard(sr, hop_length, ann_beat):
     assert np.allclose(data['beat'], data2['beat'])
 
 
-def test_decode_beat_downbeat_soft(sr, hop_length, ann_beat):
+def test_decode_beat_downbeat_soft(sr, hop_length, ann_beat,
+                                   p_self_beat, p_init_beat, p_state_beat,
+                                   p_self_down, p_init_down, p_state_down):
 
-    tc = pumpp.task.BeatTransformer('beat', sr=sr, hop_length=hop_length)
+    tc = pumpp.task.BeatTransformer('beat', sr=sr, hop_length=hop_length,
+                                    p_self_beat=p_self_beat,
+                                    p_init_beat=p_init_beat,
+                                    p_state_beat=p_state_beat,
+                                    p_self_down=p_self_down,
+                                    p_init_down=p_init_down,
+                                    p_state_down=p_state_down)
 
     data = tc.transform_annotation(ann_beat, ann_beat.duration)
-    beat_pred = data['beat'] * 0.51 + 0.1
-    dbeat_pred = data['downbeat'] * 0.51 + 0.1
+    beat_pred = 0.9 * data['beat'] + 0.1 * np.ones_like(data['beat']) / data['beat'].shape[-1]
+    dbeat_pred = 0.9 * data['downbeat'] + 0.1 * np.ones_like(data['downbeat']) / data['downbeat'].shape[-1]
     inverse = tc.inverse(beat_pred, downbeat=dbeat_pred,
                          duration=ann_beat.duration)
     for obs in inverse:
@@ -273,17 +392,20 @@ def test_decode_chordtag_hard_dense(sr, hop_length, ann_chord):
     assert np.allclose(data['chord'], data2['chord'])
 
 
-def test_decode_chordtag_soft_dense(sr, hop_length, ann_chord):
+def test_decode_chordtag_soft_dense(sr, hop_length, ann_chord, p_self_chord, p_init_chord, p_state_chord):
 
     # This test encodes an annotation, decodes it, and then re-encodes it
     # It passes if the re-encoded version matches the initial encoding
     tc = pumpp.task.ChordTagTransformer('chord', vocab='3567s',
                                         hop_length=hop_length,
-                                        sr=sr, sparse=False)
+                                        sr=sr, sparse=False,
+                                        p_self=p_self_chord,
+                                        p_init=p_init_chord,
+                                        p_state=p_state_chord)
 
     data = tc.transform_annotation(ann_chord, ann_chord.duration)
 
-    chord_predict = data['chord'] * 0.51 + 0.1
+    chord_predict = 0.9 * data['chord'] + 0.1 * np.ones_like(data['chord']) / data['chord'].shape[1]
     inverse = tc.inverse(chord_predict, duration=ann_chord.duration)
 
     for obs in inverse:
@@ -338,22 +460,29 @@ def test_decode_chordtag_hard_dense_sparse(sr, hop_length, ann_chord):
     assert np.allclose(dense_positions, sparse_positions)
 
 
-def test_decode_chordtag_soft_dense_sparse(sr, hop_length, ann_chord):
+def test_decode_chordtag_soft_dense_sparse(sr, hop_length, ann_chord, p_self_chord, p_init_chord, p_state_chord):
 
     # This test encodes an annotation, decodes it, and then re-encodes it
     # It passes if the re-encoded version matches the initial encoding
     tcd = pumpp.task.ChordTagTransformer('chord', vocab='3567s',
                                          hop_length=hop_length,
-                                         sr=sr, sparse=False)
+                                         sr=sr, sparse=False,
+                                         p_self=p_self_chord,
+                                         p_init=p_init_chord,
+                                         p_state=p_state_chord)
 
     tcs = pumpp.task.ChordTagTransformer('chord', vocab='3567s',
                                          hop_length=hop_length,
-                                         sr=sr, sparse=True)
+                                         sr=sr, sparse=True,
+                                         p_self=p_self_chord,
+                                         p_init=p_init_chord,
+                                         p_state=p_state_chord)
 
     # Make a soft, dense encoding of the data
     data = tcd.transform_annotation(ann_chord, ann_chord.duration)
 
-    chord_predict = data['chord'] * 0.51 + 0.1
+    chord_predict = 0.9 * data['chord'] + 0.1 * np.ones_like(data['chord']) / data['chord'].shape[1]
+
     # Invert using the sparse encoder
     inverse = tcs.inverse(chord_predict, duration=ann_chord.duration)
     for obs in inverse:
@@ -390,3 +519,4 @@ def test_decode_beatpos(sr, hop_length, ann_beat):
     data2 = tc.transform_annotation(inverse, ann_beat.duration)
 
     assert np.allclose(data['position'], data2['position'])
+

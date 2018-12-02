@@ -5,6 +5,7 @@
 import numpy as np
 
 from librosa import time_to_frames
+from librosa.sequence import transition_loop, transition_cycle
 import jams
 from mir_eval.util import boundaries_to_intervals, adjust_intervals
 from sklearn.preprocessing import LabelBinarizer, LabelEncoder
@@ -28,15 +29,93 @@ class BeatTransformer(BaseTaskTransformer):
 
     hop_length : int > 0
         The hop length for annotation frames
+
+    p_self_beat : None, float in (0, 1), or np.ndarray [shape=(2,)]
+        Optional self-loop probability(ies), used for Viterbi decoding
+
+    p_state_beat : None or float in (0, 1)
+        Optional marginal probability for beat state
+
+    p_init_beat : None or float in (0, 1)
+        Optional initial probability for beat state
+
+    p_self_down : None, float in (0, 1), or np.ndarray [shape=(2,)]
+        Optional self-loop probability(ies), used for Viterbi decoding
+
+    p_state_down : None or float in (0, 1)
+        Optional marginal probability for downbeat state
+
+    p_init_down : None or float in (0, 1)
+        Optional initial probability for downbeat state
+
     '''
-    def __init__(self, name='beat', sr=22050, hop_length=512):
+    def __init__(self, name='beat', sr=22050, hop_length=512,
+                 p_self_beat=None, p_init_beat=None, p_state_beat=None,
+                 p_self_down=None, p_init_down=None, p_state_down=None):
+
         super(BeatTransformer, self).__init__(name=name,
                                               namespace='beat',
                                               sr=sr, hop_length=hop_length)
 
+        self.set_transition_beat(p_self_beat)
+
+        if p_init_beat is not None:
+            if not np.isscalar(p_init_beat):
+                raise ParameterError('Invalid p_init_beat={}'.format(p_init_beat))
+
+        self.beat_p_init = p_init_beat
+
+        if p_state_beat is not None:
+            if not np.isscalar(p_state_beat):
+                raise ParameterError('Invalid p_state_beat={}'.format(p_state_beat))
+
+        self.beat_p_state = p_state_beat
+
+        self.set_transition_down(p_self_beat)
+
+        if p_init_down is not None:
+            if not np.isscalar(p_init_down):
+                raise ParameterError('Invalid p_init_down={}'.format(p_init_down))
+
+        self.down_p_init = p_init_down
+
+        if p_state_down is not None:
+            if not np.isscalar(p_state_down):
+                raise ParameterError('Invalid p_state_down={}'.format(p_state_down))
+
+        self.down_p_state = p_state_down
+
         self.register('beat', [None], np.bool)
         self.register('downbeat', [None], np.bool)
         self.register('mask_downbeat', [1], np.bool)
+
+    def set_transition_beat(self, p_self):
+        '''Set the beat-tracking transition matrix according to
+        self-loop probabilities.
+
+        Parameters
+        ----------
+        p_self : None, float in (0, 1), or np.ndarray [shape=(2,)]
+            Optional self-loop probability(ies), used for Viterbi decoding
+        '''
+        if p_self is None:
+            self.beat_transition = None
+        else:
+            self.beat_transition = transition_loop(2, p_self)
+
+    def set_transition_down(self, p_self):
+        '''Set the downbeat-tracking transition matrix according to
+        self-loop probabilities.
+
+        Parameters
+        ----------
+        p_self : None, float in (0, 1), or np.ndarray [shape=(2,)]
+            Optional self-loop probability(ies), used for Viterbi decoding
+        '''
+        if p_self is None:
+            self.down_transition = None
+        else:
+            self.down_transition = transition_loop(2, p_self)
 
     def transform_annotation(self, ann, duration):
         '''Apply the beat transformer
@@ -96,14 +175,19 @@ class BeatTransformer(BaseTaskTransformer):
 
         ann = jams.Annotation(namespace=self.namespace, duration=duration)
 
-        beat_times = np.asarray([t for t, _ in self.decode_events(encoded) if _])
+        beat_times = np.asarray([t for t, _ in self.decode_events(encoded,
+                                                                  transition=self.beat_transition,
+                                                                  p_init=self.beat_p_init,
+                                                                  p_state=self.beat_p_state) if _])
         beat_frames = time_to_frames(beat_times,
                                      sr=self.sr,
                                      hop_length=self.hop_length)
 
         if downbeat is not None:
-            downbeat_times = set([t for t, _ in self.decode_events(downbeat)
-                                  if _])
+            downbeat_times = set([t for t, _ in self.decode_events(downbeat,
+                                                                   transition=self.down_transition,
+                                                                   p_init=self.down_p_init,
+                                                                   p_state=self.down_p_state) if _])
             pickup_beats = len([t for t in beat_times
                                 if t < min(downbeat_times)])
         else:
@@ -160,6 +244,11 @@ class BeatPositionTransformer(BaseTaskTransformer):
             self.encoder = LabelBinarizer()
         self.encoder.fit(labels)
         self._classes = set(self.encoder.classes_)
+
+        # transitions should use transition_loop here
+        #   construct block-wise for each metrical length
+        # initial-state distributions should be over X
+        #   X -> **/01 s
 
         if self.sparse:
             self.register('position', [None, 1], np.int)
