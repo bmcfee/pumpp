@@ -157,6 +157,7 @@ def test_feature_stft(audio, SR, HOP_LENGTH, n_fft, conv, log, dtype):
                              sr=SR, hop_length=HOP_LENGTH,
                              n_fft=n_fft,
                              conv=conv,
+                             log=log,
                              dtype=dtype)
 
     output = ext.transform(**audio)
@@ -174,6 +175,7 @@ def test_feature_stft_phasediff(audio, SR, HOP_LENGTH, n_fft, conv, log, dtype):
                                       sr=SR, hop_length=HOP_LENGTH,
                                       n_fft=n_fft,
                                       conv=conv,
+                                      log=log,
                                       dtype=dtype)
 
     output = ext.transform(**audio)
@@ -192,6 +194,7 @@ def test_feature_stft_mag(audio, SR, HOP_LENGTH, n_fft, conv, log, dtype):
                                 sr=SR, hop_length=HOP_LENGTH,
                                 n_fft=n_fft,
                                 conv=conv,
+                                log=log,
                                 dtype=dtype)
 
     output = ext.transform(**audio)
@@ -226,6 +229,7 @@ def test_feature_mel(audio, SR, HOP_LENGTH, n_fft, n_mels, conv, log, dtype):
                             sr=SR, hop_length=HOP_LENGTH,
                             n_fft=n_fft, n_mels=n_mels,
                             conv=conv,
+                            log=log,
                             dtype=dtype)
 
     output = ext.transform(**audio)
