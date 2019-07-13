@@ -6,7 +6,7 @@ from librosa import cqt, magphase, note_to_hz
 from librosa import amplitude_to_db, get_duration
 from librosa.util import fix_length
 
-from ._utils import phase_diff
+from ._utils import phase_diff, to_dtype
 from .base import FeatureExtractor
 from ..exceptions import ParameterError
 
@@ -44,8 +44,8 @@ class CQT(FeatureExtractor):
 
     '''
     def __init__(self, name, sr, hop_length, n_octaves=8, over_sample=3,
-                 fmin=None, log=False, conv=None):
-        super(CQT, self).__init__(name, sr, hop_length, conv=conv)
+                 fmin=None, log=False, conv=None, dtype='float32'):
+        super(CQT, self).__init__(name, sr, hop_length, conv=conv, dtype=dtype)
 
         if fmin is None:
             fmin = note_to_hz('C1')
@@ -56,8 +56,8 @@ class CQT(FeatureExtractor):
         self.log = log
 
         n_bins = n_octaves * 12 * over_sample
-        self.register('mag', n_bins, np.float32)
-        self.register('phase', n_bins, np.float32)
+        self.register('mag', n_bins, self.dtype)
+        self.register('phase', n_bins, self.dtype)
 
     def transform_audio(self, y):
         '''Compute the CQT
@@ -89,8 +89,8 @@ class CQT(FeatureExtractor):
         if self.log:
             cqtm = amplitude_to_db(cqtm, ref=np.max)
 
-        return {'mag': cqtm.T.astype(np.float32)[self.idx],
-                'phase': np.angle(phase).T.astype(np.float32)[self.idx]}
+        return {'mag': to_dtype(cqtm.T[self.idx], self.dtype),
+                'phase': to_dtype(np.angle(phase).T[self.idx], self.dtype)}
 
 
 class CQTMag(CQT):
@@ -140,7 +140,7 @@ class CQTPhaseDiff(CQT):
                       phase_field.dtype)
 
     def transform_audio(self, y):
-        '''Compute the CQT with unwrapped phase
+        '''Compute the CQT
 
         Parameters
         ----------
@@ -150,15 +150,29 @@ class CQTPhaseDiff(CQT):
         Returns
         -------
         data : dict
-            data['mag'] : np.ndarray, shape=(n_frames, n_bins)
-                CQT magnitude
+            data['mag'] : np.ndarray, shape = (n_frames, n_bins)
+                The CQT magnitude
 
-            data['dphase'] : np.ndarray, shape=(n_frames, n_bins)
-                Unwrapped phase differential
+            data['phase']: np.ndarray, shape = mag.shape
+                The CQT phase
         '''
-        data = super(CQTPhaseDiff, self).transform_audio(y)
-        data['dphase'] = phase_diff(data.pop('phase'), self.conv)
-        return data
+        n_frames = self.n_frames(get_duration(y=y, sr=self.sr))
+
+        C = cqt(y=y, sr=self.sr, hop_length=self.hop_length,
+                fmin=self.fmin,
+                n_bins=(self.n_octaves * self.over_sample * 12),
+                bins_per_octave=(self.over_sample * 12))
+
+        C = fix_length(C, n_frames)
+
+        cqtm, phase = magphase(C)
+        if self.log:
+            cqtm = amplitude_to_db(cqtm, ref=np.max)
+
+        dphase = phase_diff(np.angle(phase).T[self.idx], self.conv)
+
+        return {'mag': to_dtype(cqtm.T[self.idx], self.dtype),
+                'dphase': to_dtype(dphase, self.dtype)}
 
 
 class HCQT(FeatureExtractor):
