@@ -103,8 +103,11 @@ class FeatureExtractor(Scope):
     def transform_audio(self, y):
         raise NotImplementedError
 
-    def layers(self):
-        '''Construct Keras input layers for the given transformer
+    def layers(self, api='keras'):
+        '''Construct input layers for the given transformer
+
+        Parameters
+        ----------
 
         Returns
         -------
@@ -112,6 +115,13 @@ class FeatureExtractor(Scope):
             A dictionary of keras input layers, keyed by the corresponding
             field keys.
         '''
+
+        if api == 'keras':
+            return self.layers_keras()
+        else:
+            raise ParameterError('Unsupported layer api={}'.format(api))
+
+    def layers_keras(self):
         from keras.layers import Input
 
         L = dict()
