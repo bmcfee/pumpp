@@ -13,7 +13,6 @@ Data subsampling
 
 from itertools import count
 
-import six
 import numpy as np
 
 from .base import Slicer
@@ -157,11 +156,11 @@ class Sampler(Slicer):
             as parameterized by the sampler object.
         '''
         if self.n_samples:
-            counter = six.moves.range(self.n_samples)
+            counter = range(self.n_samples)
         else:
             counter = count(0)
 
-        for _, start in six.moves.zip(counter, self.indices(data)):
+        for _, start in zip(counter, self.indices(data)):
             yield self.sample(data, slice(start, start + self.duration))
 
 
@@ -310,12 +309,12 @@ class VariableLengthSampler(Sampler):
             as parameterized by the sampler object.
         '''
         if self.n_samples:
-            counter = six.moves.range(self.n_samples)
+            counter = range(self.n_samples)
         else:
             counter = count(0)
 
         duration = self.data_duration(data)
 
-        for _, start in six.moves.zip(counter, self.indices(data)):
+        for _, start in zip(counter, self.indices(data)):
             yield self.sample(data,
                               slice(start, min(duration, start + self.duration)))
