@@ -2,7 +2,6 @@
 [![GitHub license](https://img.shields.io/badge/license-ISC-blue.svg)](https://raw.githubusercontent.com/bmcfee/pumpp/master/LICENSE)
 [![Build Status](https://travis-ci.org/bmcfee/pumpp.svg?branch=master)](https://travis-ci.org/bmcfee/pumpp)
 [![Coverage Status](https://coveralls.io/repos/github/bmcfee/pumpp/badge.svg?branch=master)](https://coveralls.io/github/bmcfee/pumpp?branch=master)
-[![Dependency Status](https://dependencyci.com/github/bmcfee/pumpp/badge)](https://dependencyci.com/github/bmcfee/pumpp)
 [![Documentation Status](http://readthedocs.org/projects/pumpp/badge/?version=latest)](http://pumpp.readthedocs.io/en/latest/?badge=latest)
 
 
