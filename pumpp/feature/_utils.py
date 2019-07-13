@@ -88,3 +88,32 @@ def quantize(x, ref_min=None, ref_max=None, dtype='uint8'):
     x_quant[x > ref_max] = info.max
     x_quant[x < ref_min] = info.min
     return x_quant
+
+
+def to_dtype(x, dtype):
+    '''Convert an array to a target dtype.  Quantize if integrable.
+
+    Parameters
+    ----------
+    x : np.ndarray
+        The input data
+
+    dtype : np.dtype or type specification
+        The target dtype
+
+    Returns
+    -------
+    x_dtype : np.ndarray, dtype=dtype
+        The converted data.
+
+        If dtype is integrable, `x_dtype` will be quantized.
+
+    See Also
+    --------
+    quantize
+    '''
+
+    if np.issubdtype(dtype, np.integer):
+        return quantize(x, dtype=dtype)
+    else:
+        return x.astype(dtype)

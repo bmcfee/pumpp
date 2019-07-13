@@ -8,6 +8,8 @@ from librosa.util import fix_length
 
 from .base import FeatureExtractor
 
+from ._utils import to_dtype
+
 __all__ = ['Mel']
 
 
@@ -41,15 +43,16 @@ class Mel(FeatureExtractor):
         Otherwise, use a linear amplitude scale.
     '''
     def __init__(self, name, sr, hop_length, n_fft, n_mels, fmax=None,
-                 log=False, conv=None):
+                 log=False, conv=None, dtype='float32'):
         super(Mel, self).__init__(name, sr, hop_length, conv=conv)
 
         self.n_fft = n_fft
         self.n_mels = n_mels
         self.fmax = fmax
         self.log = log
+        self.dtype = dtype
 
-        self.register('mag', n_mels, np.float32)
+        self.register('mag', n_mels, np.dtype(dtype))
 
     def transform_audio(self, y):
         '''Compute the Mel spectrogram
@@ -71,11 +74,14 @@ class Mel(FeatureExtractor):
                                      n_fft=self.n_fft,
                                      hop_length=self.hop_length,
                                      n_mels=self.n_mels,
-                                     fmax=self.fmax)).astype(np.float32)
+                                     fmax=self.fmax))
 
         mel = fix_length(mel, n_frames)
 
         if self.log:
             mel = amplitude_to_db(mel, ref=np.max)
+
+        # Type convert
+        mel = to_dtype(mel, self.dtype)
 
         return {'mag': mel.T[self.idx]}
