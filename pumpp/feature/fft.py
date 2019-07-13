@@ -7,6 +7,7 @@ from librosa import amplitude_to_db, get_duration
 from librosa.util import fix_length
 
 from .base import FeatureExtractor
+from ._utils import phase_diff, to_dtype
 
 __all__ = ['STFT', 'STFTMag', 'STFTPhaseDiff']
 
@@ -34,19 +35,27 @@ class STFT(FeatureExtractor):
 
         Otherwise use linear magnitude.
 
+    conv : str
+        Convolution mode
+
+    dtype : np.dtype
+        The data type for the output features.  Default is `float32`.
+
+        Setting to `uint8` will produce quantized features.
+
     See Also
     --------
     STFTMag
     STFTPhaseDiff
     '''
-    def __init__(self, name, sr, hop_length, n_fft, log=False, conv=None):
-        super(STFT, self).__init__(name, sr, hop_length, conv=conv)
+    def __init__(self, name, sr, hop_length, n_fft, log=False, conv=None, dtype='float32'):
+        super(STFT, self).__init__(name, sr, hop_length, conv=conv, dtype=dtype)
 
         self.n_fft = n_fft
         self.log = log
 
-        self.register('mag', 1 + n_fft // 2, np.float32)
-        self.register('phase', 1 + n_fft // 2, np.float32)
+        self.register('mag', 1 + n_fft // 2, self.dtype)
+        self.register('phase', 1 + n_fft // 2, self.dtype)
 
     def transform_audio(self, y):
         '''Compute the STFT magnitude and phase.
@@ -76,8 +85,8 @@ class STFT(FeatureExtractor):
         if self.log:
             mag = amplitude_to_db(mag, ref=np.max)
 
-        return {'mag': mag.T[self.idx].astype(np.float32),
-                'phase': np.angle(phase.T)[self.idx].astype(np.float32)}
+        return {'mag': to_dtype(mag.T[self.idx], self.dtype),
+                'phase': to_dtype(np.angle(phase.T)[self.idx], self.dtype)}
 
 
 class STFTPhaseDiff(STFT):
@@ -93,25 +102,37 @@ class STFTPhaseDiff(STFT):
         self.register('dphase', 1 + self.n_fft // 2, phase_field.dtype)
 
     def transform_audio(self, y):
-        '''Compute the STFT with phase differentials.
+        '''Compute the STFT magnitude and phase differential.
 
         Parameters
         ----------
         y : np.ndarray
-            the audio buffer
+            The audio buffer
 
         Returns
         -------
         data : dict
             data['mag'] : np.ndarray, shape=(n_frames, 1 + n_fft//2)
-                The STFT magnitude
+                STFT magnitude
 
             data['dphase'] : np.ndarray, shape=(n_frames, 1 + n_fft//2)
-                The unwrapped phase differential
+                STFT phase
         '''
-        data = super(STFTPhaseDiff, self).transform_audio(y)
-        data['dphase'] = self.phase_diff(data.pop('phase'))
-        return data
+        n_frames = self.n_frames(get_duration(y=y, sr=self.sr))
+
+        D = stft(y, hop_length=self.hop_length,
+                 n_fft=self.n_fft)
+
+        D = fix_length(D, n_frames)
+
+        mag, phase = magphase(D)
+        if self.log:
+            mag = amplitude_to_db(mag, ref=np.max)
+
+        phase = phase_diff(np.angle(phase.T)[self.idx], self.conv)
+
+        return {'mag': to_dtype(mag.T[self.idx], self.dtype),
+                'dphase': to_dtype(phase, self.dtype)}
 
 
 class STFTMag(STFT):

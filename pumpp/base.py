@@ -75,8 +75,8 @@ class Scope:
         ParameterError
             If dtype or shape are improperly specified
         '''
-        if not isinstance(dtype, type):
-            raise ParameterError('dtype={} must be a type'.format(dtype))
+        if not isinstance(dtype, (type, np.dtype)):
+            raise ParameterError('dtype={} must be a type or np.dtype'.format(dtype))
 
         if not (isinstance(shape, Iterable) and
                 all([s is None or isinstance(s, int) for s in shape])):

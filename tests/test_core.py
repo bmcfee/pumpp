@@ -30,7 +30,7 @@ def jam(request):
 
 @pytest.mark.parametrize('audio_f', [None, 'tests/data/test.ogg'])
 @pytest.mark.parametrize('y', [None, 'tests/data/test.ogg'])
-@pytest.mark.parametrize('sr2', [None, 22050, 44100])
+@pytest.mark.parametrize('sr2', [None, 22050])
 @pytest.mark.parametrize('crop', [False, True])
 def test_pump(audio_f, jam, y, sr, sr2, hop_length, crop):
 

@@ -79,10 +79,15 @@ def hconv(request):
     return request.param
 
 
-@pytest.fixture(params=[None, [1], [1, 2], [1, 2, 3],
+@pytest.fixture(params=[None, [1], [1, 2],
                         pytest.param([-1], marks=xfail(raises=pumpp.ParameterError)),
                         pytest.param('bad harmonics', marks=xfail(raises=pumpp.ParameterError))])
 def harmonics(request):
+    return request.param
+
+
+@pytest.fixture(params=['uint8', 'float16', np.float32])
+def dtype(request):
     return request.param
 
 
@@ -97,58 +102,63 @@ def __check_shape(fields, key, dim, conv, channels=1):
         assert fields[key].shape == (channels, None, dim)
 
 
-def test_feature_stft_fields(SR, HOP_LENGTH, n_fft, conv, log):
+def test_feature_stft_fields(SR, HOP_LENGTH, n_fft, conv, log, dtype):
 
     ext = pumpp.feature.STFT(name='stft',
                              sr=SR, hop_length=HOP_LENGTH,
                              n_fft=n_fft,
-                             conv=conv)
+                             conv=conv,
+                             dtype=dtype)
 
     # Check the fields
     assert set(ext.fields.keys()) == set(['stft/mag', 'stft/phase'])
 
     __check_shape(ext.fields, 'stft/mag', 1 + n_fft // 2, conv)
     __check_shape(ext.fields, 'stft/phase', 1 + n_fft // 2, conv)
-    assert ext.fields['stft/mag'].dtype is np.float32
-    assert ext.fields['stft/phase'].dtype is np.float32
+    assert ext.fields['stft/mag'].dtype is np.dtype(dtype)
+    assert ext.fields['stft/phase'].dtype is np.dtype(dtype)
 
 
-def test_feature_stft_mag_fields(SR, HOP_LENGTH, n_fft, conv):
+def test_feature_stft_mag_fields(SR, HOP_LENGTH, n_fft, conv, dtype):
 
     ext = pumpp.feature.STFTMag(name='stft',
                                 sr=SR, hop_length=HOP_LENGTH,
                                 n_fft=n_fft,
-                                conv=conv)
+                                conv=conv,
+                                dtype=dtype)
 
     # Check the fields
     assert set(ext.fields.keys()) == set(['stft/mag'])
 
     __check_shape(ext.fields, 'stft/mag', 1 + n_fft // 2, conv)
-    assert ext.fields['stft/mag'].dtype is np.float32
+    assert ext.fields['stft/mag'].dtype is np.dtype(dtype)
 
 
-def test_feature_stft_phasediff_fields(SR, HOP_LENGTH, n_fft, conv):
+def test_feature_stft_phasediff_fields(SR, HOP_LENGTH, n_fft, conv, dtype):
 
     ext = pumpp.feature.STFTPhaseDiff(name='stft',
                                       sr=SR, hop_length=HOP_LENGTH,
                                       n_fft=n_fft,
-                                      conv=conv)
+                                      conv=conv,
+                                      dtype=dtype)
 
     # Check the fields
     assert set(ext.fields.keys()) == set(['stft/mag', 'stft/dphase'])
 
     __check_shape(ext.fields, 'stft/mag', 1 + n_fft // 2, conv)
     __check_shape(ext.fields, 'stft/dphase', 1 + n_fft // 2, conv)
-    assert ext.fields['stft/mag'].dtype is np.float32
-    assert ext.fields['stft/dphase'].dtype is np.float32
+    assert ext.fields['stft/mag'].dtype is np.dtype(dtype)
+    assert ext.fields['stft/dphase'].dtype is np.dtype(dtype)
 
 
-def test_feature_stft(audio, SR, HOP_LENGTH, n_fft, conv, log):
+def test_feature_stft(audio, SR, HOP_LENGTH, n_fft, conv, log, dtype):
 
     ext = pumpp.feature.STFT(name='stft',
                              sr=SR, hop_length=HOP_LENGTH,
                              n_fft=n_fft,
-                             conv=conv)
+                             conv=conv,
+                             log=log,
+                             dtype=dtype)
 
     output = ext.transform(**audio)
 
@@ -159,12 +169,14 @@ def test_feature_stft(audio, SR, HOP_LENGTH, n_fft, conv, log):
         assert type_match(output[key].dtype, ext.fields[key].dtype)
 
 
-def test_feature_stft_phasediff(audio, SR, HOP_LENGTH, n_fft, conv, log):
+def test_feature_stft_phasediff(audio, SR, HOP_LENGTH, n_fft, conv, log, dtype):
 
     ext = pumpp.feature.STFTPhaseDiff(name='stft',
                                       sr=SR, hop_length=HOP_LENGTH,
                                       n_fft=n_fft,
-                                      conv=conv)
+                                      conv=conv,
+                                      log=log,
+                                      dtype=dtype)
 
     output = ext.transform(**audio)
 
@@ -176,12 +188,14 @@ def test_feature_stft_phasediff(audio, SR, HOP_LENGTH, n_fft, conv, log):
         assert type_match(output[key].dtype, ext.fields[key].dtype)
 
 
-def test_feature_stft_mag(audio, SR, HOP_LENGTH, n_fft, conv, log):
+def test_feature_stft_mag(audio, SR, HOP_LENGTH, n_fft, conv, log, dtype):
 
     ext = pumpp.feature.STFTMag(name='stft',
                                 sr=SR, hop_length=HOP_LENGTH,
                                 n_fft=n_fft,
-                                conv=conv)
+                                conv=conv,
+                                log=log,
+                                dtype=dtype)
 
     output = ext.transform(**audio)
 
@@ -194,26 +208,29 @@ def test_feature_stft_mag(audio, SR, HOP_LENGTH, n_fft, conv, log):
 
 
 # Mel features
-def test_feature_mel_fields(SR, HOP_LENGTH, n_fft, n_mels, conv):
+def test_feature_mel_fields(SR, HOP_LENGTH, n_fft, n_mels, conv, dtype):
 
     ext = pumpp.feature.Mel(name='mel',
                             sr=SR, hop_length=HOP_LENGTH,
                             n_fft=n_fft, n_mels=n_mels,
-                            conv=conv)
+                            conv=conv,
+                            dtype=dtype)
 
     # Check the fields
     assert set(ext.fields.keys()) == set(['mel/mag'])
 
     __check_shape(ext.fields, 'mel/mag', n_mels, conv)
-    assert ext.fields['mel/mag'].dtype is np.float32
+    assert ext.fields['mel/mag'].dtype is np.dtype(dtype)
 
 
-def test_feature_mel(audio, SR, HOP_LENGTH, n_fft, n_mels, conv, log):
+def test_feature_mel(audio, SR, HOP_LENGTH, n_fft, n_mels, conv, log, dtype):
 
     ext = pumpp.feature.Mel(name='mel',
                             sr=SR, hop_length=HOP_LENGTH,
                             n_fft=n_fft, n_mels=n_mels,
-                            conv=conv)
+                            conv=conv,
+                            log=log,
+                            dtype=dtype)
 
     output = ext.transform(**audio)
 
@@ -227,64 +244,68 @@ def test_feature_mel(audio, SR, HOP_LENGTH, n_fft, n_mels, conv, log):
 
 # CQT features
 
-def test_feature_cqt_fields(SR, HOP_LENGTH, over_sample, n_octaves, conv):
+def test_feature_cqt_fields(SR, HOP_LENGTH, over_sample, n_octaves, conv, dtype):
 
     ext = pumpp.feature.CQT(name='cqt',
                             sr=SR, hop_length=HOP_LENGTH,
                             n_octaves=n_octaves,
                             over_sample=over_sample,
-                            conv=conv)
+                            conv=conv,
+                            dtype=dtype)
 
     # Check the fields
     assert set(ext.fields.keys()) == set(['cqt/mag', 'cqt/phase'])
 
     __check_shape(ext.fields, 'cqt/mag', over_sample * n_octaves * 12, conv)
     __check_shape(ext.fields, 'cqt/phase', over_sample * n_octaves * 12, conv)
-    assert ext.fields['cqt/mag'].dtype is np.float32
-    assert ext.fields['cqt/phase'].dtype is np.float32
+    assert ext.fields['cqt/mag'].dtype is np.dtype(dtype)
+    assert ext.fields['cqt/phase'].dtype is np.dtype(dtype)
 
 
-def test_feature_cqtmag_fields(SR, HOP_LENGTH, over_sample, n_octaves, conv):
+def test_feature_cqtmag_fields(SR, HOP_LENGTH, over_sample, n_octaves, conv, dtype):
 
     ext = pumpp.feature.CQTMag(name='cqt',
                                sr=SR, hop_length=HOP_LENGTH,
                                n_octaves=n_octaves,
                                over_sample=over_sample,
-                               conv=conv)
+                               conv=conv,
+                               dtype=dtype)
 
     # Check the fields
     assert set(ext.fields.keys()) == set(['cqt/mag'])
 
     __check_shape(ext.fields, 'cqt/mag', over_sample * n_octaves * 12, conv)
-    assert ext.fields['cqt/mag'].dtype is np.float32
+    assert ext.fields['cqt/mag'].dtype is np.dtype(dtype)
 
 
 def test_feature_cqtphasediff_fields(SR, HOP_LENGTH, over_sample, n_octaves,
-                                     conv):
+                                     conv, dtype):
 
     ext = pumpp.feature.CQTPhaseDiff(name='cqt',
                                      sr=SR, hop_length=HOP_LENGTH,
                                      n_octaves=n_octaves,
                                      over_sample=over_sample,
-                                     conv=conv)
+                                     conv=conv,
+                                     dtype=dtype)
 
     # Check the fields
     assert set(ext.fields.keys()) == set(['cqt/mag', 'cqt/dphase'])
 
     __check_shape(ext.fields, 'cqt/mag', over_sample * n_octaves * 12, conv)
     __check_shape(ext.fields, 'cqt/dphase', over_sample * n_octaves * 12, conv)
-    assert ext.fields['cqt/mag'].dtype is np.float32
-    assert ext.fields['cqt/dphase'].dtype is np.float32
+    assert ext.fields['cqt/mag'].dtype is np.dtype(dtype)
+    assert ext.fields['cqt/dphase'].dtype is np.dtype(dtype)
 
 
-def test_feature_cqt(audio, SR, HOP_LENGTH, over_sample, n_octaves, conv, log):
+def test_feature_cqt(audio, SR, HOP_LENGTH, over_sample, n_octaves, conv, log, dtype):
 
     ext = pumpp.feature.CQT(name='cqt',
                             sr=SR, hop_length=HOP_LENGTH,
                             n_octaves=n_octaves,
                             over_sample=over_sample,
                             log=log,
-                            conv=conv)
+                            conv=conv,
+                            dtype=dtype)
 
     output = ext.transform(**audio)
 
@@ -296,14 +317,15 @@ def test_feature_cqt(audio, SR, HOP_LENGTH, over_sample, n_octaves, conv, log):
 
 
 def test_feature_cqtmag(audio, SR, HOP_LENGTH, over_sample, n_octaves, conv,
-                        log):
+                        log, dtype):
 
     ext = pumpp.feature.CQTMag(name='cqt',
                                sr=SR, hop_length=HOP_LENGTH,
                                n_octaves=n_octaves,
                                over_sample=over_sample,
                                log=log,
-                               conv=conv)
+                               conv=conv,
+                               dtype=dtype)
 
     output = ext.transform(**audio)
 
@@ -315,14 +337,15 @@ def test_feature_cqtmag(audio, SR, HOP_LENGTH, over_sample, n_octaves, conv,
 
 
 def test_feature_cqtphasediff(audio, SR, HOP_LENGTH, over_sample, n_octaves,
-                              conv, log):
+                              conv, log, dtype):
 
     ext = pumpp.feature.CQTPhaseDiff(name='cqt',
                                      sr=SR, hop_length=HOP_LENGTH,
                                      n_octaves=n_octaves,
                                      over_sample=over_sample,
                                      log=log,
-                                     conv=conv)
+                                     conv=conv,
+                                     dtype=dtype)
 
     output = ext.transform(**audio)
 
@@ -334,26 +357,28 @@ def test_feature_cqtphasediff(audio, SR, HOP_LENGTH, over_sample, n_octaves,
 
 
 # Rhythm features
-def test_feature_tempogram_fields(SR, HOP_LENGTH, WIN_LENGTH, conv):
+def test_feature_tempogram_fields(SR, HOP_LENGTH, WIN_LENGTH, conv, dtype):
 
     ext = pumpp.feature.Tempogram(name='rhythm',
                                   sr=SR, hop_length=HOP_LENGTH,
                                   win_length=WIN_LENGTH,
-                                  conv=conv)
+                                  conv=conv,
+                                  dtype=dtype)
 
     # Check the fields
     assert set(ext.fields.keys()) == set(['rhythm/tempogram'])
 
     __check_shape(ext.fields, 'rhythm/tempogram', WIN_LENGTH, conv)
-    assert ext.fields['rhythm/tempogram'].dtype is np.float32
+    assert ext.fields['rhythm/tempogram'].dtype is np.dtype(dtype)
 
 
-def test_feature_tempogram(audio, SR, HOP_LENGTH, WIN_LENGTH, conv):
+def test_feature_tempogram(audio, SR, HOP_LENGTH, WIN_LENGTH, conv, dtype):
 
     ext = pumpp.feature.Tempogram(name='rhythm',
                                   sr=SR, hop_length=HOP_LENGTH,
                                   win_length=WIN_LENGTH,
-                                  conv=conv)
+                                  conv=conv,
+                                  dtype=dtype)
 
     output = ext.transform(**audio)
 
@@ -364,28 +389,30 @@ def test_feature_tempogram(audio, SR, HOP_LENGTH, WIN_LENGTH, conv):
         assert type_match(output[key].dtype, ext.fields[key].dtype)
 
 
-def test_feature_temposcale_fields(SR, HOP_LENGTH, WIN_LENGTH, N_FMT, conv):
+def test_feature_temposcale_fields(SR, HOP_LENGTH, WIN_LENGTH, N_FMT, conv, dtype):
 
     ext = pumpp.feature.TempoScale(name='rhythm',
                                    sr=SR, hop_length=HOP_LENGTH,
                                    win_length=WIN_LENGTH,
                                    n_fmt=N_FMT,
-                                   conv=conv)
+                                   conv=conv,
+                                   dtype=dtype)
 
     # Check the fields
     assert set(ext.fields.keys()) == set(['rhythm/temposcale'])
 
     __check_shape(ext.fields, 'rhythm/temposcale', 1 + N_FMT // 2, conv)
-    assert ext.fields['rhythm/temposcale'].dtype is np.float32
+    assert ext.fields['rhythm/temposcale'].dtype is np.dtype(dtype)
 
 
-def test_feature_temposcale(audio, SR, HOP_LENGTH, WIN_LENGTH, N_FMT, conv):
+def test_feature_temposcale(audio, SR, HOP_LENGTH, WIN_LENGTH, N_FMT, conv, dtype):
 
     ext = pumpp.feature.TempoScale(name='rhythm',
                                    sr=SR, hop_length=HOP_LENGTH,
                                    win_length=WIN_LENGTH,
                                    n_fmt=N_FMT,
-                                   conv=conv)
+                                   conv=conv,
+                                   dtype=dtype)
 
     output = ext.transform(**audio)
 
@@ -399,14 +426,15 @@ def test_feature_temposcale(audio, SR, HOP_LENGTH, WIN_LENGTH, N_FMT, conv):
 # HCQT features
 
 def test_feature_hcqt_fields(SR, HOP_LENGTH, over_sample, n_octaves,
-                             hconv, harmonics):
+                             hconv, harmonics, dtype):
 
     ext = pumpp.feature.HCQT(name='hcqt',
                              sr=SR, hop_length=HOP_LENGTH,
                              n_octaves=n_octaves,
                              over_sample=over_sample,
                              conv=hconv,
-                             harmonics=harmonics)
+                             harmonics=harmonics,
+                             dtype=dtype)
 
     # Check the fields
     assert set(ext.fields.keys()) == set(['hcqt/mag', 'hcqt/phase'])
@@ -420,18 +448,19 @@ def test_feature_hcqt_fields(SR, HOP_LENGTH, over_sample, n_octaves,
                   hconv, channels=channels)
     __check_shape(ext.fields, 'hcqt/phase', over_sample * n_octaves * 12,
                   hconv, channels=channels)
-    assert ext.fields['hcqt/mag'].dtype is np.float32
-    assert ext.fields['hcqt/phase'].dtype is np.float32
+    assert ext.fields['hcqt/mag'].dtype is np.dtype(dtype)
+    assert ext.fields['hcqt/phase'].dtype is np.dtype(dtype)
 
 
 def test_feature_hcqtmag_fields(SR, HOP_LENGTH, over_sample, n_octaves,
-                                hconv, harmonics):
+                                hconv, harmonics, dtype):
 
     ext = pumpp.feature.HCQTMag(name='hcqt',
                                 sr=SR, hop_length=HOP_LENGTH,
                                 n_octaves=n_octaves,
                                 over_sample=over_sample,
-                                conv=hconv, harmonics=harmonics)
+                                conv=hconv, harmonics=harmonics,
+                                dtype=dtype)
 
     if not harmonics:
         channels = 1
@@ -443,17 +472,18 @@ def test_feature_hcqtmag_fields(SR, HOP_LENGTH, over_sample, n_octaves,
 
     __check_shape(ext.fields, 'hcqt/mag', over_sample * n_octaves * 12,
                   hconv, channels=channels)
-    assert ext.fields['hcqt/mag'].dtype is np.float32
+    assert ext.fields['hcqt/mag'].dtype is np.dtype(dtype)
 
 
 def test_feature_hcqtphasediff_fields(SR, HOP_LENGTH, over_sample, n_octaves,
-                                      hconv, harmonics):
+                                      hconv, harmonics, dtype):
 
     ext = pumpp.feature.HCQTPhaseDiff(name='hcqt',
                                       sr=SR, hop_length=HOP_LENGTH,
                                       n_octaves=n_octaves,
                                       over_sample=over_sample,
-                                      conv=hconv, harmonics=harmonics)
+                                      conv=hconv, harmonics=harmonics,
+                                      dtype=dtype)
 
     if not harmonics:
         channels = 1
@@ -467,12 +497,12 @@ def test_feature_hcqtphasediff_fields(SR, HOP_LENGTH, over_sample, n_octaves,
                   hconv, channels=channels)
     __check_shape(ext.fields, 'hcqt/dphase', over_sample * n_octaves * 12,
                   hconv, channels=channels)
-    assert ext.fields['hcqt/mag'].dtype is np.float32
-    assert ext.fields['hcqt/dphase'].dtype is np.float32
+    assert ext.fields['hcqt/mag'].dtype is np.dtype(dtype)
+    assert ext.fields['hcqt/dphase'].dtype is np.dtype(dtype)
 
 
 def test_feature_hcqt(audio, SR, HOP_LENGTH, over_sample, n_octaves,
-                      hconv, log, harmonics):
+                      hconv, log, harmonics, dtype):
 
     ext = pumpp.feature.HCQT(name='hcqt',
                              sr=SR, hop_length=HOP_LENGTH,
@@ -480,7 +510,8 @@ def test_feature_hcqt(audio, SR, HOP_LENGTH, over_sample, n_octaves,
                              over_sample=over_sample,
                              conv=hconv,
                              log=log,
-                             harmonics=harmonics)
+                             harmonics=harmonics,
+                             dtype=dtype)
 
     output = ext.transform(**audio)
 
@@ -492,7 +523,7 @@ def test_feature_hcqt(audio, SR, HOP_LENGTH, over_sample, n_octaves,
 
 
 def test_feature_hcqtmag(audio, SR, HOP_LENGTH, over_sample, n_octaves,
-                         hconv, log, harmonics):
+                         hconv, log, harmonics, dtype):
 
     ext = pumpp.feature.HCQTMag(name='hcqt',
                                 sr=SR, hop_length=HOP_LENGTH,
@@ -500,7 +531,8 @@ def test_feature_hcqtmag(audio, SR, HOP_LENGTH, over_sample, n_octaves,
                                 over_sample=over_sample,
                                 conv=hconv,
                                 log=log,
-                                harmonics=harmonics)
+                                harmonics=harmonics,
+                                dtype=dtype)
 
     output = ext.transform(**audio)
 
@@ -512,7 +544,7 @@ def test_feature_hcqtmag(audio, SR, HOP_LENGTH, over_sample, n_octaves,
 
 
 def test_feature_hcqtphasediff(audio, SR, HOP_LENGTH, over_sample, n_octaves,
-                               hconv, log, harmonics):
+                               hconv, log, harmonics, dtype):
 
     ext = pumpp.feature.HCQTPhaseDiff(name='hcqt',
                                       sr=SR, hop_length=HOP_LENGTH,
@@ -520,7 +552,8 @@ def test_feature_hcqtphasediff(audio, SR, HOP_LENGTH, over_sample, n_octaves,
                                       over_sample=over_sample,
                                       conv=hconv,
                                       log=log,
-                                      harmonics=harmonics)
+                                      harmonics=harmonics,
+                                      dtype=dtype)
 
     output = ext.transform(**audio)
 
@@ -533,28 +566,30 @@ def test_feature_hcqtphasediff(audio, SR, HOP_LENGTH, over_sample, n_octaves,
 
 # Time Features
 
-def test_feature_time_fields(SR, HOP_LENGTH, conv):
+def test_feature_time_fields(SR, HOP_LENGTH, conv, dtype):
 
     ext = pumpp.feature.TimePosition(name='time',
                                      sr=SR,
                                      hop_length=HOP_LENGTH,
-                                     conv=conv)
+                                     conv=conv,
+                                     dtype=dtype)
 
     assert set(ext.fields.keys()) == set(['time/absolute', 'time/relative'])
 
     __check_shape(ext.fields, 'time/absolute', 2, conv)
     __check_shape(ext.fields, 'time/relative', 2, conv)
 
-    assert ext.fields['time/absolute'].dtype is np.float32
-    assert ext.fields['time/relative'].dtype is np.float32
+    assert ext.fields['time/absolute'].dtype is np.dtype(dtype)
+    assert ext.fields['time/relative'].dtype is np.dtype(dtype)
 
 
-def test_feature_time(audio, SR, HOP_LENGTH, conv):
+def test_feature_time(audio, SR, HOP_LENGTH, conv, dtype):
 
     ext = pumpp.feature.TimePosition(name='time',
                                      sr=SR,
                                      hop_length=HOP_LENGTH,
-                                     conv=conv)
+                                     conv=conv,
+                                     dtype=dtype)
 
     output = ext.transform(**audio)
 
