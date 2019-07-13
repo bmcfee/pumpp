@@ -368,7 +368,7 @@ def test_feature_tempogram_fields(SR, HOP_LENGTH, WIN_LENGTH, conv, dtype):
     assert ext.fields['rhythm/tempogram'].dtype is np.dtype(dtype)
 
 
-def test_feature_tempogram(audio, SR, HOP_LENGTH, WIN_LENGTH, conv):
+def test_feature_tempogram(audio, SR, HOP_LENGTH, WIN_LENGTH, conv, dtype):
 
     ext = pumpp.feature.Tempogram(name='rhythm',
                                   sr=SR, hop_length=HOP_LENGTH,

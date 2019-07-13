@@ -31,8 +31,14 @@ class FeatureExtractor(Scope):
             - 'channels_first' for theano-style 2D convolution
             - 'th' equivalent to 'channels_first'
             - None for 1D or non-convolutional representations
+
+    dtype : str or np.dtype
+        The data type for features produced by this object.  Default is`float32`.
+
+        Setting to `uint8` will produced quantized features.
+
     '''
-    def __init__(self, name, sr, hop_length, conv=None):
+    def __init__(self, name, sr, hop_length, conv=None, dtype='float32'):
 
         super(FeatureExtractor, self).__init__(name)
 
@@ -44,6 +50,7 @@ class FeatureExtractor(Scope):
         self.sr = sr
         self.hop_length = hop_length
         self.conv = conv
+        self.dtype = np.dtype(dtype)
 
     def register(self, key, dimension, dtype, channels=1):
 

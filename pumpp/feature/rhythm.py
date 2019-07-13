@@ -8,6 +8,7 @@ from librosa import get_duration
 from librosa.util import fix_length
 
 from .base import FeatureExtractor
+from ._utils import to_dtype
 
 __all__ = ['Tempogram', 'TempoScale']
 
@@ -28,13 +29,21 @@ class Tempogram(FeatureExtractor):
 
     win_length : int > 0
         The length of the analysis window (in frames)
+
+    conv : str
+        Convolution mode
+
+    dtype : np.dtype
+        The data type for the output features.  Default is `float32`.
+
+        Setting to `uint8` will produce quantized features.
     '''
-    def __init__(self, name, sr, hop_length, win_length, conv=None):
-        super(Tempogram, self).__init__(name, sr, hop_length, conv=conv)
+    def __init__(self, name, sr, hop_length, win_length, conv=None, dtype='float32'):
+        super(Tempogram, self).__init__(name, sr, hop_length, conv=conv, dtype=dtype)
 
         self.win_length = win_length
 
-        self.register('tempogram', win_length, np.float32)
+        self.register('tempogram', win_length, self.dtype)
 
     def transform_audio(self, y):
         '''Compute the tempogram
@@ -54,9 +63,9 @@ class Tempogram(FeatureExtractor):
 
         tgram = tempogram(y=y, sr=self.sr,
                           hop_length=self.hop_length,
-                          win_length=self.win_length).astype(np.float32)
+                          win_length=self.win_length)
 
-        tgram = fix_length(tgram, n_frames)
+        tgram = to_dtype(fix_length(tgram, n_frames), self.dtype)
         return {'tempogram': tgram.T[self.idx]}
 
 
@@ -81,14 +90,23 @@ class TempoScale(Tempogram):
 
     n_fmt : int > 0
         Number of scale coefficients to retain
+
+    conv : str
+        Convolution mode
+
+    dtype : np.dtype
+        The data type for the output features.  Default is `float32`.
+
+        Setting to `uint8` will produce quantized features.
     '''
-    def __init__(self, name, sr, hop_length, win_length, n_fmt=128, conv=None):
+    def __init__(self, name, sr, hop_length, win_length, n_fmt=128, conv=None, dtype='float32'):
         super(TempoScale, self).__init__(name, sr, hop_length, win_length,
-                                         conv=conv)
+                                         conv=conv, dtype=dtype)
 
         self.n_fmt = n_fmt
+
         self.pop('tempogram')
-        self.register('temposcale', 1 + n_fmt // 2, np.float32)
+        self.register('temposcale', 1 + n_fmt // 2, self.dtype)
 
     def transform_audio(self, y):
         '''Apply the scale transform to the tempogram
@@ -107,5 +125,7 @@ class TempoScale(Tempogram):
         data = super(TempoScale, self).transform_audio(y)
         data['temposcale'] = np.abs(fmt(data.pop('tempogram'),
                                         axis=1,
-                                        n_fmt=self.n_fmt)).astype(np.float32)[self.idx]
+                                        n_fmt=self.n_fmt))[self.idx]
+        data['temposcale'] = to_dtype(data['temposcale'], self.dtype)
+
         return data

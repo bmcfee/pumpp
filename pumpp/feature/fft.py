@@ -35,6 +35,9 @@ class STFT(FeatureExtractor):
 
         Otherwise use linear magnitude.
 
+    conv : str
+        Convolution mode
+
     dtype : np.dtype
         The data type for the output features.  Default is `float32`.
 
@@ -46,14 +49,13 @@ class STFT(FeatureExtractor):
     STFTPhaseDiff
     '''
     def __init__(self, name, sr, hop_length, n_fft, log=False, conv=None, dtype='float32'):
-        super(STFT, self).__init__(name, sr, hop_length, conv=conv)
+        super(STFT, self).__init__(name, sr, hop_length, conv=conv, dtype=dtype)
 
         self.n_fft = n_fft
         self.log = log
-        self.dtype = dtype
 
-        self.register('mag', 1 + n_fft // 2, np.dtype(dtype))
-        self.register('phase', 1 + n_fft // 2, np.dtype(dtype))
+        self.register('mag', 1 + n_fft // 2, self.dtype)
+        self.register('phase', 1 + n_fft // 2, self.dtype)
 
     def transform_audio(self, y):
         '''Compute the STFT magnitude and phase.

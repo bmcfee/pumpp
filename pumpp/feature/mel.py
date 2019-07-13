@@ -41,18 +41,22 @@ class Mel(FeatureExtractor):
         If `True`, scale magnitude in decibels.
 
         Otherwise, use a linear amplitude scale.
+
+    dtype : np.dtype
+        The data type for the output features.  Default is `float32`.
+
+        Setting to `uint8` will produce quantized features.
     '''
     def __init__(self, name, sr, hop_length, n_fft, n_mels, fmax=None,
                  log=False, conv=None, dtype='float32'):
-        super(Mel, self).__init__(name, sr, hop_length, conv=conv)
+        super(Mel, self).__init__(name, sr, hop_length, conv=conv, dtype=dtype)
 
         self.n_fft = n_fft
         self.n_mels = n_mels
         self.fmax = fmax
         self.log = log
-        self.dtype = dtype
 
-        self.register('mag', n_mels, np.dtype(dtype))
+        self.register('mag', n_mels, self.dtype)
 
     def transform_audio(self, y):
         '''Compute the Mel spectrogram
