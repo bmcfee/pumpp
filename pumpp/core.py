@@ -246,7 +246,7 @@ class Pump(Slicer):
             for fkey, field in self.opmap[key].fields.items():
                 rstr += '\n  <li>{:s} [shape={}, dtype={}]</li>'.format(fkey,
                                                                         field.shape,
-                                                                        field.dtype.__name__)
+                                                                        repr(field.dtype))
             rstr += '</ul></dd>'
         rstr += '</dl>'
         return rstr
