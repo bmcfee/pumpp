@@ -11,7 +11,6 @@ Core functionality
 
 import librosa
 import jams
-import six
 
 from .base import Slicer
 from .exceptions import ParameterError
@@ -244,7 +243,7 @@ class Pump(Slicer):
             rstr += '\n  <dd class="col-sm-9">{}'.format(self.opmap[key])
 
             rstr += '<ul>'
-            for fkey, field in six.iteritems(self.opmap[key].fields):
+            for fkey, field in self.opmap[key].fields.items():
                 rstr += '\n  <li>{:s} [shape={}, dtype={}]</li>'.format(fkey,
                                                                         field.shape,
                                                                         field.dtype.__name__)

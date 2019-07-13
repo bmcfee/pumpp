@@ -6,17 +6,15 @@ import re
 from itertools import product
 
 import numpy as np
-from sklearn.preprocessing import LabelBinarizer, LabelEncoder
-from sklearn.preprocessing import MultiLabelBinarizer
+import mir_eval
+import jams
 
 from librosa import time_to_frames
 from librosa.sequence import transition_loop
 
-import mir_eval
-import jams
-
 from .base import BaseTaskTransformer
 from ..exceptions import ParameterError
+from ..labels import LabelBinarizer, LabelEncoder, MultiLabelBinarizer
 
 __all__ = ['ChordTransformer', 'SimpleChordTransformer', 'ChordTagTransformer']
 

@@ -3,15 +3,14 @@
 '''Tag task transformers'''
 
 import numpy as np
-from sklearn.preprocessing import MultiLabelBinarizer
+import jams
 
 from librosa import time_to_frames
 from librosa.sequence import transition_loop
 
-import jams
-
 from .base import BaseTaskTransformer
 from ..exceptions import ParameterError
+from ..labels import MultiLabelBinarizer
 
 __all__ = ['DynamicLabelTransformer', 'StaticLabelTransformer']
 

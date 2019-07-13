@@ -2,7 +2,8 @@
 # -*- encoding: utf-8 -*-
 '''Base class definitions'''
 
-from collections import namedtuple, Iterable
+from collections import namedtuple
+from collections.abc import Iterable
 import numpy as np
 
 from .exceptions import ParameterError
@@ -15,7 +16,7 @@ Multi-dimensional array descriptions: `shape` and `dtype`
 '''
 
 
-class Scope(object):
+class Scope:
     '''
     A base class for managing named tensors
 
@@ -111,7 +112,7 @@ class Scope(object):
         return data_out
 
 
-class Slicer(object):
+class Slicer:
     '''Slicer can compute the duration of data with time-like fields,
     and slice down to the common time index.
 
