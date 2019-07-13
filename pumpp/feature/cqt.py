@@ -6,6 +6,7 @@ from librosa import cqt, magphase, note_to_hz
 from librosa import amplitude_to_db, get_duration
 from librosa.util import fix_length
 
+from ._utils import phase_diff
 from .base import FeatureExtractor
 from ..exceptions import ParameterError
 
@@ -156,7 +157,7 @@ class CQTPhaseDiff(CQT):
                 Unwrapped phase differential
         '''
         data = super(CQTPhaseDiff, self).transform_audio(y)
-        data['dphase'] = self.phase_diff(data.pop('phase'))
+        data['dphase'] = phase_diff(data.pop('phase'), self.conv)
         return data
 
 
@@ -347,5 +348,5 @@ class HCQTPhaseDiff(HCQT):
                 Unwrapped phase differential
         '''
         data = super(HCQTPhaseDiff, self).transform_audio(y)
-        data['dphase'] = self.phase_diff(data.pop('phase'))
+        data['dphase'] = phase_diff(data.pop('phase'), self.conv)
         return data

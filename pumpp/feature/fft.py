@@ -7,6 +7,7 @@ from librosa import amplitude_to_db, get_duration
 from librosa.util import fix_length
 
 from .base import FeatureExtractor
+from ._utils import phase_diff
 
 __all__ = ['STFT', 'STFTMag', 'STFTPhaseDiff']
 
@@ -110,7 +111,7 @@ class STFTPhaseDiff(STFT):
                 The unwrapped phase differential
         '''
         data = super(STFTPhaseDiff, self).transform_audio(y)
-        data['dphase'] = self.phase_diff(data.pop('phase'))
+        data['dphase'] = phase_diff(data.pop('phase'), self.conv)
         return data
 
 
