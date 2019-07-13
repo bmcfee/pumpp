@@ -214,14 +214,19 @@ class HCQT(FeatureExtractor):
             - 'channels_first' for theano-style 2D convolution
             - 'th' equivalent to 'channels_first'
 
+    dtype : np.dtype
+        The data type for the output features.  Default is `float32`.
+
+        Setting to `uint8` will produce quantized features.
     '''
     def __init__(self, name, sr, hop_length, n_octaves=8, over_sample=3,
-                 fmin=None, harmonics=None, log=False, conv='channels_last'):
+                 fmin=None, harmonics=None, log=False, conv='channels_last',
+                 dtype='float32'):
 
         if conv not in ('channels_last', 'tf', 'channels_first', 'th'):
             raise ParameterError('Invalid conv={}'.format(conv))
 
-        super(HCQT, self).__init__(name, sr, hop_length, conv=conv)
+        super(HCQT, self).__init__(name, sr, hop_length, conv=conv, dtype=dtype)
 
         if fmin is None:
             fmin = note_to_hz('C1')
@@ -240,8 +245,8 @@ class HCQT(FeatureExtractor):
         self.harmonics = harmonics
 
         n_bins = n_octaves * 12 * over_sample
-        self.register('mag', n_bins, np.float32, channels=len(harmonics))
-        self.register('phase', n_bins, np.float32, channels=len(harmonics))
+        self.register('mag', n_bins, self.dtype, channels=len(harmonics))
+        self.register('phase', n_bins, self.dtype, channels=len(harmonics))
 
     def transform_audio(self, y):
         '''Compute the HCQT
@@ -278,8 +283,8 @@ class HCQT(FeatureExtractor):
             cqtm.append(C)
             phase.append(P)
 
-        cqtm = np.asarray(cqtm).astype(np.float32)
-        phase = np.angle(np.asarray(phase)).astype(np.float32)
+        cqtm = to_dtype(np.asarray(cqtm), self.dtype)
+        phase = to_dtype(np.angle(np.asarray(phase)), self.dtype)
 
         return {'mag': self._index(cqtm),
                 'phase': self._index(phase)}
@@ -364,3 +369,47 @@ class HCQTPhaseDiff(HCQT):
         data = super(HCQTPhaseDiff, self).transform_audio(y)
         data['dphase'] = phase_diff(data.pop('phase'), self.conv)
         return data
+
+    def transform_audio(self, y):
+        '''Compute the HCQT
+
+        Parameters
+        ----------
+        y : np.ndarray
+            The audio buffer
+
+        Returns
+        -------
+        data : dict
+            data['mag'] : np.ndarray, shape = (n_frames, n_bins, n_harmonics)
+                The CQT magnitude
+
+            data['phase']: np.ndarray, shape = mag.shape
+                The CQT phase
+        '''
+        cqtm, phase = [], []
+
+        n_frames = self.n_frames(get_duration(y=y, sr=self.sr))
+
+        for h in self.harmonics:
+            C = cqt(y=y, sr=self.sr, hop_length=self.hop_length,
+                    fmin=self.fmin * h,
+                    n_bins=(self.n_octaves * self.over_sample * 12),
+                    bins_per_octave=(self.over_sample * 12))
+
+            C = fix_length(C, n_frames)
+
+            C, P = magphase(C)
+            if self.log:
+                C = amplitude_to_db(C, ref=np.max)
+            cqtm.append(C)
+            phase.append(P)
+
+        cqtm = to_dtype(np.asarray(cqtm), self.dtype)
+        phase = np.angle(np.asarray(phase))
+
+        dphase = to_dtype(phase_diff(self._index(phase), self.conv),
+                          self.dtype)
+
+        return {'mag': self._index(cqtm),
+                'dphase': dphase}
