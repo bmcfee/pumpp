@@ -29,6 +29,7 @@ setup(
     install_requires=['six',
                       'librosa>=0.6.2',
                       'jams>=0.3',
+                      'scikit-learn>=0.20',
                       'mir_eval>=0.5'],
     extras_require={
         'docs': ['numpydoc'],

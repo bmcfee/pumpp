@@ -3,15 +3,15 @@
 '''Instantaneous event coding'''
 
 import numpy as np
+import jams
 
 from librosa import time_to_frames
 from librosa.sequence import transition_loop, transition_cycle
-import jams
 from mir_eval.util import boundaries_to_intervals, adjust_intervals
-from sklearn.preprocessing import LabelBinarizer, LabelEncoder
 
 from .base import BaseTaskTransformer
 from ..exceptions import ParameterError
+from ..labels import LabelBinarizer, LabelEncoder
 
 __all__ = ['BeatTransformer', 'BeatPositionTransformer']
 
