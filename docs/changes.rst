@@ -1,6 +1,14 @@
 Changes
 -------
 
+0.5.0
+=====
+- `#105`_ Expanding API for layer construction to eventually support alternative frameworks.
+- `#104`_ Added API for explicit data types in feature modules.
+- `#103`_ Added quantization support for feature modules.
+- `#106`_ Dropped support for python 2.7.
+
+
 0.4.0
 =====
 - `#100`_ Added viterbi decoding options for tags, chords, and beat transformers
