@@ -203,9 +203,14 @@ class Pump(Slicer):
 
         return out
 
-    def layers(self):
-        '''Construct Keras input layers for all feature transformers
+    def layers(self, api='keras'):
+        '''Construct input layers for all feature transformers
         in the pump.
+
+        Parameters
+        ----------
+        api : {'keras', ...}
+            Which API to use for layer construction
 
         Returns
         -------
@@ -217,7 +222,7 @@ class Pump(Slicer):
         layermap = dict()
         for operator in self.ops:
             if hasattr(operator, 'layers'):
-                layermap.update(operator.layers())
+                layermap.update(operator.layers(api=api))
         return layermap
 
     def __getitem__(self, key):
