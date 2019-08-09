@@ -1047,6 +1047,46 @@ def test_task_beatpos_tail(SR, HOP_LENGTH, SPARSE):
     for i, (y1, y2) in enumerate(zip(Y_pred, Y_expected)):
         assert y1 == y2
 
+
+def test_task_key__encode_key_str(SPARSE):
+    # Checks the helper function which does key string to encoding
+    trans = pumpp.task.KeyTransformer(sparse=SPARSE)
+    
+    # Check A:minor
+    pitch_profile, tonic = trans._encode_key_str('A:minor')
+    assert pitch_profile == np.array([1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1])
+    if SPARSE:
+        assert tonic == 9
+    else:
+        assert np.all(tonic == np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]))
+
+    # Check 'N' for no key
+    pitch_profile, tonic = trans._encode_key_str('N')
+    assert np.all(pitch_profile == np.array(np.zeros(12, dtype=np.bool)))
+    # Or should the above the all 1's with np.ones()?
+    if SPARSE:
+        assert tonic == 12
+    else:
+        assert np.all(tonic == np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]))
+ 
+        
+def test_task_key_fields(SPARSE):
+    trans = pumpp.task.KeyTransformer(name='mykey', sparse=SPARSE)
+
+    assert set(trans.fields.keys()) == set(['mykey/pitch_profile',
+                                            'mykey/tonic'])
+
+    assert trans.fields['mykey/pitch_profile'].shape == (None, 12)
+    assert trans.fields['mykey/pitch_profile'].dtype is np.bool
+
+    if SPARSE:
+        assert trans.fields['mykey/tonic'].shape == (None, 1)
+        assert np.issubdtype(trans.fields['mykey/tonic'].dtype, np.integer)
+    else:
+        assert trans.fields['mykey/tonic'].shape == (None, 13)
+        assert trans.fields['mykey/tonic'].dtype is np.bool
+
+
 def test_task_key_present(SR, HOP_LENGTH, SPARSE):
     # Create jams with key annotation
     jam = jams.JAMS(file_metadata=dict(duration=12.0))
@@ -1068,14 +1108,19 @@ def test_task_key_present(SR, HOP_LENGTH, SPARSE):
     output = trans.transform(jam)
 
     # Make sure we have the mask
-    assert np.all(output['key/_valid'] == [0, 12 * trans.sr //
-                                               trans.hop_length])
+    assert np.all(output['key/_valid'] == [0, 12 * trans.sr // trans.hop_length])
 
     # Ideal vectors:
-    # pcp = Cmin, N, Eb, N, D, D_lyd
-    pcp_true = None #TODO
+    # pcp = Cmin, N, Eb, N, D, D_lyd TODO
+    pcp_true = np.array([
+        trans._encode_key_str('C:minor'),
+        trans._encode_key_str('N'),
+        trans._encode_key_str('Eb:major'),
+        trans._encode_key_str('N'),
+        trans._encode_key_str('D:major'),
+        trans._encode_key_str('D:lydian')
+    ])
     
-    # TODO: Write some asserts
     assert np.all(output['key/pitch_profile'] == np.repeat(pcp_true,
                                                            (SR * 2 // HOP_LENGTH),
                                                            axis=0))
@@ -1084,7 +1129,7 @@ def test_task_key_present(SR, HOP_LENGTH, SPARSE):
         assert shape_match(output[key].shape[1:], trans.fields[key].shape)
         assert type_match(output[key].dtype, trans.fields[key].dtype)
 
-def test_task_key_absent():
+
+def test_task_key_absent(SPARSE):
     # TODO
     raise NotImplementedError
-

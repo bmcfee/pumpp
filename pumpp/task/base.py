@@ -69,7 +69,7 @@ class BaseTaskTransformer(Scope):
         duration : int >= 0
             Duration of the annotation
         '''
-        return jams.Annotation(namespace=self.namespace, time=0, duration=duration)
+        return jams.Annotation(namespace=self.namespace, time=0, duration=0)
 
     def transform(self, jam, query=None):
         '''Transform jam object to make data for this task
