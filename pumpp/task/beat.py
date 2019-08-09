@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- enconding: utf-8 -*-
+# -*- encoding: utf-8 -*-
 '''Instantaneous event coding'''
 
 import numpy as np
