@@ -91,9 +91,9 @@ class KeyTransformer(BaseTaskTransformer):
         for pc in C_MAJOR_PITCHES:
             c_major_profile[pc] = 1
 
-        # When there is no tonal center, pitch profile is all ones.
+        # When there is no tonal center, pitch profile is all zeros.
         if tonic == 12:
-            pitch_profile = np.ones(12, dtype=np.bool)
+            pitch_profile = np.zeros(12, dtype=np.bool)
         else:
             # When there is no quality, major assumed.
             if len(key_str_split) == 1:
@@ -168,11 +168,49 @@ class KeyTransformer(BaseTaskTransformer):
             If densely encoded, `tonic` has an extra
             final dimension which is active when there it is atonal.
         '''
-        #TODO
-        raise NotImplementedError
+        # get list of observations
+        intervals, keys = ann.to_interval_values()
+
+        # Get the dtype for tonic
+        if self.sparse:
+            dtype = np.int
+        else:
+            dtype = np.bool
+
+        # If we don't have any labeled intervals, fill in a 'N'
+        if not keys:
+            intervals = np.asarray([[0, duration]])
+            keys = ['N']
+
+        # Suppress all intervals not in the encoder
+        pitch_profiles = []
+        tonics = []
+
+        # default value when data is missing
+        if self.sparse:
+            fill = 12
+        else:
+            fill = False
+
+        for key in keys:
+            pitch_profile, tonic = self._encode_key_str(key)
+            pitch_profiles.append(pitch_profile)
+            tonics.append(tonic if type(tonic) is np.ndarray else [tonic])
+        
+        pitch_profiles = np.asarray(pitch_profiles, dtype=np.bool)
+        tonics = np.asarray(tonics, dtype=dtype)
+
+        target_pitch_profile = self.encode_intervals(duration, intervals, pitch_profiles)
+
+        target_tonic = self.encode_intervals(duration, intervals, tonics,
+                                             multi=False,
+                                             dtype=dtype,
+                                             fill=fill)
+
+        return {'pitch_profile': target_pitch_profile,
+                'tonic': target_tonic}
 
     def inverse(self, pitch_profile, tonic, duration=None):
-        #TODO
-        raise NotImplementedError
+        raise NotImplementedError('There are some ambiguities')
 
     
