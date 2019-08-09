@@ -6,6 +6,8 @@ import numpy as np
 import mir_eval
 import jams
 
+from librosa import note_to_midi
+
 from .base import BaseTaskTransformer
 from ..labels import MultiLabelBinarizer
 
@@ -70,7 +72,50 @@ class KeyTransformer(BaseTaskTransformer):
                 a int in the range [0, 12] to indicate the pitch class of the tonic. 12
                 being atonal.
         '''
-        # TODO
+        C_MAJOR = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
+        C_MAJOR_PITCHES = note_to_midi(C_MAJOR) % 12
+        MODES = ['ionian', 'dorian', 'phrygian', 'lydian', 'mixolydian', 'aeolian', 'locrian']
+        QUALITY = {'major' : 0, 'minor' : -3}
+
+        key_str_split = key_str.split(':')
+        
+        # Look at the Tonic first
+        if key_str_split[0] == 'N':
+            tonic = 12
+        else:
+            tonic = note_to_midi(key_str_split[0]) % 12
+
+        # Now look at quality/mode and build pitch_profile
+        # First construct the profile in C for a given mode/quality
+        c_major_profile = np.zeros(12)
+        for pc in C_MAJOR_PITCHES:
+            c_major_profile[pc] = 1
+
+        # When there is no tonal center, pitch profile is all ones.
+        if tonic == 12:
+            pitch_profile = np.ones(12, dtype=np.bool)
+        else:
+            # When there is no quality, major assumed.
+            if len(key_str_split) == 1:
+                quality = 'major'
+            else:
+                quality = key_str_split[1]
+
+            if quality in set(MODES):
+                mode_transpose_int = -1 * C_MAJOR_PITCHES[MODES.index(quality)]
+            elif quality in QUALITY.keys():
+                mode_transpose_int = -1 * QUALITY[quality]
+
+            mode_profile_in_c = np.roll(c_major_profile, mode_transpose_int)
+            
+            # Now roll the profile again to get the right tonic.
+            pitch_profile = np.roll(mode_profile_in_c, tonic)
+
+        if not self.sparse:
+            tonic_vec = np.zeros(13, dtype=np.bool)
+            tonic_vec[tonic] = 1
+            tonic = tonic_vec
+
         return (pitch_profile, tonic)
 
     def empty(self, duration):

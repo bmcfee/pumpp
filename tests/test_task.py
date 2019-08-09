@@ -1054,16 +1054,16 @@ def test_task_key__encode_key_str(SPARSE):
     
     # Check A:minor
     pitch_profile, tonic = trans._encode_key_str('A:minor')
-    assert pitch_profile == np.array([1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1])
+    assert np.all(pitch_profile == np.array([1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1]))
     if SPARSE:
         assert tonic == 9
-    else:
+    else:                            #   C #C  D bE  E  F #F  G bA  A bB  B  N
         assert np.all(tonic == np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]))
 
     # Check 'N' for no key
     pitch_profile, tonic = trans._encode_key_str('N')
-    assert np.all(pitch_profile == np.array(np.zeros(12, dtype=np.bool)))
-    # Or should the above the all 1's with np.ones()?
+    assert np.all(pitch_profile == np.array(np.ones(12, dtype=np.bool)))
+    # Or should the above the all 0's with np.ones()?
     if SPARSE:
         assert tonic == 12
     else:
@@ -1130,6 +1130,30 @@ def test_task_key_present(SR, HOP_LENGTH, SPARSE):
         assert type_match(output[key].dtype, trans.fields[key].dtype)
 
 
-def test_task_key_absent(SPARSE):
-    # TODO
-    raise NotImplementedError
+def test_task_key_absent(SR, HOP_LENGTH, SPARSE):
+    jam = jams.JAMS(file_metadata=dict(duration=4.0))
+    trans = pumpp.task.KeyTransformer(name='key',
+                                      sr=SR, hop_length=HOP_LENGTH,
+                                      sparse=SPARSE)
+
+    output = trans.transform(jam)
+
+    # Valid range is 0 since we have no matching namespace
+    assert not np.any(output['key/_valid'])
+
+    # Check the shape
+    assert output['key/pitch_profile'].shape == (1, 4 * (SR // HOP_LENGTH), 12)
+
+    # Make sure it's empty
+    assert not np.any(output['key/pitch_profile'])
+    if SPARSE:
+        assert output['key/tonic'].shape == (1, 4 * (SR // HOP_LENGTH), 1)
+        assert np.all(output['key/tonic'] == 12)
+    else:
+        assert output['key/tonic'].shape == (1, 4 * (SR // HOP_LENGTH), 13)
+        assert not np.any(output['key/tonic'][:, :, :12])
+        assert np.all(output['key/tonic'][:, :, 12])
+
+    for key in trans.fields:
+        assert shape_match(output[key].shape[1:], trans.fields[key].shape)
+        assert type_match(output[key].dtype, trans.fields[key].dtype)
