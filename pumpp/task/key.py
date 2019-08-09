@@ -44,12 +44,34 @@ class KeyTransformer(BaseTaskTransformer):
         self._classes = set(self.encoder.classes_)
         self.sparse = sparse
 
-        # using floats as pitch_profile datatype to allow for probabilistic profiles... Need discussion...
-        self.register('pitch_profile', [None, 12], np.float32)
+        # Maybe use floats as pitch_profile datatype to allow for probabilistic profiles?... Need discussion...
+        self.register('pitch_profile', [None, 12], np.bool)
         if self.sparse:
             self.register('tonic', [None, 1], np.int)
         else:
             self.register('tonic', [None, 13], np.bool)
+
+    def _encode_key_str(self, key_str):
+        '''Helper function to go from jams `key_mode` annotation value strings to 12-D 
+        numpy membership vec, representing the pitch profile.
+
+        Parameters
+        ----------
+        key_str : str
+            String in the style of 'key_mode' jams annotation values.
+
+        Returns
+        -------
+        (pitch_profile, tonic) : tuple
+            pitch_profile : np.ndarray, shape = (1, 12), dtype = np.bool
+                a 12-D row vector that's encodes the membership of each pitch class for 
+                a given `key_str`.
+            tonic : int or np.ndarray, shape = (1, 13), dtype = np.bool
+                a int in the range [0, 12] to indicate the pitch class of the tonic. 12
+                being atonal.
+        '''
+        # TODO
+        return (pitch_profile, tonic)
 
     def empty(self, duration):
         '''Empty key annotation
@@ -107,3 +129,5 @@ class KeyTransformer(BaseTaskTransformer):
     def inverse(self, pitch_profile, tonic, duration=None):
         #TODO
         raise NotImplementedError
+
+    
