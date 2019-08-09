@@ -69,7 +69,7 @@ class BaseTaskTransformer(Scope):
         duration : int >= 0
             Duration of the annotation
         '''
-        return jams.Annotation(namespace=self.namespace, time=0, duration=0)
+        return jams.Annotation(namespace=self.namespace, time=0, duration=duration)
 
     def transform(self, jam, query=None):
         '''Transform jam object to make data for this task
@@ -127,6 +127,9 @@ class BaseTaskTransformer(Scope):
 
         # Prefix and collect
         return self.merge(results)
+
+    def transform_annotation(self, ann, duration):
+        raise NotImplementedError
 
     def encode_events(self, duration, events, values, dtype=np.bool):
         '''Encode labeled events as a time-series matrix.

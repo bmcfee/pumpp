@@ -24,3 +24,4 @@ from .beat import *
 from .regression import *
 from .tags import *
 from .structure import *
+from .key import *

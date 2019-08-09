@@ -1046,3 +1046,45 @@ def test_task_beatpos_tail(SR, HOP_LENGTH, SPARSE):
                            axis=0).astype(Y_pred.dtype)
     for i, (y1, y2) in enumerate(zip(Y_pred, Y_expected)):
         assert y1 == y2
+
+def test_task_key_present(SR, HOP_LENGTH, SPARSE):
+    # Create jams with key annotation
+    jam = jams.JAMS(file_metadata=dict(duration=12.0))
+
+    ann = jams.Annotation(namespace='key_mode')
+
+    ann.append(time=0, duration=2.0, value='C:minor')
+    ann.append(time=2, duration=2.0, value='N')
+    ann.append(time=4, duration=2.0, value='Eb')
+    ann.append(time=8, duration=2.0, value='D:major')
+    ann.append(time=10, duration=2.0, value='D:lydian')
+
+    jam.annotations.append(ann)
+
+    trans = pumpp.task.KeyTransformer(name='key',
+                                      sr=SR, hop_length=HOP_LENGTH,
+                                      sparse=SPARSE)
+    
+    output = trans.transform(jam)
+
+    # Make sure we have the mask
+    assert np.all(output['key/_valid'] == [0, 12 * trans.sr //
+                                               trans.hop_length])
+
+    # Ideal vectors:
+    # pcp = Cmin, N, Eb, N, D, D_lyd
+    pcp_true = None #TODO
+    
+    # TODO: Write some asserts
+    assert np.all(output['key/pitch_profile'] == np.repeat(pcp_true,
+                                                           (SR * 2 // HOP_LENGTH),
+                                                           axis=0))
+    
+    for key in trans.fields:
+        assert shape_match(output[key].shape[1:], trans.fields[key].shape)
+        assert type_match(output[key].dtype, trans.fields[key].dtype)
+
+def test_task_key_absent():
+    # TODO
+    raise NotImplementedError
+
