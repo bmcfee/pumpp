@@ -128,9 +128,6 @@ class BaseTaskTransformer(Scope):
         # Prefix and collect
         return self.merge(results)
 
-    def transform_annotation(self, ann, duration):
-        raise NotImplementedError
-
     def encode_events(self, duration, events, values, dtype=np.bool):
         '''Encode labeled events as a time-series matrix.
 

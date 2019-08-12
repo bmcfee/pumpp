@@ -101,7 +101,7 @@ class KeyTransformer(BaseTaskTransformer):
             else:
                 quality = key_str_split[1]
 
-            if quality in set(MODES):
+            if quality in MODES:
                 mode_transpose_int = -1 * C_MAJOR_PITCHES[MODES.index(quality)]
             elif quality in QUALITY.keys():
                 mode_transpose_int = -1 * QUALITY[quality]
