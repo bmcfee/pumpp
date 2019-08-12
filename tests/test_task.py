@@ -1063,7 +1063,6 @@ def test_task_key__encode_key_str(SPARSE):
     # Check 'N' for no key
     pitch_profile, tonic = trans._encode_key_str('N')
     assert np.all(pitch_profile == np.array(np.zeros(12, dtype=np.bool)))
-    # Or should the above the all 1's with np.ones()?
     if SPARSE:
         assert tonic == 12
     else:
@@ -1111,13 +1110,13 @@ def test_task_key_present(SR, HOP_LENGTH, SPARSE):
     assert np.all(output['key/_valid'] == [0, 12 * trans.sr // trans.hop_length])
 
     # Ideal vectors:
-    # pcp = Cmin, N, Eb, N, D, D_lyd TODO
+    # pcp = Cmin, N, Eb, N, D, D_lyd
     pcp_true = np.array([
         trans._encode_key_str('C:minor')[0],
         trans._encode_key_str('N')[0],
         trans._encode_key_str('Eb:major')[0],
         trans._encode_key_str('N')[0],
-        trans._encode_key_str('D:major')[0],
+        trans._encode_key_str('D')[0],
         trans._encode_key_str('D:lydian')[0]
     ])
     
