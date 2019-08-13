@@ -51,6 +51,11 @@ def type_match(x, y):
 
     return np.issubdtype(np.dtype(x), np.dtype(y)) and np.issubdtype(np.dtype(y), np.dtype(x))
 
+@pytest.mark.xfail(raises=NotImplementedError)
+def test_task_base_stub(SR, HOP_LENGTH):
+    trans = pumpp.task.BaseTaskTransformer(name='basetask', namespace='key_mode',
+                                           sr=SR, hop_length=HOP_LENGTH)
+    trans.transform(jams.JAMS())
 
 def test_task_chord_fields(SPARSE):
 
@@ -1059,6 +1064,22 @@ def test_task_key__encode_key_str(SPARSE):
         assert tonic == 9
     else:                            #   C #C  D bE  E  F #F  G bA  A bB  B  N
         assert np.all(tonic == np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]))
+    
+    # Check D:dorian
+    pitch_profile, tonic = trans._encode_key_str('D:dorian')
+    assert np.all(pitch_profile == np.array([1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1]))
+    if SPARSE:
+        assert tonic == 2
+    else:                            #   C #C  D bE  E  F #F  G bA  A bB  B  N
+        assert np.all(tonic == np.array([0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]))
+
+    # Check F
+    pitch_profile, tonic = trans._encode_key_str('F')
+    assert np.all(pitch_profile == np.array([1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0]))
+    if SPARSE:
+        assert tonic == 5
+    else:                            #   C #C  D bE  E  F #F  G bA  A bB  B  N
+        assert np.all(tonic == np.array([0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]))
 
     # Check 'N' for no key
     pitch_profile, tonic = trans._encode_key_str('N')
@@ -1143,7 +1164,7 @@ def test_task_key_absent(SR, HOP_LENGTH, SPARSE):
     # Check the shape
     assert output['key/pitch_profile'].shape == (1, 4 * (SR // HOP_LENGTH), 12)
 
-    # Make sure it's empty
+    # Make sure it's emptys
     assert not np.any(output['key/pitch_profile'])
     if SPARSE:
         assert output['key/tonic'].shape == (1, 4 * (SR // HOP_LENGTH), 1)
