@@ -9,7 +9,6 @@ import jams
 from librosa import note_to_midi
 
 from .base import BaseTaskTransformer
-from ..labels import MultiLabelBinarizer
 
 __all__ = ['KeyTransformer']
 
@@ -40,13 +39,8 @@ class KeyTransformer(BaseTaskTransformer):
         super(KeyTransformer, self).__init__(name=name,
                                              namespace='key_mode',
                                              sr=sr, hop_length=hop_length)
-
-        self.encoder = MultiLabelBinarizer()
-        self.encoder.fit([list(range(12))])
-        self._classes = set(self.encoder.classes_)
         self.sparse = sparse
-
-        # Maybe use floats as pitch_profile datatype to allow for probabilistic profiles?... Need discussion...
+ 
         self.register('pitch_profile', [None, 12], np.bool)
         if self.sparse:
             self.register('tonic', [None, 1], np.int)
@@ -211,6 +205,4 @@ class KeyTransformer(BaseTaskTransformer):
                 'tonic': target_tonic}
 
     def inverse(self, pitch_profile, tonic, duration=None):
-        raise NotImplementedError('There are some ambiguities')
-
-    
+        raise NotImplementedError('There are some ambiguities, also streaming profiles are difficult')

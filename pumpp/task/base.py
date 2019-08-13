@@ -128,6 +128,24 @@ class BaseTaskTransformer(Scope):
         # Prefix and collect
         return self.merge(results)
 
+    def transform_annotation(self, ann, duration):
+        '''Transform jams.Annotation to make data for a given task.
+        
+        Parameters
+        ----------
+        ann : jams.Annotation
+            The jams annotation containing the data
+
+        duration : number > 0 
+           time in seconds of the output duration
+
+        Returns
+        -------
+        data : dict
+            A dictionary of transformed annotation.
+        '''
+        raise NotImplementedError
+
     def encode_events(self, duration, events, values, dtype=np.bool):
         '''Encode labeled events as a time-series matrix.
 
