@@ -118,8 +118,20 @@ class FeatureExtractor(Scope):
 
         if api == 'keras':
             return self.layers_keras()
+        elif api in ('tf', 'tensorflow'):
+            return self.layers_tensorflow()
         else:
             raise ParameterError('Unsupported layer api={}'.format(api))
+
+    def layers_tensorflow(self):
+        from tensorflow import placeholder
+
+        L = dict()
+        for key in self.fields:
+            shape = tuple([None] + list(self.fields[key].shape))
+            L[key] = placeholder(self.fields[key].dtype,
+                                 shape=shape, name=key)
+        return L
 
     def layers_keras(self):
         from keras.layers import Input
@@ -128,7 +140,7 @@ class FeatureExtractor(Scope):
         for key in self.fields:
             L[key] = Input(name=key,
                            shape=self.fields[key].shape,
-                           dtype=self.fields[key].dtype)
+                           dtype=np.dtype(self.fields[key].dtype).name)
 
         return L
 
