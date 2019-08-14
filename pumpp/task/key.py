@@ -160,7 +160,7 @@ class KeyTransformer(BaseTaskTransformer):
             in the range [0, 12] where 12 indicates atonal.
 
             If densely encoded, `tonic` has an extra
-            final dimension which is active when there it is atonal.
+            final dimension which is active when it is atonal.
         '''
         # get list of observations
         intervals, keys = ann.to_interval_values()

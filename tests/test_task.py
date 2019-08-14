@@ -1150,6 +1150,37 @@ def test_task_key_present(SR, HOP_LENGTH, SPARSE):
         assert type_match(output[key].dtype, trans.fields[key].dtype)
 
 
+def test_task_key_empty_annotation(SR, HOP_LENGTH, SPARSE):
+    # test the case where the key annotation is a empty list
+    jam = jams.JAMS(file_metadata=dict(duration=4.0))
+    jam.annotations.append(jams.Annotation('key_mode'))
+    trans = pumpp.task.KeyTransformer(name='key',
+                                      sr=SR, hop_length=HOP_LENGTH,
+                                      sparse=SPARSE)
+
+    output = trans.transform(jam)
+
+    # Valid range is 1 since we do have matching namespace
+    assert not np.all(output['key/_valid'])
+
+    # Check the shape
+    assert output['key/pitch_profile'].shape == (1, 4 * (SR // HOP_LENGTH), 12)
+
+    # Make sure it's emptys
+    assert not np.any(output['key/pitch_profile'])
+    if SPARSE:
+        assert output['key/tonic'].shape == (1, 4 * (SR // HOP_LENGTH), 1)
+        assert np.all(output['key/tonic'] == 12)
+    else:
+        assert output['key/tonic'].shape == (1, 4 * (SR // HOP_LENGTH), 13)
+        assert not np.any(output['key/tonic'][:, :, :12])
+        assert np.all(output['key/tonic'][:, :, 12])
+
+    for key in trans.fields:
+        assert shape_match(output[key].shape[1:], trans.fields[key].shape)
+        assert type_match(output[key].dtype, trans.fields[key].dtype)
+
+
 def test_task_key_absent(SR, HOP_LENGTH, SPARSE):
     jam = jams.JAMS(file_metadata=dict(duration=4.0))
     trans = pumpp.task.KeyTransformer(name='key',
@@ -1177,3 +1208,14 @@ def test_task_key_absent(SR, HOP_LENGTH, SPARSE):
     for key in trans.fields:
         assert shape_match(output[key].shape[1:], trans.fields[key].shape)
         assert type_match(output[key].dtype, trans.fields[key].dtype)
+
+
+@pytest.mark.xfail(raises=NotImplementedError)
+def test_task_key_inverse_transform(SR, HOP_LENGTH, SPARSE):
+    jam = jams.JAMS(file_metadata=dict(duration=4.0))
+    trans = pumpp.task.KeyTransformer(name='key',
+                                      sr=SR, hop_length=HOP_LENGTH,
+                                      sparse=SPARSE)
+
+    output = trans.transform(jam)
+    _ = trans.inverse(output['key/pitch_profile'], output['key/tonic'])
