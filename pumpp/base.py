@@ -34,6 +34,9 @@ class Scope:
         self.name = name
         self.fields = dict()
 
+    def __repr__(self):
+        return '<{}({}) fields={}>'.format(self.__class__.__name__, self.name, self.fields)
+
     def scope(self, key):
         '''Apply the name scope to a key
 
