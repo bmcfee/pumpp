@@ -1314,4 +1314,3 @@ def test_task_key_tag_absent(SR, HOP_LENGTH, SPARSE):
     for key in trans.fields:
         assert shape_match(output[key].shape[1:], trans.fields[key].shape)
         assert type_match(output[key].dtype, trans.fields[key].dtype)
-
