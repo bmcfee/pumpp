@@ -583,6 +583,23 @@ def test_decode_keytag_hard_dense(sr, hop_length, ann_key):
     assert np.allclose(data['keytag'], data2['keytag'])
 
 
+def test_decode_keytag_hard_sparse_sparse(sr, hop_length, ann_key):
+
+    # This test encodes an annotation, decodes it, and then re-encodes it
+    # It passes if the re-encoded version matches the initial encoding
+    tc = pumpp.task.KeyTagTransformer('key', hop_length=hop_length,
+                                      sr=sr, sparse=True)
+
+    data = tc.transform_annotation(ann_key, ann_key.duration)
+
+    inverse = tc.inverse(data['keytag'], duration=ann_key.duration)
+    for obs in inverse:
+        assert 0 <= obs.confidence <= 1.
+    data2 = tc.transform_annotation(inverse, ann_key.duration)
+
+    assert np.allclose(data['keytag'], data2['keytag'])
+
+
 def test_decode_keytag_soft_dense_sparse(sr, hop_length, ann_key, p_self_key, p_init_key, p_state_key):
 
     # This test encodes an annotation, decodes it, and then re-encodes it
