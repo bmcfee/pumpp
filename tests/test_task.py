@@ -5,6 +5,7 @@
 import numpy as np
 import pytest
 import jams
+import mir_eval
 
 import pumpp
 
@@ -1210,12 +1211,107 @@ def test_task_key_absent(SR, HOP_LENGTH, SPARSE):
         assert type_match(output[key].dtype, trans.fields[key].dtype)
 
 
-@pytest.mark.xfail(raises=NotImplementedError)
-def test_task_key_inverse_transform(SR, HOP_LENGTH, SPARSE):
-    jam = jams.JAMS(file_metadata=dict(duration=4.0))
-    trans = pumpp.task.KeyTransformer(name='key',
-                                      sr=SR, hop_length=HOP_LENGTH,
-                                      sparse=SPARSE)
+def test_task_key_tag_fields(SPARSE):
+
+    trans = pumpp.task.KeyTagTransformer(name='mykeytag', sparse=SPARSE)
+
+    assert set(trans.fields.keys()) == set(['mykeytag/keytag'])
+
+    if SPARSE:
+        assert trans.fields['mykeytag/keytag'].shape == (None, 1)
+        assert np.issubdtype(trans.fields['mykeytag/keytag'].dtype, np.integer)
+    else:
+        assert trans.fields['mykeytag/keytag'].shape == (None, 12 * 9 + 1)
+        assert trans.fields['mykeytag/keytag'].dtype is np.bool
+
+
+def test_task_key_tag_present(SR, HOP_LENGTH, SPARSE):
+
+    # Construct a jam
+    jam = jams.JAMS(file_metadata=dict(duration=13.0))
+
+    ann = jams.Annotation(namespace='key_mode')
+
+    Y_true = ['C',              # 0
+              'D:minor',        # 1
+              'E#:lydian',      # 2
+              'Db:ionian',      # 3
+              'N',              # 4
+              'C#:mixolydian',  # 5
+              'F#:minor',       # 6
+              'A#',             # 7
+              'Bb:major',       # 8
+              'C#:dorian',      # 9
+              'C#:phrygian',    # 10
+              'G:locrian',      # 11
+              'G:aeolian']      # 12
+
+    Y_true_out = ['C:major',        # 0
+                  'D:minor',        # 1
+                  'F:lydian',       # 2
+                  'C#:ionian',      # 3
+                  'N',              # 4
+                  'C#:mixolydian',  # 5
+                  'F#:minor',       # 6
+                  'A#:major',       # 7
+                  'A#:major',       # 8
+                  'C#:dorian',      # 9
+                  'C#:phrygian',    # 10
+                  'G:locrian',      # 11
+                  'G:aeolian']      # 12
+
+    for i, y in enumerate(Y_true):
+        ann.append(time=i, duration=1.0, value=y)
+
+    jam.annotations.append(ann)
+
+    trans = pumpp.task.KeyTagTransformer(name='key',
+                                         sr=SR, hop_length=HOP_LENGTH,
+                                         sparse=SPARSE, p_self=0.5)
 
     output = trans.transform(jam)
-    _ = trans.inverse(output['key/pitch_profile'], output['key/tonic'])
+
+    # Make sure we have the mask
+    assert np.all(output['key/_valid'] == [0, 13 * trans.sr //
+                                             trans.hop_length])
+
+    # Decode the label encoding
+    Y_pred = trans.encoder.inverse_transform(output['key/keytag'][0])
+
+    Y_expected = np.repeat(Y_true_out, (SR // HOP_LENGTH), axis=0)
+
+    assert np.all(Y_pred == Y_expected)
+
+
+@pytest.mark.xfail(raises=pumpp.ParameterError)
+def test_task_key_tag_badinit():
+    pumpp.task.KeyTagTransformer(name='key', p_init=np.ones(5))
+
+
+@pytest.mark.xfail(raises=pumpp.ParameterError)
+def test_task_key_tag_badstate():
+    pumpp.task.KeyTagTransformer(name='key', p_state=np.ones(5))
+
+
+def test_task_key_tag_absent(SR, HOP_LENGTH, SPARSE):
+
+    jam = jams.JAMS(file_metadata=dict(duration=4.0))
+    trans = pumpp.task.KeyTagTransformer(name='key',
+                                         sr=SR, hop_length=HOP_LENGTH,
+                                         sparse=SPARSE)
+
+    output = trans.transform(jam)
+
+    # Valid range is 0 since we have no matching namespace
+    assert not np.any(output['key/_valid'])
+
+    # Make sure it's all no-key
+    Y_pred = trans.encoder.inverse_transform(output['key/keytag'][0])
+
+    assert all([_ == 'N' for _ in Y_pred])
+
+    # Check the shape
+    for key in trans.fields:
+        assert shape_match(output[key].shape[1:], trans.fields[key].shape)
+        assert type_match(output[key].dtype, trans.fields[key].dtype)
+

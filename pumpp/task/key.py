@@ -2,15 +2,25 @@
 # -*- encoding: utf-8 -*-
 '''Key recognition task transformer'''
 
+from itertools import product
+
 import numpy as np
 import mir_eval
 import jams
 
-from librosa import note_to_midi
+from librosa import note_to_midi, midi_to_note, time_to_frames
+from librosa.sequence import transition_loop
 
 from .base import BaseTaskTransformer
+from ..exceptions import ParameterError
+from ..labels import LabelBinarizer, LabelEncoder, MultiLabelBinarizer
 
-__all__ = ['KeyTransformer']
+__all__ = ['KeyTransformer', 'KeyTagTransformer']
+
+C_MAJOR = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
+C_MAJOR_PITCHES = note_to_midi(C_MAJOR) % 12
+MODES = ['ionian', 'dorian', 'phrygian', 'lydian', 'mixolydian', 'aeolian', 'locrian']
+QUALITY = {'major' : 0, 'minor' : -3}
 
 class KeyTransformer(BaseTaskTransformer):
     '''Key annotation transformer.
@@ -66,11 +76,7 @@ class KeyTransformer(BaseTaskTransformer):
                 a int in the range [0, 12] to indicate the pitch class of the tonic. 12
                 being atonal.
         '''
-        C_MAJOR = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
-        C_MAJOR_PITCHES = note_to_midi(C_MAJOR) % 12
-        MODES = ['ionian', 'dorian', 'phrygian', 'lydian', 'mixolydian', 'aeolian', 'locrian']
-        QUALITY = {'major' : 0, 'minor' : -3}
-
+        
         key_str_split = key_str.split(':')
         
         # Look at the Tonic first
@@ -206,3 +212,224 @@ class KeyTransformer(BaseTaskTransformer):
 
     def inverse(self, pitch_profile, tonic, duration=None):
         raise NotImplementedError('There are some ambiguities, also streaming profiles are difficult')
+
+class KeyTagTransformer(BaseTaskTransformer):
+    '''Chord transformer that uses a tag-space encoding for key labels.
+
+    Attributes
+    ----------
+    name : str
+        name of the transformer
+
+    sr : number > 0
+        Sampling rate of audio
+
+    hop_length : int > 0
+        Hop length for annotation frames
+
+    sparse : Bool
+        Whether or not to use sparse encoding for the labels
+
+    p_self : None, float in (0, 1), or np.ndarray [shape=(n_labels,)]
+        Optional self-loop probability(ies), used for Viterbi decoding
+
+    p_state : None or np.ndarray [shape=(n_labels,)]
+        Optional marginal probability for each chord class
+
+    p_init : None or np.ndarray [shape=(n_labels,)]
+        Optional initial probability for each chord class
+
+    See Also
+    --------
+    KeyTransformer
+    ChordTagTransformer
+    '''
+    def __init__(self, name='keytag',
+                 sr=22050, hop_length=512, sparse=False,
+                 p_self=None, p_init=None, p_state=None):
+
+        super(KeyTagTransformer, self).__init__(name=name,
+                                                namespace='key_mode',
+                                                sr=sr,
+                                                hop_length=hop_length)
+        
+        labels = self.vocabulary()
+        self.sparse = sparse
+
+        if self.sparse:
+            self.encoder = LabelEncoder()
+        else:
+            self.encoder = LabelBinarizer()
+        self.encoder.fit(labels)
+        self._classes = set(self.encoder.classes_)
+
+        self.set_transition(p_self)
+
+        if p_init is not None:
+            if len(p_init) != len(self._classes):
+                raise ParameterError('Invalid p_init.shape={} for vocabulary of size {}'.format(p_init.shape, len(self._classes)))
+
+        self.p_init = p_init
+
+        if p_state is not None:
+            if len(p_state) != len(self._classes):
+                raise ParameterError('Invalid p_state.shape={} for vocabulary of size {}'.format(p_state.shape, len(self._classes)))
+
+        self.p_state = p_state
+
+        if self.sparse:
+            self.register('keytag', [None, 1], np.int)
+        else:
+            self.register('keytag', [None, len(self._classes)], np.bool)
+
+    def set_transition(self, p_self):
+        '''Set the transition matrix according to self-loop probabilities.
+
+        Parameters
+        ----------
+        p_self : None, float in (0, 1), or np.ndarray [shape=(n_labels,)]
+            Optional self-loop probability(ies), used for Viterbi decoding
+        '''
+        if p_self is None:
+            self.transition = None
+        else:
+            self.transition = transition_loop(len(self._classes), p_self)
+
+    def empty(self, duration):
+        '''Empty key annotations
+
+        Parameters
+        ----------
+        duration : number
+            The length (in seconds) of the empty annotation
+
+        Returns
+        -------
+        ann : jams.Annotation
+            A key annotation consisting of a single `N` observation.
+        '''
+        ann = super(KeyTagTransformer, self).empty(duration)
+
+        ann.append(time=0,
+                   duration=duration,
+                   value='N', confidence=0)
+
+        return ann
+
+    def vocabulary(self):
+        ''' Build the vocabulary for all key_mode strings
+
+        Returns
+        -------
+        labels : list
+            list of string labels.
+        '''
+        qualities = MODES + list(QUALITY.keys())
+        tonics = midi_to_note(list(range(12)), octave=False)
+        
+        labels = ['N']
+
+        for key_mode in product(tonics, qualities):
+            labels.append('{}:{}'.format(*key_mode))
+
+        return labels
+
+    def enharmonic(self, key_str):
+        '''Force the tonic spelling to fit our tonic list 
+        by spelling out of vocab keys enharmonically.
+
+        Parameters
+        ----------
+        key_str : str
+            The key_mode string in jams style.
+
+        Returns
+        -------
+        key_str : str
+            The key_mode string spelled enharmonically to fit our vocab.
+        '''
+        key_list = key_str.split(':')
+        # spell the tonic enharmonically if necessary
+        if key_list[0] != 'N':
+            key_list[0] = midi_to_note(note_to_midi(key_list[0]), octave=False)
+            if len(key_list) == 1:
+                key_list.append('major')
+
+        return ':'.join(key_list)
+
+    def transform_annotation(self, ann, duration):
+        '''Transform an annotation to key-tag encoding
+
+        Parameters
+        ----------
+        ann : jams.Annotation
+            The annotation to convert
+
+        duration : number > 0
+            The duration of the track
+
+        Returns
+        -------
+        data : dict
+            if self.sparse = True
+            data['keytag'] : np.ndarray, shape=(n, n_labels) or shape=(n,)
+                A time-varying binary encoding of the chords. 
+                The shape depends on self.sparse.
+        '''
+        intervals, values = ann.to_interval_values()
+
+        keys = []
+        for v in values:
+            keys.extend(self.encoder.transform([self.enharmonic(v)]))
+
+        dtype = self.fields[self.scope('keytag')].dtype
+
+        keys = np.asarray(keys)
+
+        if self.sparse:
+            keys = keys[:, np.newaxis]
+        
+        target = self.encode_intervals(duration, intervals, keys,
+                                       multi=False, dtype=dtype)
+
+        return {'keytag': target}
+
+    def inverse(self, encoded, duration=None):
+        '''Inverse transformation'''
+
+        ann = jams.Annotation(self.namespace, duration=duration)
+            
+        for start, end, value in self.decode_intervals(encoded,
+                                                       duration=duration,
+                                                       multi=False,
+                                                       sparse=self.sparse,
+                                                       transition=self.transition,
+                                                       p_init=self.p_init,
+                                                       p_state=self.p_state):
+
+            # Map start:end to frames
+            f_start, f_end = time_to_frames([start, end],
+                                            sr=self.sr,
+                                            hop_length=self.hop_length)
+
+            # Reverse the index
+            if self.sparse:
+                # Compute the confidence
+                if encoded.shape[1] == 1:
+                    # This case is for full-confidence prediction (just the index)
+                    confidence = 1.
+                else:
+                    confidence = np.mean(encoded[f_start:f_end+1, value])
+
+                value_dec = self.encoder.inverse_transform(value)
+            else:
+                confidence = np.mean(encoded[f_start:f_end+1, np.argmax(value)])
+                value_dec = self.encoder.inverse_transform(np.atleast_2d(value))
+
+            for vd in value_dec:
+                ann.append(time=start,
+                           duration=end-start,
+                           value=vd,
+                           confidence=float(confidence))
+
+        return ann
