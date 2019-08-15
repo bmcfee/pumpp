@@ -322,6 +322,9 @@ class ChordTagTransformer(BaseTaskTransformer):
     hop_length : int > 0
         Hop length for annotation frames
 
+    sparse : Bool
+        Whether or not to use sparse encoding for the labels
+
     p_self : None, float in (0, 1), or np.ndarray [shape=(n_labels,)]
         Optional self-loop probability(ies), used for Viterbi decoding
 
