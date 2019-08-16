@@ -105,8 +105,11 @@ class KeyTransformer(BaseTaskTransformer):
                 mode_transpose_int = -1 * C_MAJOR_PITCHES[MODES.index(quality)]
             elif quality in QUALITY.keys():
                 mode_transpose_int = -1 * QUALITY[quality]
-
+                    
             mode_profile_in_c = np.roll(c_major_profile, mode_transpose_int)
+            # Add the leading tone to the minor profiles
+            if quality == 'minor':
+                mode_profile_in_c[11] = 1
             
             # Now roll the profile again to get the right tonic.
             pitch_profile = np.roll(mode_profile_in_c, tonic)

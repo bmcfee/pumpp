@@ -1060,7 +1060,7 @@ def test_task_key__encode_key_str(SPARSE):
     
     # Check A:minor
     pitch_profile, tonic = trans._encode_key_str('A:minor')
-    assert np.all(pitch_profile == np.array([1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1]))
+    assert np.all(pitch_profile == np.array([1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1]))
     if SPARSE:
         assert tonic == 9
     else:                            #   C #C  D bE  E  F #F  G bA  A bB  B  N
