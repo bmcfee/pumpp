@@ -575,12 +575,12 @@ def test_decode_keytag_hard_dense(sr, hop_length, ann_key):
     
     data = tc.transform_annotation(ann_key, ann_key.duration)
 
-    inverse = tc.inverse(data['keytag'], duration=ann_key.duration)
+    inverse = tc.inverse(data['tag'], duration=ann_key.duration)
     for obs in inverse:
         assert 0 <= obs.confidence <= 1.
     data2 = tc.transform_annotation(inverse, ann_key.duration)
 
-    assert np.allclose(data['keytag'], data2['keytag'])
+    assert np.allclose(data['tag'], data2['tag'])
 
 
 def test_decode_keytag_hard_sparse_sparse(sr, hop_length, ann_key):
@@ -592,12 +592,12 @@ def test_decode_keytag_hard_sparse_sparse(sr, hop_length, ann_key):
 
     data = tc.transform_annotation(ann_key, ann_key.duration)
 
-    inverse = tc.inverse(data['keytag'], duration=ann_key.duration)
+    inverse = tc.inverse(data['tag'], duration=ann_key.duration)
     for obs in inverse:
         assert 0 <= obs.confidence <= 1.
     data2 = tc.transform_annotation(inverse, ann_key.duration)
 
-    assert np.allclose(data['keytag'], data2['keytag'])
+    assert np.allclose(data['tag'], data2['tag'])
 
 
 def test_decode_keytag_soft_dense_sparse(sr, hop_length, ann_key, p_self_key, p_init_key, p_state_key):
@@ -621,7 +621,7 @@ def test_decode_keytag_soft_dense_sparse(sr, hop_length, ann_key, p_self_key, p_
     # Make a soft, dense encoding of the data
     data = tcd.transform_annotation(ann_key, ann_key.duration)
 
-    key_predict = 0.9 * data['keytag'] + 0.1 * np.ones_like(data['keytag']) / data['keytag'].shape[1]
+    key_predict = 0.9 * data['tag'] + 0.1 * np.ones_like(data['tag']) / data['tag'].shape[1]
 
     # Invert using the sparse encoder
     inverse = tcs.inverse(key_predict, duration=ann_key.duration)
@@ -629,6 +629,6 @@ def test_decode_keytag_soft_dense_sparse(sr, hop_length, ann_key, p_self_key, p_
         assert 0 <= obs.confidence <= 1.
     data2 = tcs.transform_annotation(inverse, ann_key.duration)
 
-    dense_positions = np.where(data['keytag'])[1]
-    sparse_positions = data2['keytag'][:, 0]
+    dense_positions = np.where(data['tag'])[1]
+    sparse_positions = data2['tag'][:, 0]
     assert np.allclose(dense_positions, sparse_positions)

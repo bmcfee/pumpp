@@ -8,6 +8,7 @@ import jams
 import mir_eval
 
 import pumpp
+from pumpp.task.key import _encode_key_str
 
 xfail = pytest.mark.xfail
 
@@ -1056,18 +1057,17 @@ def test_task_beatpos_tail(SR, HOP_LENGTH, SPARSE):
 
 def test_task_key__encode_key_str(SPARSE):
     # Checks the helper function which does key string to encoding
-    trans = pumpp.task.KeyTransformer(sparse=SPARSE)
     
     # Check A:minor
-    pitch_profile, tonic = trans._encode_key_str('A:minor')
+    pitch_profile, tonic = _encode_key_str('A:minor', SPARSE)
     assert np.all(pitch_profile == np.array([1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1]))
     if SPARSE:
         assert tonic == 9
     else:                            #   C #C  D bE  E  F #F  G bA  A bB  B  N
         assert np.all(tonic == np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]))
-    
+
     # Check D:dorian
-    pitch_profile, tonic = trans._encode_key_str('D:dorian')
+    pitch_profile, tonic = _encode_key_str('D:dorian', SPARSE)
     assert np.all(pitch_profile == np.array([1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1]))
     if SPARSE:
         assert tonic == 2
@@ -1075,15 +1075,22 @@ def test_task_key__encode_key_str(SPARSE):
         assert np.all(tonic == np.array([0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]))
 
     # Check F
-    pitch_profile, tonic = trans._encode_key_str('F')
+    pitch_profile, tonic = _encode_key_str('F', SPARSE)
     assert np.all(pitch_profile == np.array([1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0]))
     if SPARSE:
         assert tonic == 5
     else:                            #   C #C  D bE  E  F #F  G bA  A bB  B  N
         assert np.all(tonic == np.array([0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]))
 
+    # Check A:pentatonic
+    pitch_profile, tonic = _encode_key_str('A:pentatonic', SPARSE)
+    # since pentatonic is out of vocab, should be major
+    y_pitch_profile, y_tonic = _encode_key_str('A:major', SPARSE)
+    assert np.all(pitch_profile == y_pitch_profile)
+    assert np.all(tonic == y_tonic)
+
     # Check 'N' for no key
-    pitch_profile, tonic = trans._encode_key_str('N')
+    pitch_profile, tonic = _encode_key_str('N', SPARSE)
     assert np.all(pitch_profile == np.array(np.zeros(12, dtype=np.bool)))
     if SPARSE:
         assert tonic == 12
@@ -1134,12 +1141,12 @@ def test_task_key_present(SR, HOP_LENGTH, SPARSE):
     # Ideal vectors:
     # pcp = Cmin, N, Eb, N, D, D_lyd
     pcp_true = np.array([
-        trans._encode_key_str('C:minor')[0],
-        trans._encode_key_str('N')[0],
-        trans._encode_key_str('Eb:major')[0],
-        trans._encode_key_str('N')[0],
-        trans._encode_key_str('D')[0],
-        trans._encode_key_str('D:lydian')[0]
+        _encode_key_str('C:minor', SPARSE)[0],
+        _encode_key_str('N', SPARSE)[0],
+        _encode_key_str('Eb:major', SPARSE)[0],
+        _encode_key_str('N', SPARSE)[0],
+        _encode_key_str('D', SPARSE)[0],
+        _encode_key_str('D:lydian', SPARSE)[0]
     ])
     
     assert np.all(output['key/pitch_profile'] == np.repeat(pcp_true,
@@ -1215,14 +1222,14 @@ def test_task_key_tag_fields(SPARSE):
 
     trans = pumpp.task.KeyTagTransformer(name='mykeytag', sparse=SPARSE)
 
-    assert set(trans.fields.keys()) == set(['mykeytag/keytag'])
+    assert set(trans.fields.keys()) == set(['mykeytag/tag'])
 
     if SPARSE:
-        assert trans.fields['mykeytag/keytag'].shape == (None, 1)
-        assert np.issubdtype(trans.fields['mykeytag/keytag'].dtype, np.integer)
+        assert trans.fields['mykeytag/tag'].shape == (None, 1)
+        assert np.issubdtype(trans.fields['mykeytag/tag'].dtype, np.integer)
     else:
-        assert trans.fields['mykeytag/keytag'].shape == (None, 12 * 9 + 1)
-        assert trans.fields['mykeytag/keytag'].dtype is np.bool
+        assert trans.fields['mykeytag/tag'].shape == (None, 12 * 9 + 1)
+        assert trans.fields['mykeytag/tag'].dtype is np.bool
 
 
 def test_task_key_tag_present(SR, HOP_LENGTH, SPARSE):
@@ -1276,7 +1283,7 @@ def test_task_key_tag_present(SR, HOP_LENGTH, SPARSE):
                                              trans.hop_length])
 
     # Decode the label encoding
-    Y_pred = trans.encoder.inverse_transform(output['key/keytag'][0])
+    Y_pred = trans.encoder.inverse_transform(output['key/tag'][0])
 
     Y_expected = np.repeat(Y_true_out, (SR // HOP_LENGTH), axis=0)
 
@@ -1306,7 +1313,7 @@ def test_task_key_tag_absent(SR, HOP_LENGTH, SPARSE):
     assert not np.any(output['key/_valid'])
 
     # Make sure it's all no-key
-    Y_pred = trans.encoder.inverse_transform(output['key/keytag'][0])
+    Y_pred = trans.encoder.inverse_transform(output['key/tag'][0])
 
     assert all([_ == 'N' for _ in Y_pred])
 
