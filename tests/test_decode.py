@@ -177,6 +177,42 @@ def ann_segment():
     return ann
 
 
+@pytest.fixture()
+def ann_key():
+
+    ann = jams.Annotation(namespace='key_mode', duration=5)
+
+    for t, c in [(0, 'A:major'),
+                 (1, 'Bb:lydian'),
+                 (2, 'A:minor'),
+                 (3, 'B:major'),
+                 (4, 'C:dorian')]:
+        ann.append(time=t, duration=1, value=c)
+
+    return ann
+
+
+@pytest.fixture(params=[None, 0.5])
+def p_self_key(request):
+    return request.param
+
+
+@pytest.fixture(params=[False, True])
+def p_init_key(request):
+    if request.param:
+        return np.ones(109) / 109
+    else:
+        return None
+
+
+@pytest.fixture(params=[False, True])
+def p_state_key(request):
+    if request.param:
+        return np.ones(109) / 109
+    else:
+        return None
+
+
 def test_decode_tags_dynamic_hard(sr, hop_length, ann_tag, p_self_tags, p_init_tags, p_state_tags):
 
     # This test encodes an annotation, decodes it, and then re-encodes it
@@ -520,3 +556,79 @@ def test_decode_beatpos(sr, hop_length, ann_beat):
 
     assert np.allclose(data['position'], data2['position'])
 
+
+@pytest.mark.xfail(raises=NotImplementedError)
+def test_task_key_inverse_transform(sr, hop_length):
+    jam = jams.JAMS(file_metadata=dict(duration=4.0))
+    trans = pumpp.task.KeyTransformer(name='key',
+                                      sr=sr, hop_length=hop_length)
+
+    output = trans.transform(jam)
+    _ = trans.inverse(output['key/pitch_profile'], output['key/tonic'])
+
+
+def test_decode_keytag_hard_dense(sr, hop_length, ann_key):
+
+    # This test encodes an annotation, decodes it, and then re-encodes it
+    tc = pumpp.task.KeyTagTransformer('key', sr=sr, hop_length=hop_length, 
+                                      sparse=False)
+    
+    data = tc.transform_annotation(ann_key, ann_key.duration)
+
+    inverse = tc.inverse(data['tag'], duration=ann_key.duration)
+    for obs in inverse:
+        assert 0 <= obs.confidence <= 1.
+    data2 = tc.transform_annotation(inverse, ann_key.duration)
+
+    assert np.allclose(data['tag'], data2['tag'])
+
+
+def test_decode_keytag_hard_sparse_sparse(sr, hop_length, ann_key):
+
+    # This test encodes an annotation, decodes it, and then re-encodes it
+    # It passes if the re-encoded version matches the initial encoding
+    tc = pumpp.task.KeyTagTransformer('key', hop_length=hop_length,
+                                      sr=sr, sparse=True)
+
+    data = tc.transform_annotation(ann_key, ann_key.duration)
+
+    inverse = tc.inverse(data['tag'], duration=ann_key.duration)
+    for obs in inverse:
+        assert 0 <= obs.confidence <= 1.
+    data2 = tc.transform_annotation(inverse, ann_key.duration)
+
+    assert np.allclose(data['tag'], data2['tag'])
+
+
+def test_decode_keytag_soft_dense_sparse(sr, hop_length, ann_key, p_self_key, p_init_key, p_state_key):
+
+    # This test encodes an annotation, decodes it, and then re-encodes it
+    # It passes if the re-encoded version matches the initial encoding
+    tcd = pumpp.task.KeyTagTransformer('key',
+                                       hop_length=hop_length,
+                                       sr=sr, sparse=False,
+                                       p_self=p_self_key,
+                                       p_init=p_init_key,
+                                       p_state=p_state_key)
+
+    tcs = pumpp.task.KeyTagTransformer('key',
+                                       hop_length=hop_length,
+                                       sr=sr, sparse=True,
+                                       p_self=p_self_key,
+                                       p_init=p_init_key,
+                                       p_state=p_state_key)
+
+    # Make a soft, dense encoding of the data
+    data = tcd.transform_annotation(ann_key, ann_key.duration)
+
+    key_predict = 0.9 * data['tag'] + 0.1 * np.ones_like(data['tag']) / data['tag'].shape[1]
+
+    # Invert using the sparse encoder
+    inverse = tcs.inverse(key_predict, duration=ann_key.duration)
+    for obs in inverse:
+        assert 0 <= obs.confidence <= 1.
+    data2 = tcs.transform_annotation(inverse, ann_key.duration)
+
+    dense_positions = np.where(data['tag'])[1]
+    sparse_positions = data2['tag'][:, 0]
+    assert np.allclose(dense_positions, sparse_positions)

@@ -5,8 +5,10 @@
 import numpy as np
 import pytest
 import jams
+import mir_eval
 
 import pumpp
+from pumpp.task.key import _encode_key_str
 
 xfail = pytest.mark.xfail
 
@@ -51,6 +53,11 @@ def type_match(x, y):
 
     return np.issubdtype(np.dtype(x), np.dtype(y)) and np.issubdtype(np.dtype(y), np.dtype(x))
 
+@pytest.mark.xfail(raises=NotImplementedError)
+def test_task_base_stub(SR, HOP_LENGTH):
+    trans = pumpp.task.BaseTaskTransformer(name='basetask', namespace='key_mode',
+                                           sr=SR, hop_length=HOP_LENGTH)
+    trans.transform(jams.JAMS())
 
 def test_task_chord_fields(SPARSE):
 
@@ -1046,3 +1053,271 @@ def test_task_beatpos_tail(SR, HOP_LENGTH, SPARSE):
                            axis=0).astype(Y_pred.dtype)
     for i, (y1, y2) in enumerate(zip(Y_pred, Y_expected)):
         assert y1 == y2
+
+
+def test_task_key__encode_key_str(SPARSE):
+    # Checks the helper function which does key string to encoding
+    
+    # Check A:minor
+    pitch_profile, tonic = _encode_key_str('A:minor', SPARSE)
+    assert np.all(pitch_profile == np.array([1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1]))
+    if SPARSE:
+        assert tonic == 9
+    else:                            #   C #C  D bE  E  F #F  G bA  A bB  B  N
+        assert np.all(tonic == np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]))
+
+    # Check D:dorian
+    pitch_profile, tonic = _encode_key_str('D:dorian', SPARSE)
+    assert np.all(pitch_profile == np.array([1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1]))
+    if SPARSE:
+        assert tonic == 2
+    else:                            #   C #C  D bE  E  F #F  G bA  A bB  B  N
+        assert np.all(tonic == np.array([0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]))
+
+    # Check F
+    pitch_profile, tonic = _encode_key_str('F', SPARSE)
+    assert np.all(pitch_profile == np.array([1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0]))
+    if SPARSE:
+        assert tonic == 5
+    else:                            #   C #C  D bE  E  F #F  G bA  A bB  B  N
+        assert np.all(tonic == np.array([0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]))
+
+    # Check A:pentatonic
+    pitch_profile, tonic = _encode_key_str('A:pentatonic', SPARSE)
+    # since pentatonic is out of vocab, should be major
+    y_pitch_profile, y_tonic = _encode_key_str('A:major', SPARSE)
+    assert np.all(pitch_profile == y_pitch_profile)
+    assert np.all(tonic == y_tonic)
+
+    # Check 'N' for no key
+    pitch_profile, tonic = _encode_key_str('N', SPARSE)
+    assert np.all(pitch_profile == np.array(np.zeros(12, dtype=np.bool)))
+    if SPARSE:
+        assert tonic == 12
+    else:
+        assert np.all(tonic == np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]))
+ 
+        
+def test_task_key_fields(SPARSE):
+    trans = pumpp.task.KeyTransformer(name='mykey', sparse=SPARSE)
+
+    assert set(trans.fields.keys()) == set(['mykey/pitch_profile',
+                                            'mykey/tonic'])
+
+    assert trans.fields['mykey/pitch_profile'].shape == (None, 12)
+    assert trans.fields['mykey/pitch_profile'].dtype is np.bool
+
+    if SPARSE:
+        assert trans.fields['mykey/tonic'].shape == (None, 1)
+        assert np.issubdtype(trans.fields['mykey/tonic'].dtype, np.integer)
+    else:
+        assert trans.fields['mykey/tonic'].shape == (None, 13)
+        assert trans.fields['mykey/tonic'].dtype is np.bool
+
+
+def test_task_key_present(SR, HOP_LENGTH, SPARSE):
+    # Create jams with key annotation
+    jam = jams.JAMS(file_metadata=dict(duration=12.0))
+
+    ann = jams.Annotation(namespace='key_mode')
+
+    ann.append(time=0, duration=2.0, value='C:minor')
+    ann.append(time=2, duration=2.0, value='N')
+    ann.append(time=4, duration=2.0, value='Eb')
+    ann.append(time=8, duration=2.0, value='D:major')
+    ann.append(time=10, duration=2.0, value='D:lydian')
+
+    jam.annotations.append(ann)
+
+    trans = pumpp.task.KeyTransformer(name='key',
+                                      sr=SR, hop_length=HOP_LENGTH,
+                                      sparse=SPARSE)
+    
+    output = trans.transform(jam)
+
+    # Make sure we have the mask
+    assert np.all(output['key/_valid'] == [0, 12 * trans.sr // trans.hop_length])
+
+    # Ideal vectors:
+    # pcp = Cmin, N, Eb, N, D, D_lyd
+    pcp_true = np.array([
+        _encode_key_str('C:minor', SPARSE)[0],
+        _encode_key_str('N', SPARSE)[0],
+        _encode_key_str('Eb:major', SPARSE)[0],
+        _encode_key_str('N', SPARSE)[0],
+        _encode_key_str('D', SPARSE)[0],
+        _encode_key_str('D:lydian', SPARSE)[0]
+    ])
+    
+    assert np.all(output['key/pitch_profile'] == np.repeat(pcp_true,
+                                                           (SR * 2 // HOP_LENGTH),
+                                                           axis=0))
+    
+    for key in trans.fields:
+        assert shape_match(output[key].shape[1:], trans.fields[key].shape)
+        assert type_match(output[key].dtype, trans.fields[key].dtype)
+
+
+def test_task_key_empty_annotation(SR, HOP_LENGTH, SPARSE):
+    # test the case where the key annotation is a empty list
+    jam = jams.JAMS(file_metadata=dict(duration=4.0))
+    jam.annotations.append(jams.Annotation('key_mode'))
+    trans = pumpp.task.KeyTransformer(name='key',
+                                      sr=SR, hop_length=HOP_LENGTH,
+                                      sparse=SPARSE)
+
+    output = trans.transform(jam)
+
+    # Valid range is 1 since we do have matching namespace
+    assert not np.all(output['key/_valid'])
+
+    # Check the shape
+    assert output['key/pitch_profile'].shape == (1, 4 * (SR // HOP_LENGTH), 12)
+
+    # Make sure it's emptys
+    assert not np.any(output['key/pitch_profile'])
+    if SPARSE:
+        assert output['key/tonic'].shape == (1, 4 * (SR // HOP_LENGTH), 1)
+        assert np.all(output['key/tonic'] == 12)
+    else:
+        assert output['key/tonic'].shape == (1, 4 * (SR // HOP_LENGTH), 13)
+        assert not np.any(output['key/tonic'][:, :, :12])
+        assert np.all(output['key/tonic'][:, :, 12])
+
+    for key in trans.fields:
+        assert shape_match(output[key].shape[1:], trans.fields[key].shape)
+        assert type_match(output[key].dtype, trans.fields[key].dtype)
+
+
+def test_task_key_absent(SR, HOP_LENGTH, SPARSE):
+    jam = jams.JAMS(file_metadata=dict(duration=4.0))
+    trans = pumpp.task.KeyTransformer(name='key',
+                                      sr=SR, hop_length=HOP_LENGTH,
+                                      sparse=SPARSE)
+
+    output = trans.transform(jam)
+
+    # Valid range is 0 since we have no matching namespace
+    assert not np.any(output['key/_valid'])
+
+    # Check the shape
+    assert output['key/pitch_profile'].shape == (1, 4 * (SR // HOP_LENGTH), 12)
+
+    # Make sure it's emptys
+    assert not np.any(output['key/pitch_profile'])
+    if SPARSE:
+        assert output['key/tonic'].shape == (1, 4 * (SR // HOP_LENGTH), 1)
+        assert np.all(output['key/tonic'] == 12)
+    else:
+        assert output['key/tonic'].shape == (1, 4 * (SR // HOP_LENGTH), 13)
+        assert not np.any(output['key/tonic'][:, :, :12])
+        assert np.all(output['key/tonic'][:, :, 12])
+
+    for key in trans.fields:
+        assert shape_match(output[key].shape[1:], trans.fields[key].shape)
+        assert type_match(output[key].dtype, trans.fields[key].dtype)
+
+
+def test_task_key_tag_fields(SPARSE):
+
+    trans = pumpp.task.KeyTagTransformer(name='mykeytag', sparse=SPARSE)
+
+    assert set(trans.fields.keys()) == set(['mykeytag/tag'])
+
+    if SPARSE:
+        assert trans.fields['mykeytag/tag'].shape == (None, 1)
+        assert np.issubdtype(trans.fields['mykeytag/tag'].dtype, np.integer)
+    else:
+        assert trans.fields['mykeytag/tag'].shape == (None, 12 * 9 + 1)
+        assert trans.fields['mykeytag/tag'].dtype is np.bool
+
+
+def test_task_key_tag_present(SR, HOP_LENGTH, SPARSE):
+
+    # Construct a jam
+    jam = jams.JAMS(file_metadata=dict(duration=13.0))
+
+    ann = jams.Annotation(namespace='key_mode')
+
+    Y_true = ['C',              # 0
+              'D:minor',        # 1
+              'E#:lydian',      # 2
+              'Db:ionian',      # 3
+              'N',              # 4
+              'C#:mixolydian',  # 5
+              'F#:minor',       # 6
+              'A#',             # 7
+              'Bb:major',       # 8
+              'C#:dorian',      # 9
+              'C#:phrygian',    # 10
+              'G:locrian',      # 11
+              'G:aeolian']      # 12
+
+    Y_true_out = ['C:major',        # 0
+                  'D:minor',        # 1
+                  'F:lydian',       # 2
+                  'C#:ionian',      # 3
+                  'N',              # 4
+                  'C#:mixolydian',  # 5
+                  'F#:minor',       # 6
+                  'A#:major',       # 7
+                  'A#:major',       # 8
+                  'C#:dorian',      # 9
+                  'C#:phrygian',    # 10
+                  'G:locrian',      # 11
+                  'G:aeolian']      # 12
+
+    for i, y in enumerate(Y_true):
+        ann.append(time=i, duration=1.0, value=y)
+
+    jam.annotations.append(ann)
+
+    trans = pumpp.task.KeyTagTransformer(name='key',
+                                         sr=SR, hop_length=HOP_LENGTH,
+                                         sparse=SPARSE, p_self=0.5)
+
+    output = trans.transform(jam)
+
+    # Make sure we have the mask
+    assert np.all(output['key/_valid'] == [0, 13 * trans.sr //
+                                             trans.hop_length])
+
+    # Decode the label encoding
+    Y_pred = trans.encoder.inverse_transform(output['key/tag'][0])
+
+    Y_expected = np.repeat(Y_true_out, (SR // HOP_LENGTH), axis=0)
+
+    assert np.all(Y_pred == Y_expected)
+
+
+@pytest.mark.xfail(raises=pumpp.ParameterError)
+def test_task_key_tag_badinit():
+    pumpp.task.KeyTagTransformer(name='key', p_init=np.ones(5))
+
+
+@pytest.mark.xfail(raises=pumpp.ParameterError)
+def test_task_key_tag_badstate():
+    pumpp.task.KeyTagTransformer(name='key', p_state=np.ones(5))
+
+
+def test_task_key_tag_absent(SR, HOP_LENGTH, SPARSE):
+
+    jam = jams.JAMS(file_metadata=dict(duration=4.0))
+    trans = pumpp.task.KeyTagTransformer(name='key',
+                                         sr=SR, hop_length=HOP_LENGTH,
+                                         sparse=SPARSE)
+
+    output = trans.transform(jam)
+
+    # Valid range is 0 since we have no matching namespace
+    assert not np.any(output['key/_valid'])
+
+    # Make sure it's all no-key
+    Y_pred = trans.encoder.inverse_transform(output['key/tag'][0])
+
+    assert all([_ == 'N' for _ in Y_pred])
+
+    # Check the shape
+    for key in trans.fields:
+        assert shape_match(output[key].shape[1:], trans.fields[key].shape)
+        assert type_match(output[key].dtype, trans.fields[key].dtype)
