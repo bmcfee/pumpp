@@ -3,6 +3,7 @@
 '''Key recognition task transformer'''
 
 from itertools import product
+import logging
 
 import numpy as np
 import mir_eval
@@ -21,6 +22,80 @@ C_MAJOR = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
 C_MAJOR_PITCHES = note_to_midi(C_MAJOR) % 12
 MODES = ['ionian', 'dorian', 'phrygian', 'lydian', 'mixolydian', 'aeolian', 'locrian']
 QUALITY = {'major' : 0, 'minor' : -3}
+
+
+def _encode_key_str(key_str, sparse):
+        '''Helper function to go from jams `key_mode` annotation value strings to 12-D 
+        numpy membership vec, representing the pitch profile.
+
+        Parameters
+        ----------
+        key_str : str
+            String in the style of 'key_mode' jams annotation values.
+        sparse : bool
+            Whether or not to use sparse encoding for the tonic field.
+
+        Returns
+        -------
+        (pitch_profile, tonic) : tuple
+            pitch_profile : np.ndarray, shape = (1, 12), dtype = np.bool
+                a 12-D row vector that's encodes the membership of each pitch class for 
+                a given `key_str`.
+            tonic : int or np.ndarray, shape = (1, 13), dtype = np.bool
+                a int in the range [0, 12] to indicate the pitch class of the tonic. 12
+                being atonal. The type will depend on the `sparse` parameter
+        '''
+        
+        key_str_split = key_str.split(':')
+        
+        # Look at the Tonic first
+        if key_str_split[0] == 'N':
+            tonic = 12
+        else:
+            tonic = note_to_midi(key_str_split[0]) % 12
+
+        # Now look at quality/mode and build pitch_profile
+        # First construct the profile in C for a given mode/quality
+        c_major_profile = np.zeros(12)
+        for pc in C_MAJOR_PITCHES:
+            c_major_profile[pc] = 1
+
+        # When there is no tonal center, pitch profile is all zeros.
+        if tonic == 12:
+            pitch_profile = np.zeros(12, dtype=np.bool)
+        else:
+            # When there is no quality, major assumed.
+            if len(key_str_split) == 1:
+                quality = 'major'
+            else:
+                quality = key_str_split[1]
+
+            if quality in MODES:
+                mode_transpose_int = -1 * C_MAJOR_PITCHES[MODES.index(quality)]
+            elif quality in QUALITY.keys():
+                mode_transpose_int = -1 * QUALITY[quality]
+            else:
+                logging.info(
+                    '{} is not a recognized quality. Using major instead.'.format(quality)
+                )
+                mode_transpose_int = 0
+
+            # roll the profile to fit different modes.        
+            mode_profile_in_c = np.roll(c_major_profile, mode_transpose_int)
+            # Add the leading tone to the minor profiles
+            if quality == 'minor':
+                mode_profile_in_c[11] = 1
+            
+            # Now roll the profile again to get the right tonic.
+            pitch_profile = np.roll(mode_profile_in_c, tonic)
+
+        if not sparse:
+            tonic_vec = np.zeros(13, dtype=np.bool)
+            tonic_vec[tonic] = 1
+            tonic = tonic_vec
+
+        return (pitch_profile, tonic)
+
 
 class KeyTransformer(BaseTaskTransformer):
     '''Key annotation transformer.
@@ -57,70 +132,7 @@ class KeyTransformer(BaseTaskTransformer):
         else:
             self.register('tonic', [None, 13], np.bool)
 
-    def _encode_key_str(self, key_str):
-        '''Helper function to go from jams `key_mode` annotation value strings to 12-D 
-        numpy membership vec, representing the pitch profile.
-
-        Parameters
-        ----------
-        key_str : str
-            String in the style of 'key_mode' jams annotation values.
-
-        Returns
-        -------
-        (pitch_profile, tonic) : tuple
-            pitch_profile : np.ndarray, shape = (1, 12), dtype = np.bool
-                a 12-D row vector that's encodes the membership of each pitch class for 
-                a given `key_str`.
-            tonic : int or np.ndarray, shape = (1, 13), dtype = np.bool
-                a int in the range [0, 12] to indicate the pitch class of the tonic. 12
-                being atonal.
-        '''
-        
-        key_str_split = key_str.split(':')
-        
-        # Look at the Tonic first
-        if key_str_split[0] == 'N':
-            tonic = 12
-        else:
-            tonic = note_to_midi(key_str_split[0]) % 12
-
-        # Now look at quality/mode and build pitch_profile
-        # First construct the profile in C for a given mode/quality
-        c_major_profile = np.zeros(12)
-        for pc in C_MAJOR_PITCHES:
-            c_major_profile[pc] = 1
-
-        # When there is no tonal center, pitch profile is all zeros.
-        if tonic == 12:
-            pitch_profile = np.zeros(12, dtype=np.bool)
-        else:
-            # When there is no quality, major assumed.
-            if len(key_str_split) == 1:
-                quality = 'major'
-            else:
-                quality = key_str_split[1]
-
-            if quality in MODES:
-                mode_transpose_int = -1 * C_MAJOR_PITCHES[MODES.index(quality)]
-            elif quality in QUALITY.keys():
-                mode_transpose_int = -1 * QUALITY[quality]
-                    
-            mode_profile_in_c = np.roll(c_major_profile, mode_transpose_int)
-            # Add the leading tone to the minor profiles
-            if quality == 'minor':
-                mode_profile_in_c[11] = 1
-            
-            # Now roll the profile again to get the right tonic.
-            pitch_profile = np.roll(mode_profile_in_c, tonic)
-
-        if not self.sparse:
-            tonic_vec = np.zeros(13, dtype=np.bool)
-            tonic_vec[tonic] = 1
-            tonic = tonic_vec
-
-        return (pitch_profile, tonic)
-
+    
     def empty(self, duration):
         '''Empty key annotation
 
@@ -196,9 +208,9 @@ class KeyTransformer(BaseTaskTransformer):
             fill = False
 
         for key in keys:
-            pitch_profile, tonic = self._encode_key_str(key)
+            pitch_profile, tonic = _encode_key_str(key, self.sparse)
             pitch_profiles.append(pitch_profile)
-            tonics.append(tonic if type(tonic) is np.ndarray else [tonic])
+            tonics.append(tonic if isinstance(tonic, np.ndarray) else [tonic])
         
         pitch_profiles = np.asarray(pitch_profiles, dtype=np.bool)
         tonics = np.asarray(tonics, dtype=dtype)
@@ -247,7 +259,7 @@ class KeyTagTransformer(BaseTaskTransformer):
     KeyTransformer
     ChordTagTransformer
     '''
-    def __init__(self, name='keytag',
+    def __init__(self, name='key_tag',
                  sr=22050, hop_length=512, sparse=False,
                  p_self=None, p_init=None, p_state=None):
 
@@ -281,9 +293,9 @@ class KeyTagTransformer(BaseTaskTransformer):
         self.p_state = p_state
 
         if self.sparse:
-            self.register('keytag', [None, 1], np.int)
+            self.register('tag', [None, 1], np.int)
         else:
-            self.register('keytag', [None, len(self._classes)], np.bool)
+            self.register('tag', [None, len(self._classes)], np.bool)
 
     def set_transition(self, p_self):
         '''Set the transition matrix according to self-loop probabilities.
@@ -375,8 +387,8 @@ class KeyTagTransformer(BaseTaskTransformer):
         -------
         data : dict
             if self.sparse = True
-            data['keytag'] : np.ndarray, shape=(n, n_labels) or shape=(n,)
-                A time-varying binary encoding of the chords. 
+            data['tag'] : np.ndarray, shape=(n, n_labels) or shape=(n,)
+                A time-varying binary encoding of the keys. 
                 The shape depends on self.sparse.
         '''
         intervals, values = ann.to_interval_values()
@@ -385,7 +397,7 @@ class KeyTagTransformer(BaseTaskTransformer):
         for v in values:
             keys.extend(self.encoder.transform([self.enharmonic(v)]))
 
-        dtype = self.fields[self.scope('keytag')].dtype
+        dtype = self.fields[self.scope('tag')].dtype
 
         keys = np.asarray(keys)
 
@@ -395,7 +407,7 @@ class KeyTagTransformer(BaseTaskTransformer):
         target = self.encode_intervals(duration, intervals, keys,
                                        multi=False, dtype=dtype)
 
-        return {'keytag': target}
+        return {'tag': target}
 
     def inverse(self, encoded, duration=None):
         '''Inverse transformation'''
