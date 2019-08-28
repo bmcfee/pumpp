@@ -43,7 +43,7 @@ class CQT(FeatureExtractor):
         Otherwise, use linear magnitude
 
     '''
-    def __init__(self, name, sr, hop_length, n_octaves=8, over_sample=3,
+    def __init__(self, name='cqt', sr=22050, hop_length=512, n_octaves=8, over_sample=3,
                  fmin=None, log=False, conv=None, dtype='float32'):
         super(CQT, self).__init__(name, sr, hop_length, conv=conv, dtype=dtype)
 

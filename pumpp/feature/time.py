@@ -26,7 +26,8 @@ class TimePosition(FeatureExtractor):
         The hop length of analysis windows
     '''
 
-    def __init__(self, name, sr, hop_length, conv=None, dtype='float32'):
+    def __init__(self, name='time_position', sr=22050, hop_length=512,
+                 conv=None, dtype='float32'):
         super(TimePosition, self).__init__(name, sr, hop_length, conv=conv,
                                            dtype=dtype)
 

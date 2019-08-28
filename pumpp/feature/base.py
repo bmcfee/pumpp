@@ -38,7 +38,7 @@ class FeatureExtractor(Scope):
         Setting to `uint8` will produced quantized features.
 
     '''
-    def __init__(self, name, sr, hop_length, conv=None, dtype='float32'):
+    def __init__(self, name, sr=22050, hop_length=512, conv=None, dtype='float32'):
 
         super(FeatureExtractor, self).__init__(name)
 
