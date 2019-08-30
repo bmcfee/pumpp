@@ -67,12 +67,12 @@ class ChordTransformer(BaseTaskTransformer):
     --------
     SimpleChordTransformer
     '''
-    def __init__(self, name='chord', sr=22050, hop_length=512, sparse=False):
+    def __init__(self, name='chord', sr=22050, hop_length=512, sparse=False, **kw):
         '''Initialize a chord task transformer'''
 
         super(ChordTransformer, self).__init__(name=name,
                                                namespace='chord',
-                                               sr=sr, hop_length=hop_length)
+                                               sr=sr, hop_length=hop_length, **kw)
 
         self.encoder = MultiLabelBinarizer()
         self.encoder.fit([list(range(12))])

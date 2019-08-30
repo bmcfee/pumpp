@@ -49,7 +49,7 @@ class BaseTaskTransformer(Scope):
         The number of samples between frames
     '''
 
-    def __init__(self, name, namespace, sr, hop_length):
+    def __init__(self, name, namespace, sr, hop_length, query=None):
         super(BaseTaskTransformer, self).__init__(name)
 
         # This will trigger an exception if the namespace is not found
@@ -58,6 +58,7 @@ class BaseTaskTransformer(Scope):
         self.namespace = namespace
         self.sr = sr
         self.hop_length = hop_length
+        self.query = query if query is not None else {}
 
     def empty(self, duration):
         '''Create an empty jams.Annotation for this task.
@@ -93,7 +94,8 @@ class BaseTaskTransformer(Scope):
             will be converted.
         '''
         anns = []
-        if query:
+        if query or self.query:
+            query = dict(self.query, **(query or {}))
             results = jam.search(**query)
         else:
             results = jam.annotations

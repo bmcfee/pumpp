@@ -29,10 +29,10 @@ class VectorTransformer(BaseTaskTransformer):
     dtype : np.dtype
         The desired data type of the output
     '''
-    def __init__(self, name, namespace, dimension, dtype=np.float32):
+    def __init__(self, name, namespace, dimension, dtype=np.float32, **kw):
         super(VectorTransformer, self).__init__(name=name,
                                                 namespace=namespace,
-                                                sr=1, hop_length=1)
+                                                sr=1, hop_length=1, **kw)
 
         self.dimension = dimension
         self.dtype = dtype

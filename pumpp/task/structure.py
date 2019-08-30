@@ -29,13 +29,13 @@ class StructureTransformer(BaseTaskTransformer):
         The number of samples between each annotation frame
     '''
 
-    def __init__(self, name='structure', sr=22050, hop_length=512):
+    def __init__(self, name='structure', sr=22050, hop_length=512, **kw):
         '''Initialize a structure agreement transformer'''
 
         super(StructureTransformer, self).__init__(name=name,
                                                    namespace='segment_open',
                                                    sr=sr,
-                                                   hop_length=hop_length)
+                                                   hop_length=hop_length, **kw)
 
         self.register('agree', [None, None], np.bool)
 

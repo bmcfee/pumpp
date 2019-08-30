@@ -53,11 +53,11 @@ class DynamicLabelTransformer(BaseTaskTransformer):
     StaticLabelTransformer
     '''
     def __init__(self, name, namespace, labels=None, sr=22050, hop_length=512,
-                 p_self=None, p_init=None, p_state=None):
+                 p_self=None, p_init=None, p_state=None, **kw):
         super(DynamicLabelTransformer, self).__init__(name=name,
                                                       namespace=namespace,
                                                       sr=sr,
-                                                      hop_length=hop_length)
+                                                      hop_length=hop_length, **kw)
 
         if labels is None:
             labels = jams.schema.values(namespace)

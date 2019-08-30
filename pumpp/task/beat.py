@@ -51,11 +51,11 @@ class BeatTransformer(BaseTaskTransformer):
     '''
     def __init__(self, name='beat', sr=22050, hop_length=512,
                  p_self_beat=None, p_init_beat=None, p_state_beat=None,
-                 p_self_down=None, p_init_down=None, p_state_down=None):
+                 p_self_down=None, p_init_down=None, p_state_down=None, **kw):
 
         super(BeatTransformer, self).__init__(name=name,
                                               namespace='beat',
-                                              sr=sr, hop_length=hop_length)
+                                              sr=sr, hop_length=hop_length, **kw)
 
         self.set_transition_beat(p_self_beat)
 
