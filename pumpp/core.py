@@ -8,7 +8,7 @@ Core functionality
 
     Pump
 '''
-
+import os
 import librosa
 import jams
 
@@ -17,6 +17,7 @@ from .exceptions import ParameterError
 from .task import BaseTaskTransformer
 from .feature import FeatureExtractor
 from .sampler import Sampler
+from . import util
 
 
 class Pump(Slicer):
@@ -62,11 +63,12 @@ class Pump(Slicer):
     {'chord/chord': Tensor(shape=(None, 170), dtype=<class 'bool'>)}
     '''
 
-    def __init__(self, *ops):
+    def __init__(self, *ops, cache_dir=None):
 
         self.ops = []
         self.opmap = dict()
         super(Pump, self).__init__(*ops)
+        self.cache_dir = cache_dir
 
     def add(self, operator):
         '''Add an operation to this pump.
@@ -94,7 +96,8 @@ class Pump(Slicer):
         self.opmap[operator.name] = operator
         self.ops.append(operator)
 
-    def transform(self, audio_f=None, jam=None, y=None, sr=None, crop=False):
+    def transform(self, audio_f=None, jam=None, y=None, sr=None, crop=False,
+                  data=None, refresh=False):
         '''Apply the transformations to an audio file, and optionally JAMS object.
 
         Parameters
@@ -116,6 +119,13 @@ class Pump(Slicer):
             If `True`, then data are cropped to a common time index across all
             fields.  Otherwise, data may have different time extents.
 
+        data : optional, dict
+            Optional data dict containing already computed features. Fields in
+            dict will be skipped unless ``refresh`` is True.
+
+        refresh : bool
+            Recompute features.
+
         Returns
         -------
         data : dict
@@ -127,6 +137,21 @@ class Pump(Slicer):
             At least one of `audio_f` or `(y, sr)` must be provided.
 
         '''
+        data = dict() if data is None else data
+
+        # initialize data, load from cache if dir provided.
+        if self.cache_dir and audio_f:
+            cache_id = util.get_cache_id(audio_f)
+            cache_file = os.path.join(self.cache_dir, cache_id + '.h5')
+
+            if not refresh and os.path.isfile(cache_file):
+                data = util.load_h5(cache_file, data=data, fields=self.fields)
+
+        # check if all fields exist - potentially avoid loading audio
+        # TODO: check BaseTaskTransformer and FeatureExtractor separately
+        initial_data_keys = set(data)
+        if set(self.fields).issubset(initial_data_keys):
+            return data
 
         if y is None:
             if audio_f is None:
@@ -148,15 +173,22 @@ class Pump(Slicer):
         if not isinstance(jam, jams.JAMS):
             jam = jams.load(jam)
 
-        data = dict()
-
         for operator in self.ops:
+            # skip keys that already exist
+            if set(operator.fields).issubset(initial_data_keys):
+                continue
+
             if isinstance(operator, BaseTaskTransformer):
                 data.update(operator.transform(jam))
             elif isinstance(operator, FeatureExtractor):
                 data.update(operator.transform(y, sr))
         if crop:
             data = self.crop(data)
+
+        # save for future use
+        if self.cache_dir and audio_f:
+            if refresh or initial_data_keys != set(data):
+                util.save_h5(cache_file, **{k: data[k] for k in self.fields})
         return data
 
     def sampler(self, n_samples, duration, random_state=None):
