@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 '''Miscellaneous utility tests'''
-
+import os
 import pytest
 import numpy as np
 
@@ -9,6 +9,7 @@ import librosa
 import jams
 
 import pumpp
+import pumpp.util
 
 
 @pytest.fixture(params=[11025, 22050])
@@ -254,3 +255,55 @@ def test_pump_repr_html(sr, hop_length):
     pump = pumpp.Pump(*ops)
 
     assert isinstance(pump._repr_html_(), str)
+
+def test_pump_cache(sr, hop_length, tmp_path):
+    ops = [pumpp.feature.STFT(name='stft', sr=sr,
+                              hop_length=hop_length,
+                              n_fft=2*hop_length),
+
+           pumpp.feature.Tempogram(name='tempo', sr=sr,
+                                   win_length=384,
+                                   hop_length=hop_length)]
+
+    # setup temp cache directory
+    cache_dir = os.path.join(tmp_path, 'asdf')
+    os.makedirs(cache_dir, exist_ok=True)
+
+    audio_f = 'tests/data/test.ogg'
+    KEY = 'tempo/tempogram'
+    data = {KEY: np.array(np.nan)}
+
+    cache_file = os.path.join(cache_dir, pumpp.util.get_cache_id(audio_f) + '.h5')
+
+    P = pumpp.Pump(*ops, cache_dir=cache_dir)
+
+    # see if existing keys are ignored
+    X = P.transform(audio_f, data=dict(data))
+    assert np.isnan(X[KEY]).all(), 'field was overwritten'
+    assert {f for f in P.fields} == set(X)
+    assert os.path.isfile(cache_file)
+
+    # see values are loaded from hdf5
+    X = P.transform(audio_f, data={})
+    assert np.isnan(X[KEY]).all(), 'field was not loaded properly'
+    assert set(P.fields) == set(X)
+
+    # see if refresh works
+    X = P.transform(audio_f, refresh=True)
+    assert ~(np.isnan(X[KEY]).all()), 'field was not overwritten'
+    assert set(P.fields) == set(X)
+
+    # set the cache file field to be NaN to test with no cache file
+    X = P.transform(audio_f, data=dict(data), refresh=True)
+    assert np.isnan(X[KEY]).all(), 'field was not overwritten'
+    assert set(P.fields) == set(X)
+
+    # test without cache_dir
+
+    P = pumpp.Pump(*ops)
+
+    # make sure the nan value is not loaded from file
+    X = P.transform(audio_f)
+    assert ~(np.isnan(X[KEY]).all()), 'field was loaded from file instead of computed.'
+    assert {f for f in P.fields} == set(X)
+    assert os.path.isfile(cache_file)
