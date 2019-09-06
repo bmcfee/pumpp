@@ -1383,8 +1383,7 @@ def test_transform_scaper():
         sr=1, hop_length=1, sample_index=-1)
 
     output = trans.transform(jam)
-    role_null = pumpp.task.base.fill_value(trans.fields['scaper/role'].dtype)
-
+    role_null = pumpp.task.lambd.fill_value(trans.fields['scaper/role'].dtype)
 
     roles = output['scaper/role'][0]
     role_null = np.array(role_null, dtype=roles.dtype)
