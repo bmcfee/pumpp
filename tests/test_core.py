@@ -277,6 +277,10 @@ def test_pump_cache(sr, hop_length, tmp_path):
 
     P = pumpp.Pump(*ops, cache_dir=cache_dir)
 
+    P2 = pumpp.Pump(cache_dir=cache_dir)
+
+    assert P.fields == P2.fields
+
     # see if existing keys are ignored
     X = P.transform(audio_f, data=dict(data))
     assert np.isnan(X[KEY]).all(), 'field was overwritten'

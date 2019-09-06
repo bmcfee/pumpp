@@ -1,3 +1,5 @@
+import os
+import glob
 import hashlib
 import h5py
 
@@ -46,6 +48,31 @@ def load_h5(filename, data=None, fields=None):
         hf.visititems(collect)
 
     return data
+
+
+def load_ops(directory):
+    '''Load pumpp.Pump ops from a directory.
+
+    '''
+    from .core import Pump
+    pump_files = glob.glob(os.path.join(directory, '*.pkl'))
+    for fname in pump_files:
+        with open(fname, 'rb') as f:
+            pump = pickle.load(f)
+            if isinstance(pump, Pump):
+                ops.append(pump)
+    return ops
+
+
+def save_ops(directory, ops):
+    '''Save pumpp.Pump ops to a directory.
+
+    '''
+    for op in ops:
+        fname = os.path.join(directory, op.name + '.h5')
+        with open(fname, 'wb') as f:
+            pickle.dump(op, f)
+
 
 def get_cache_id(key):
     '''Create a unique ID to cache Pump output data.'''

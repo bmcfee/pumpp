@@ -64,11 +64,24 @@ class Pump(Slicer):
     '''
 
     def __init__(self, *ops, cache_dir=None):
+        self.cache_dir = cache_dir
+        if self.cache_dir:
+            pump_save_dir = os.path.join(self.cache_dir, 'pumps')
+            os.makedirs(pump_save_dir, exist_ok=True)
+
+            # if no ops were provided, but pickled ops are found in cache dir, load them.
+            # this is so you can pickle the ops then load them like Pump(cache_dir='adsfasdf')
+            if not ops:
+                ops = util.load_ops(pump_save_dir)
+
 
         self.ops = []
         self.opmap = dict()
         super(Pump, self).__init__(*ops)
-        self.cache_dir = cache_dir
+
+        if self.cache_dir:
+            # save ops separately in cache dir
+            util.save_ops(pump_save_dir, ops)
 
     def add(self, operator):
         '''Add an operation to this pump.
