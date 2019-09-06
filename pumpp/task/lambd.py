@@ -120,10 +120,11 @@ class LambdaTransformer(BaseTaskTransformer):
     '''
 
     def __init__(self, name, namespace, fields=(), query=None, reduce=None,
-                 multi=False, sample_index=-1, **kw):
+                 multi=False, sample_index=-1, squeeze=True, **kw):
         super().__init__(name, namespace, **kw)
         self.value_query = query
         self.multi = multi
+        self.squeeze = squeeze
 
         # infer missing fields / dtype for missing reducer
         fields, value_has_keys = _check_fields(fields, namespace, multi)
@@ -187,6 +188,15 @@ class LambdaTransformer(BaseTaskTransformer):
             # else [d[key] for d in data]
             for key in set().union(*data)
         }
+
+    def transform(self, jam, query=None):
+        results = super().transform(jam, query)
+        if self.squeeze:
+            results = {
+                k: d[0] if d.shape[0] == 1 else d
+                for k, d in results.items()
+            }
+        return results
 
     def inverse(self, x, duration=None):
         raise NotImplementedError('Lambda annotations cannot be inverted')
