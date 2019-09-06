@@ -1055,6 +1055,168 @@ def test_task_beatpos_tail(SR, HOP_LENGTH, SPARSE):
         assert y1 == y2
 
 
+def _sampled_scaper_event(role, **kw):
+    return dict(dict(
+        role=role,
+        label=role,
+        source_file=role + '/asdf.wav',
+        event_time=0,
+        event_duration=10,
+        source_time=10,
+        snr=0,
+        pitch_shift=None,
+        time_stretch=None,
+    ), **kw)
+
+def test_transform_scaper():
+
+    jam = jams.JAMS(file_metadata=dict(duration=6.0))
+
+    ann = jams.Annotation(namespace='scaper')
+
+    ann.append(time=0, duration=jam.file_metadata.duration, value=_sampled_scaper_event('background'))
+    ann.append(time=0, duration=1.0, value=_sampled_scaper_event('foreground', snr=-10))
+    ann.append(time=2, duration=1.0, value=_sampled_scaper_event('foreground', snr=-6))
+    ann.append(time=2, duration=1.0, value=_sampled_scaper_event('foreground', snr=-3))
+    ann.append(time=4, duration=1.0, value=_sampled_scaper_event('foreground', snr=-2))
+
+    jam.annotations.append(ann)
+
+    # test full field inference
+
+    trans = pumpp.task.LambdaTransformer(
+        name='scaper', namespace='scaper',
+        sr=1, hop_length=1)
+
+    expected_fields = {'{}/{}'.format(trans.name, f) for f in _sampled_scaper_event('')}
+
+    output = trans.transform(jam)
+    assert set(output) == expected_fields | {'{}/{}'.format(trans.name, '_valid')}
+    assert not output[tuple(expected_fields)[0]][0].ndim
+
+    # test select field inference
+
+    fields = ['snr', 'label']
+    trans = pumpp.task.LambdaTransformer(
+        name='scaper', namespace='scaper',
+        fields=fields,
+        sr=1, hop_length=1)
+
+    expected_fields = {'{}/{}'.format(trans.name, f) for f in fields}
+
+    output = trans.transform(jam)
+    assert set(output) == expected_fields | {'{}/{}'.format(trans.name, '_valid')}
+
+    # test query
+
+    trans = pumpp.task.LambdaTransformer(
+        name='scaper', namespace='scaper',
+        fields=('role', 'snr'), query={'role': 'foreground'},
+        sr=1, hop_length=1, sample_index=-1)
+
+    output = trans.transform(jam)
+    role_null = pumpp.task.lambd.fill_value(trans.fields['scaper/role'].dtype)
+
+    roles = output['scaper/role']
+    role_null = np.array(role_null, dtype=roles.dtype)
+    print(role_null, roles)
+    queried_roles = set(roles[roles != role_null])
+    assert queried_roles == {'foreground'}
+    assert output['scaper/snr'][2] == -3, 'the last observation was not taken.'
+
+    # test multi
+
+    trans = pumpp.task.LambdaTransformer(
+        name='scaper', namespace='scaper',
+        fields=('snr'),
+        query={'role': 'foreground'},
+        multi=True,
+        sr=1, hop_length=1)
+
+    output = trans.transform(jam)
+    print(output['scaper/snr'], output['scaper/snr'].shape, output['scaper/snr'][0][0].ndim)
+    assert output['scaper/snr'][0].ndim
+
+    # test reduce
+
+    trans = pumpp.task.LambdaTransformer(
+        name='scaper', namespace='scaper',
+        fields=('snr',),
+        query={'role': 'foreground'},
+        multi=True,
+        reduce=lambda events: {
+            'snr': np.mean([e['snr'] for e in events]),
+        },
+        sr=1, hop_length=1)
+
+    output = trans.transform(jam)
+    assert not output['scaper/snr'][0].ndim, 'there are still multiple elements per interval.'
+    assert output['scaper/snr'][2] == -4.5, 'field was not aggregated'
+
+
+def test_task_lambda_arbitrary(SR, HOP_LENGTH):
+    jam = jams.JAMS(file_metadata=dict(duration=4.0))
+
+    ann = jams.Annotation(namespace='tag_audioset')
+
+    ann.append(time=0, duration=1.0, value="Bird")
+    ann.append(time=1.0, duration=1, value="Bow-wow")
+    ann.append(time=1.5, duration=1.5, value="Bird")
+    ann.append(time=3, duration=1.0, value='Theremin')
+
+    jam.annotations.append(ann)
+
+    # test basic
+    trans = pumpp.task.LambdaTransformer(
+        name='auds', namespace='tag_audioset',
+        sr=1, hop_length=1)
+
+    KEY = 'auds/tag_audioset'
+    assert set(trans.fields) == {KEY}
+
+    output = trans.transform(jam)
+    assert np.all(output[KEY] == np.array(['Bird', 'Bird', 'Bird', 'Theremin']))
+
+    # test multi
+    trans = pumpp.task.LambdaTransformer(
+        name='auds', namespace='tag_audioset',
+        sr=1, hop_length=1, multi=True)
+
+    output = trans.transform(jam)
+    expected = np.array([['Bird'], ['Bow-wow', 'Bird'], ['Bird'], ['Theremin']])
+    assert np.all(a == b for a, b in zip(output[KEY], expected))
+
+    # test reduce
+    trans = pumpp.task.LambdaTransformer(
+        name='auds', namespace='tag_audioset',
+        sr=1, hop_length=1, multi=True, reduce=lambda vals: {
+            'tag_audioset': ','.join(vals)
+        })
+
+    output = trans.transform(jam)
+    assert np.all(output[KEY] == np.array(['Bird', 'Bow-wow,Bird', 'Bird', 'Theremin']))
+
+    # test unmatchable fields without an explicit reduce function
+    try:
+        trans = pumpp.task.LambdaTransformer(
+            name='auds', namespace='tag_audioset', fields=['asdf', 'adsfasdf'])
+    except RuntimeError:
+        assert True
+    else:
+        assert False, 'reduce() needs to be defined for multi-output single value transformations.'
+
+    # test unmatchable fields with a reduce function
+    trans = pumpp.task.LambdaTransformer(
+        name='auds', namespace='tag_audioset', fields=['asdf', 'adsfasdf'],
+        reduce=lambda v: {'asdf': v, 'asdfasdf': v[::-1]})
+
+    try:
+        trans.inverse(None)
+    except NotImplementedError:
+        assert True
+    else:
+        assert False
+
 def test_task_key__encode_key_str(SPARSE):
     # Checks the helper function which does key string to encoding
 
@@ -1321,145 +1483,3 @@ def test_task_key_tag_absent(SR, HOP_LENGTH, SPARSE):
     for key in trans.fields:
         assert shape_match(output[key].shape[1:], trans.fields[key].shape)
         assert type_match(output[key].dtype, trans.fields[key].dtype)
-
-
-def _sampled_scaper_event(role, **kw):
-    return dict(dict(
-        role=role,
-        label=role,
-        source_file=role + '/asdf.wav',
-        event_time=0,
-        event_duration=10,
-        source_time=10,
-        snr=0,
-        pitch_shift=None,
-        time_stretch=None,
-    ), **kw)
-
-def test_transform_scaper():
-
-    jam = jams.JAMS(file_metadata=dict(duration=6.0))
-
-    ann = jams.Annotation(namespace='scaper')
-
-    ann.append(time=0, duration=jam.file_metadata.duration, value=_sampled_scaper_event('background'))
-    ann.append(time=0, duration=1.0, value=_sampled_scaper_event('foreground', snr=-10))
-    ann.append(time=2, duration=1.0, value=_sampled_scaper_event('foreground', snr=-6))
-    ann.append(time=2, duration=1.0, value=_sampled_scaper_event('foreground', snr=-3))
-    ann.append(time=4, duration=1.0, value=_sampled_scaper_event('foreground', snr=-2))
-
-    jam.annotations.append(ann)
-
-    # test full field inference
-
-    trans = pumpp.task.LambdaTransformer(
-        name='scaper', namespace='scaper',
-        sr=1, hop_length=1)
-
-    expected_fields = {'{}/{}'.format(trans.name, f) for f in _sampled_scaper_event('')}
-
-    output = trans.transform(jam)
-    assert set(output) == expected_fields | {'{}/{}'.format(trans.name, '_valid')}
-    assert not output[tuple(expected_fields)[0]][0].ndim
-
-    # test select field inference
-
-    fields = ['snr', 'label']
-    trans = pumpp.task.LambdaTransformer(
-        name='scaper', namespace='scaper',
-        fields=fields,
-        sr=1, hop_length=1)
-
-    expected_fields = {'{}/{}'.format(trans.name, f) for f in fields}
-
-    output = trans.transform(jam)
-    assert set(output) == expected_fields | {'{}/{}'.format(trans.name, '_valid')}
-
-    # test query
-
-    trans = pumpp.task.LambdaTransformer(
-        name='scaper', namespace='scaper',
-        fields=('role', 'snr'), query={'role': 'foreground'},
-        sr=1, hop_length=1, sample_index=-1)
-
-    output = trans.transform(jam)
-    role_null = pumpp.task.lambd.fill_value(trans.fields['scaper/role'].dtype)
-
-    roles = output['scaper/role']
-    role_null = np.array(role_null, dtype=roles.dtype)
-    print(role_null, roles)
-    queried_roles = set(roles[roles != role_null])
-    assert queried_roles == {'foreground'}
-    assert output['scaper/snr'][2] == -3, 'the last observation was not taken.'
-
-    # test multi
-
-    trans = pumpp.task.LambdaTransformer(
-        name='scaper', namespace='scaper',
-        fields=('snr'),
-        query={'role': 'foreground'},
-        multi=True,
-        sr=1, hop_length=1)
-
-    output = trans.transform(jam)
-    print(output['scaper/snr'], output['scaper/snr'].shape, output['scaper/snr'][0][0].ndim)
-    assert output['scaper/snr'][0].ndim
-
-    # test reduce
-
-    trans = pumpp.task.LambdaTransformer(
-        name='scaper', namespace='scaper',
-        fields=('snr',),
-        query={'role': 'foreground'},
-        multi=True,
-        reduce=lambda events: {
-            'snr': np.mean([e['snr'] for e in events]),
-        },
-        sr=1, hop_length=1)
-
-    output = trans.transform(jam)
-    assert not output['scaper/snr'][0].ndim, 'there are still multiple elements per interval.'
-    assert output['scaper/snr'][2] == -4.5, 'field was not aggregated'
-
-
-def test_task_lambda_arbitrary(SR, HOP_LENGTH):
-    jam = jams.JAMS(file_metadata=dict(duration=4.0))
-
-    ann = jams.Annotation(namespace='tag_audioset')
-
-    ann.append(time=0, duration=1.0, value="Bird")
-    ann.append(time=1.0, duration=1, value="Bow-wow")
-    ann.append(time=1.5, duration=1.5, value="Bird")
-    ann.append(time=3, duration=1.0, value='Theremin')
-
-    jam.annotations.append(ann)
-
-    # test basic
-    trans = pumpp.task.LambdaTransformer(
-        name='auds', namespace='tag_audioset',
-        sr=1, hop_length=1)
-
-    KEY = 'auds/tag_audioset'
-    assert set(trans.fields) == {KEY}
-
-    output = trans.transform(jam)
-    assert np.all(output[KEY] == np.array(['Bird', 'Bird', 'Bird', 'Theremin']))
-
-    # test multi
-    trans = pumpp.task.LambdaTransformer(
-        name='auds', namespace='tag_audioset',
-        sr=1, hop_length=1, multi=True)
-
-    output = trans.transform(jam)
-    expected = np.array([['Bird'], ['Bow-wow', 'Bird'], ['Bird'], ['Theremin']])
-    assert np.all(a == b for a, b in zip(output[KEY], expected))
-
-    # test reduce
-    trans = pumpp.task.LambdaTransformer(
-        name='auds', namespace='tag_audioset',
-        sr=1, hop_length=1, multi=True, reduce=lambda vals: {
-            'tag_audioset': ','.join(vals)
-        })
-
-    output = trans.transform(jam)
-    assert np.all(output[KEY] == np.array(['Bird', 'Bow-wow,Bird', 'Bird', 'Theremin']))
