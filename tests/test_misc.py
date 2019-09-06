@@ -98,9 +98,9 @@ def test_get_dtype():
             value_has_defined_keys = (
                 val['type'] == 'object' and 'properties' in val)
         except KeyError:
-            value_has_keys = False
+            value_has_defined_keys = False
 
-        if value_has_keys:
+        if value_has_defined_keys:
             for name, spec in val['properties'].items():
                 pumpp.task.lambd._get_dtype(spec)
 
