@@ -147,6 +147,8 @@ class LambdaTransformer(BaseTaskTransformer):
         # select which value in the event of multiple values in interval
         self.SINGLE_INDEX = sample_index
 
+        self.fields
+
     # Either override by passing a function like `__init__(reduce=lambda x: ...)`
     # or by overriding with a subclass.
     reducer = None
@@ -195,11 +197,21 @@ class LambdaTransformer(BaseTaskTransformer):
 # Utilities
 ############
 
+# Mapping of js primitives to numpy types
+__TYPE_MAP__ = dict(integer=np.int_,
+                    boolean=np.bool_,
+                    number=np.float_,
+                    object=np.object_,
+                    array=np.object_,
+                    string=np.str_,
+                    null=np.float_)
 
-def __get_type(spec):
-    '''hot fix for https://github.com/marl/jams/issues/205
+def _get_dtype(spec):
+    '''Get the dtype given a jams namespace schema.
 
-    Adds support for e.g. `spec['type'] == ['number', 'null']`
+    This handles differently from jams.schema.__get_type in that it:
+     - explicitly assigns np.str_ to strings
+     - handles "type" as an array of types. if they're not the same base-type assign np.object_
     '''
     if 'type' in spec:
         if isinstance(spec['type'], (list, tuple)):
@@ -211,7 +223,50 @@ def __get_type(spec):
             if all([t == types[0] for t in types]):
                 return types[0]
             return np.object_
-    return jams.schema.__get_dtype(spec)
+
+        return __TYPE_MAP__.get(spec['type'], np.object_)
+
+    elif 'enum' in spec:
+        # Enums map to objects
+        types = [np.dtype(type(v)).type for v in spec['enum']]
+
+        if all([t == types[0] for t in types]):
+            return types[0]
+        return np.object_
+
+    elif 'oneOf' in spec:
+        # Recurse
+        types = [_get_dtype(v) for v in spec['oneOf']]
+
+        # If they're not all equal, return object
+        if all([t == types[0] for t in types]):
+            return types[0]
+
+    return np.object_
+
+
+__FILL_VALUE_MAP__ = [
+    (np.floating, np.nan),
+    (np.complexfloating, np.nan),
+    (np.str_, ''),
+]
+
+def fill_value(dtype):
+    '''Get a fill-value for a given dtype
+
+    Parameters
+    ----------
+    dtype : type
+
+    Returns
+    -------
+    `np.nan` if `dtype` is real or complex
+    `''` if string
+    `0` otherwise
+    '''
+    return dtype(next((
+        v for dt, v in __FILL_VALUE_MAP__
+        if np.issubdtype(dtype, dt)), 0))
 
 
 def _check_fields(fields, namespace, multi):
@@ -239,9 +294,10 @@ def _check_fields(fields, namespace, multi):
     # get object field dtypes
     try:
         dtypes = {
-            name: __get_type(spec) for name, spec in
+            name: _get_dtype(spec) for name, spec in
             schema['properties']['value']['properties'].items()
         }
+        # NOTE: cannot use value_type because other things map to np.object_
         value_has_keys = schema['properties']['value']['type'] == 'object'
     except KeyError:
         value_has_keys = False
