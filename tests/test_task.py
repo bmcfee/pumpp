@@ -1360,7 +1360,7 @@ def test_transform_scaper():
 
     output = trans.transform(jam)
     assert set(output) == expected_fields | {'{}/{}'.format(trans.name, '_valid')}
-    assert not isinstance(output[tuple(expected_fields)[0]][0][0], list)
+    assert not output[tuple(expected_fields)[0]][0].ndim
 
     # test select field inference
 
@@ -1385,11 +1385,12 @@ def test_transform_scaper():
     output = trans.transform(jam)
     role_null = pumpp.task.lambd.fill_value(trans.fields['scaper/role'].dtype)
 
-    roles = output['scaper/role'][0]
+    roles = output['scaper/role']
     role_null = np.array(role_null, dtype=roles.dtype)
+    print(role_null, roles)
     queried_roles = set(roles[roles != role_null])
     assert queried_roles == {'foreground'}
-    assert output['scaper/snr'][0][2] == -3, 'the last observation was not taken.'
+    assert output['scaper/snr'][2] == -3, 'the last observation was not taken.'
 
     # test multi
 
@@ -1402,7 +1403,7 @@ def test_transform_scaper():
 
     output = trans.transform(jam)
     print(output['scaper/snr'], output['scaper/snr'].shape, output['scaper/snr'][0][0].ndim)
-    assert output['scaper/snr'][0][0].ndim
+    assert output['scaper/snr'][0].ndim
 
     # test reduce
 
@@ -1417,8 +1418,8 @@ def test_transform_scaper():
         sr=1, hop_length=1)
 
     output = trans.transform(jam)
-    assert not output['scaper/snr'][0][0].ndim, 'there are still multiple elements per interval.'
-    assert output['scaper/snr'][0][2] == -4.5, 'field was not aggregated'
+    assert not output['scaper/snr'][0].ndim, 'there are still multiple elements per interval.'
+    assert output['scaper/snr'][2] == -4.5, 'field was not aggregated'
 
 
 def test_task_lambda_arbitrary(SR, HOP_LENGTH):
@@ -1442,7 +1443,7 @@ def test_task_lambda_arbitrary(SR, HOP_LENGTH):
     assert set(trans.fields) == {KEY}
 
     output = trans.transform(jam)
-    assert np.all(output[KEY][0] == np.array(['Bird', 'Bird', 'Bird', 'Theremin']))
+    assert np.all(output[KEY] == np.array(['Bird', 'Bird', 'Bird', 'Theremin']))
 
     # test multi
     trans = pumpp.task.LambdaTransformer(
@@ -1451,7 +1452,7 @@ def test_task_lambda_arbitrary(SR, HOP_LENGTH):
 
     output = trans.transform(jam)
     expected = np.array([['Bird'], ['Bow-wow', 'Bird'], ['Bird'], ['Theremin']])
-    assert np.all(a == b for a, b in zip(output[KEY][0], expected))
+    assert np.all(a == b for a, b in zip(output[KEY], expected))
 
     # test reduce
     trans = pumpp.task.LambdaTransformer(
@@ -1461,4 +1462,4 @@ def test_task_lambda_arbitrary(SR, HOP_LENGTH):
         })
 
     output = trans.transform(jam)
-    assert np.all(output[KEY][0] == np.array(['Bird', 'Bow-wow,Bird', 'Bird', 'Theremin']))
+    assert np.all(output[KEY] == np.array(['Bird', 'Bow-wow,Bird', 'Bird', 'Theremin']))
