@@ -266,7 +266,7 @@ def test_pump_cache(sr, hop_length, tmp_path):
                                    hop_length=hop_length)]
 
     # setup temp cache directory
-    cache_dir = os.path.join(tmp_path.absolute(), 'asdf')
+    cache_dir = os.path.join(str(tmp_path.resolve()), 'asdf')
     os.makedirs(cache_dir, exist_ok=True)
 
     audio_f = 'tests/data/test.ogg'
