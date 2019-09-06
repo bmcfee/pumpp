@@ -127,11 +127,11 @@ class LambdaTransformer(BaseTaskTransformer):
         self.squeeze = squeeze
 
         # infer missing fields / dtype for missing reducer
-        fields, value_has_keys = _check_fields(fields, namespace, multi)
+        fields, value_has_defined_keys = _check_fields(fields, namespace, multi)
 
         # get default reducer when none is specified
         if not self.reducer and not reduce:
-            reduce = _default_reducer(fields, value_has_keys, multi)
+            reduce = _default_reducer(fields, value_has_defined_keys, multi)
 
         # store reducer
         if reduce:
@@ -303,14 +303,16 @@ def _check_fields(fields, namespace, multi):
 
     # get object field dtypes
     try:
+        valschema = schema['properties']['value']
         dtypes = {
             name: _get_dtype(spec) for name, spec in
-            schema['properties']['value']['properties'].items()
+            valschema['properties'].items()
         }
         # NOTE: cannot use value_type because other things map to np.object_
-        value_has_keys = schema['properties']['value']['type'] == 'object'
+        value_has_defined_keys = (
+            valschema['type'] == 'object' and 'properties' in valschema)
     except KeyError:
-        value_has_keys = False
+        value_has_defined_keys = False
         dtypes = {}
 
     # get default shape
@@ -347,10 +349,10 @@ def _check_fields(fields, namespace, multi):
     assert all(isinstance(f, (list, tuple)) and len(f) == 3 for f in fields), (
         'all fields must be a tuple of length 3: (name, shape, dtype)')
 
-    return fields, value_has_keys
+    return fields, value_has_defined_keys
 
 
-def _default_reducer(fields, value_has_keys, multi):
+def _default_reducer(fields, value_has_defined_keys, multi):
     '''
     Validate the fields passed and try to infer fields from incomplete info.
 
@@ -368,7 +370,7 @@ def _default_reducer(fields, value_has_keys, multi):
 
     '''
     fields = [f[0] for f in fields]
-    if value_has_keys:
+    if value_has_defined_keys:
         if multi: # values will be a list of dicts
             def reduce(values):
                 return {k: [v[k] for v in values] for k in fields}
@@ -387,7 +389,7 @@ def _default_reducer(fields, value_has_keys, multi):
                 return {field: value}
 
         else:
-            raise RuntimeError('For multi-field transformers, you must define '
+            raise RuntimeError('For multi-field non-object transformers, you must define '
                                '`reduce`, the mapping from list of observation '
                                'values to data dict.')
     return reduce
