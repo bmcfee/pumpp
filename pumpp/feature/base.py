@@ -118,6 +118,7 @@ class FeatureExtractor(Scope):
 
         if api == 'keras':
             return self.layers_keras()
+
         elif api in ('tf', 'tensorflow'):
             return self.layers_tensorflow()
         else:
