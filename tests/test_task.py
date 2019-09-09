@@ -1217,6 +1217,7 @@ def test_task_lambda_arbitrary(SR, HOP_LENGTH):
     else:
         assert False
 
+
 def test_task_key__encode_key_str(SPARSE):
     # Checks the helper function which does key string to encoding
 
