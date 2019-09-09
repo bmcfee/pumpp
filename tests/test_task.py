@@ -1217,6 +1217,7 @@ def test_task_lambda_arbitrary(SR, HOP_LENGTH):
     else:
         assert False
 
+        
 def test_task_key__encode_key_str(SPARSE):
     # Checks the helper function which does key string to encoding
 
@@ -1310,11 +1311,11 @@ def test_task_key_present(SR, HOP_LENGTH, SPARSE):
         _encode_key_str('D', SPARSE)[0],
         _encode_key_str('D:lydian', SPARSE)[0]
     ])
-
+    
     assert np.all(output['key/pitch_profile'] == np.repeat(pcp_true,
                                                            (SR * 2 // HOP_LENGTH),
                                                            axis=0))
-
+    
     for key in trans.fields:
         assert shape_match(output[key].shape[1:], trans.fields[key].shape)
         assert type_match(output[key].dtype, trans.fields[key].dtype)

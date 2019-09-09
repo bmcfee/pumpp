@@ -130,7 +130,7 @@ class BaseTaskTransformer(Scope):
 
     def transform_annotation(self, ann, duration):
         '''Transform jams.Annotation to make data for a given task.
-
+        
         Parameters
         ----------
         ann : jams.Annotation
