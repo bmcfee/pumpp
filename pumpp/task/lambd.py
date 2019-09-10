@@ -6,11 +6,7 @@ import numpy as np
 import jams
 
 from librosa import time_to_frames
-from librosa.sequence import transition_loop, transition_cycle
-from mir_eval.util import boundaries_to_intervals, adjust_intervals
-
-from .base import BaseTaskTransformer, fill_value
-from ..exceptions import ParameterError
+from .base import BaseTaskTransformer
 from .. import util
 
 __all__ = ['LambdaTransformer']
@@ -138,25 +134,23 @@ class LambdaTransformer(BaseTaskTransformer):
             self.reducer = reduce
 
         # register fields
-        for name, shape, dtype in fields:
-            self.register(name, shape, dtype)
+        for name_, shape, dtype in fields:
+            self.register(name_, shape, dtype)
 
         # fills any missing values from self.reducer
         self.FILL_DICT = {
-            name: fill_value(dtype) for name, shape, dtype in fields
+            name_: fill_value(dtype) for name_, shape, dtype in fields
         }
         # select which value in the event of multiple values in interval
         self.SINGLE_INDEX = sample_index
-
-        self.fields
 
     # Either override by passing a function like `__init__(reduce=lambda x: ...)`
     # or by overriding with a subclass.
     reducer = None
 
-    def transform_annotation(self, annotation, duration):
+    def transform_annotation(self, ann, duration):
         # get observations as lists
-        intervals, values = annotation.to_interval_values()
+        intervals, values = ann.to_interval_values()
 
         # filter values that match query
         intervals, values = zip(*[
@@ -184,8 +178,6 @@ class LambdaTransformer(BaseTaskTransformer):
         # merge the list of dicts into a dict of lists/arrays
         return {
             key: np.array([np.asarray(d[key]) for d in data])
-            # if all(s is not None for s in self.fields[key].shape[1:])
-            # else [d[key] for d in data]
             for key in set().union(*data)
         }
 
@@ -236,7 +228,7 @@ def _get_dtype(spec):
 
         return __TYPE_MAP__.get(spec['type'], np.object_)
 
-    elif 'enum' in spec:
+    if 'enum' in spec:
         # Enums map to objects
         types = [np.dtype(type(v)).type for v in spec['enum']]
 
@@ -244,7 +236,7 @@ def _get_dtype(spec):
             return types[0]
         return np.object_
 
-    elif 'oneOf' in spec:
+    if 'oneOf' in spec:
         # Recurse
         types = [_get_dtype(v) for v in spec['oneOf']]
 
@@ -344,7 +336,7 @@ def _check_fields(fields, namespace, multi):
                     fields[i] = (f, default_shape, value_type)
 
     # double check that everything looks how we want it.
-    assert len(fields), 'at least one field must be defined.'
+    assert fields, 'at least one field must be defined.'
 
     assert all(isinstance(f, (list, tuple)) and len(f) == 3 for f in fields), (
         'all fields must be a tuple of length 3: (name, shape, dtype)')
