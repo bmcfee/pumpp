@@ -116,8 +116,10 @@ class FeatureExtractor(Scope):
             field keys.
         '''
 
-        if api == 'keras':
+        if api in ('k', 'keras'):
             return self.layers_keras()
+        elif api in ('tf.keras', 'tensorflow.keras', 'tfk'):
+            return self.layers_tfkeras()
         elif api in ('tf', 'tensorflow'):
             return self.layers_tensorflow()
         else:
@@ -135,6 +137,17 @@ class FeatureExtractor(Scope):
 
     def layers_keras(self):
         from keras.layers import Input
+
+        L = dict()
+        for key in self.fields:
+            L[key] = Input(name=key,
+                           shape=self.fields[key].shape,
+                           dtype=np.dtype(self.fields[key].dtype).name)
+
+        return L
+
+    def layers_tfkeras(self):
+        from tensorflow.keras.layers import Input
 
         L = dict()
         for key in self.fields:
