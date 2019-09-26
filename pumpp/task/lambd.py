@@ -153,10 +153,9 @@ class LambdaTransformer(BaseTaskTransformer):
         intervals, values = ann.to_interval_values()
 
         # filter values that match query
-        intervals, values = zip(*[
-            (i, d) for i, d in zip(intervals, values)
-            if util.match_query(d, self.value_query)
-        ])
+        matches = [(i, d) for i, d in zip(intervals, values)
+                   if util.match_query(d, self.value_query)]
+        intervals, values = zip(*matches) if matches else ((), ())
 
         # get temporal slices, using one hot observation encoding
         idxs = np.eye(len(intervals))
