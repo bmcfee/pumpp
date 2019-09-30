@@ -9,7 +9,6 @@ import librosa
 import jams
 
 import pumpp
-import pumpp.util
 
 
 @pytest.fixture(params=[11025, 22050])
@@ -256,58 +255,48 @@ def test_pump_repr_html(sr, hop_length):
 
     assert isinstance(pump._repr_html_(), str)
 
-def test_pump_cache(sr, hop_length, tmp_path):
+def test_pump_skip(sr, hop_length, tmp_path):
     ops = [pumpp.feature.STFT(name='stft', sr=sr,
                               hop_length=hop_length,
                               n_fft=2*hop_length),
 
            pumpp.feature.Tempogram(name='tempo', sr=sr,
                                    win_length=384,
-                                   hop_length=hop_length)]
-
-    # setup temp cache directory
-    cache_dir = os.path.join(str(tmp_path.resolve()), 'asdf')
-    os.makedirs(cache_dir, exist_ok=True)
+                                   hop_length=hop_length),
+           pumpp.task.BeatTransformer(name='beat', sr=sr,
+                                      hop_length=hop_length)]
 
     audio_f = 'tests/data/test.ogg'
+    jam_f = 'tests/data/test.jams'
     KEY = 'tempo/tempogram'
-    data = {KEY: np.array(np.nan)}
-
-    cache_file = os.path.join(cache_dir, pumpp.util.get_cache_id(audio_f) + '.h5')
-
-    P = pumpp.Pump(*ops, cache_dir=cache_dir)
-
-    P2 = pumpp.Pump(cache_dir=cache_dir)
-
-    assert P.fields == P2.fields
-
-    # see if existing keys are ignored
-    X = P.transform(audio_f, data=dict(data))
-    assert np.isnan(X[KEY]).all(), 'field was overwritten'
-    assert {f for f in P.fields} == set(X)
-    assert os.path.isfile(cache_file)
-
-    # see values are loaded from hdf5
-    X = P.transform(audio_f, data={})
-    assert np.isnan(X[KEY]).all(), 'field was not loaded properly'
-    assert set(P.fields) == set(X)
-
-    # see if refresh works
-    X = P.transform(audio_f, refresh=True)
-    assert ~(np.isnan(X[KEY]).all()), 'field was not overwritten'
-    assert set(P.fields) == set(X)
-
-    # set the cache file field to be NaN to test with no cache file
-    X = P.transform(audio_f, data=dict(data), refresh=True)
-    assert np.isnan(X[KEY]).all(), 'field was not overwritten'
-    assert set(P.fields) == set(X)
-
-    # test without cache_dir
+    SENTINEL = (None,)
+    data = {KEY: SENTINEL}
 
     P = pumpp.Pump(*ops)
+    fields = set(P.fields)
 
-    # make sure the nan value is not loaded from file
+    get_valid_fields = lambda x: {f for f in set(x) if not f.endswith('_valid')}
+
+    # see if existing keys are skipped
+    X = P.transform(audio_f, data=dict(data))
+    assert X[KEY] is SENTINEL, 'field was overwritten'
+    assert get_valid_fields(X) == fields
+
+    # see if existing keys are recomputed
+    X = P.transform(audio_f, data=dict(data), refresh=True)
+    assert X[KEY] is not SENTINEL, 'field was not overwritten'
+    assert get_valid_fields(X) == fields
+
+    # see normal operation
     X = P.transform(audio_f)
-    assert ~(np.isnan(X[KEY]).all()), 'field was loaded from file instead of computed.'
-    assert {f for f in P.fields} == set(X)
-    assert os.path.isfile(cache_file)
+    assert X[KEY] is not SENTINEL, 'field should have been computed'
+    assert get_valid_fields(X) == fields
+
+    # see if loading audio is skipped if we don't need it
+
+    feature_ops = [op for op in P.ops if isinstance(op, pumpp.FeatureExtractor)]
+    data = {k: (...) for op in feature_ops for k in op.fields}
+
+    X = P.transform(None, jam_f, data=data)
+    assert X[KEY] is not SENTINEL, 'field should have been computed'
+    assert get_valid_fields(X) == fields

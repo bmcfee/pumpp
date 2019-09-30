@@ -8,7 +8,6 @@ Core functionality
 
     Pump
 '''
-import os
 import librosa
 import jams
 
@@ -17,7 +16,6 @@ from .exceptions import ParameterError
 from .task import BaseTaskTransformer
 from .feature import FeatureExtractor
 from .sampler import Sampler
-from . import util
 
 
 class Pump(Slicer):
@@ -63,25 +61,10 @@ class Pump(Slicer):
     {'chord/chord': Tensor(shape=(None, 170), dtype=<class 'bool'>)}
     '''
 
-    def __init__(self, *ops, cache_dir=None):
-        self.cache_dir = cache_dir
-        if self.cache_dir:
-            pump_save_dir = os.path.join(self.cache_dir, 'pumps')
-            os.makedirs(pump_save_dir, exist_ok=True)
-
-            # if no ops were provided, but pickled ops are found in cache dir, load them.
-            # this is so you can pickle the ops then load them like Pump(cache_dir='adsfasdf')
-            if not ops:
-                ops = util.load_ops(pump_save_dir)
-
-
+    def __init__(self, *ops):
         self.ops = []
         self.opmap = dict()
         super(Pump, self).__init__(*ops)
-
-        if self.cache_dir:
-            # save ops separately in cache dir
-            util.save_ops(pump_save_dir, ops)
 
     def add(self, operator):
         '''Add an operation to this pump.
@@ -152,56 +135,42 @@ class Pump(Slicer):
         '''
         data = dict() if data is None else data
 
-        # initialize data, load from cache if dir provided.
-        if self.cache_dir and audio_f:
-            cache_id = util.get_cache_id(audio_f)
-            cache_file = os.path.join(self.cache_dir, cache_id + '.h5')
+        # check if all fields exist - potentially avoid loading audio if not needed.
+        initial_keys = set(data)
+        ops = self.ops
 
-            if not refresh and os.path.isfile(cache_file):
-                data = util.load_h5(cache_file, data=data, fields=self.fields)
+        if not refresh:
+            ops = [op for op in ops if set(op.fields) - initial_keys]
 
-        # check if all fields exist - potentially avoid loading audio
-        # TODO: check BaseTaskTransformer and FeatureExtractor separately
-        initial_data_keys = set(data)
-        if set(self.fields).issubset(initial_data_keys):
-            return data
+        if any(isinstance(op, FeatureExtractor) for op in ops):
+            if y is None:
+                if audio_f is None:
+                    raise ParameterError('At least one of `y` or `audio_f` '
+                                         'must be provided')
 
-        if y is None:
-            if audio_f is None:
-                raise ParameterError('At least one of `y` or `audio_f` '
-                                     'must be provided')
+                # Load the audio
+                y, sr = librosa.load(audio_f, sr=sr, mono=True)
 
-            # Load the audio
-            y, sr = librosa.load(audio_f, sr=sr, mono=True)
+            if sr is None:
+                raise ParameterError('If audio is provided as `y`, you must '
+                                     'specify the sampling rate as sr=')
 
-        if sr is None:
-            raise ParameterError('If audio is provided as `y`, you must '
-                                 'specify the sampling rate as sr=')
+        if any(isinstance(op, BaseTaskTransformer) for op in ops):
+            if jam is None:
+                jam = jams.JAMS()
+                jam.file_metadata.duration = librosa.get_duration(y=y, sr=sr)
 
-        if jam is None:
-            jam = jams.JAMS()
-            jam.file_metadata.duration = librosa.get_duration(y=y, sr=sr)
+            # Load the jams
+            if not isinstance(jam, jams.JAMS):
+                jam = jams.load(jam)
 
-        # Load the jams
-        if not isinstance(jam, jams.JAMS):
-            jam = jams.load(jam)
-
-        for operator in self.ops:
-            # skip keys that already exist
-            if set(operator.fields).issubset(initial_data_keys):
-                continue
-
-            if isinstance(operator, BaseTaskTransformer):
-                data.update(operator.transform(jam))
-            elif isinstance(operator, FeatureExtractor):
-                data.update(operator.transform(y, sr))
+        for op in ops:
+            if isinstance(op, BaseTaskTransformer):
+                data.update(op.transform(jam))
+            elif isinstance(op, FeatureExtractor):
+                data.update(op.transform(y, sr))
         if crop:
             data = self.crop(data)
-
-        # save for future use
-        if self.cache_dir and audio_f:
-            if refresh or initial_data_keys != set(data):
-                util.save_h5(cache_file, **{k: data[k] for k in self.fields})
         return data
 
     def sampler(self, n_samples, duration, random_state=None):
