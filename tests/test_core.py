@@ -264,6 +264,7 @@ def test_pump_skip(sr, hop_length, tmp_path):
            pumpp.feature.Tempogram(name='tempo', sr=sr,
                                    win_length=384,
                                    hop_length=hop_length),
+
            pumpp.task.BeatTransformer(name='beat', sr=sr,
                                       hop_length=hop_length)]
 
@@ -296,8 +297,10 @@ def test_pump_skip(sr, hop_length, tmp_path):
     # see if loading audio is skipped if we don't need it
 
     feature_ops = [op for op in P.ops if isinstance(op, pumpp.FeatureExtractor)]
-    data = {k: (...) for op in feature_ops for k in op.fields}
+    data = {k: SENTINEL for op in feature_ops for k in op.fields}
 
     X = P.transform(None, jam_f, data=data)
-    assert X[KEY] is not SENTINEL, 'field should have been computed'
+    assert all(X[k] is SENTINEL
+               for op in feature_ops
+               for k in op.fields), 'field should not have been computed'
     assert get_valid_fields(X) == fields
