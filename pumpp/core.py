@@ -8,6 +8,7 @@ Core functionality
 
     Pump
 '''
+import os
 import librosa
 import jams
 
@@ -16,6 +17,7 @@ from .exceptions import ParameterError
 from .task import BaseTaskTransformer
 from .feature import FeatureExtractor
 from .sampler import Sampler
+from . import util
 
 
 class Pump(Slicer):
@@ -65,6 +67,7 @@ class Pump(Slicer):
         self.ops = []
         self.opmap = dict()
         super(Pump, self).__init__(*ops)
+        self.cache_dir = cache_dir
 
     def add(self, operator):
         '''Add an operation to this pump.
@@ -171,6 +174,11 @@ class Pump(Slicer):
                 data.update(op.transform(y, sr))
         if crop:
             data = self.crop(data)
+
+        # save for future use
+        if self.cache_dir and audio_f:
+            if refresh or initial_data_keys != set(data):
+                util.save_h5(cache_file, **{k: data[k] for k in self.fields})
         return data
 
     def sampler(self, n_samples, duration, random_state=None):
