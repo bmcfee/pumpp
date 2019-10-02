@@ -8,7 +8,6 @@ Core functionality
 
     Pump
 '''
-import os
 import librosa
 import jams
 
@@ -17,7 +16,6 @@ from .exceptions import ParameterError
 from .task import BaseTaskTransformer
 from .feature import FeatureExtractor
 from .sampler import Sampler
-from . import util
 
 
 class Pump(Slicer):

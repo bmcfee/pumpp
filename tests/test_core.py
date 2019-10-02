@@ -9,7 +9,6 @@ import librosa
 import jams
 
 import pumpp
-import pumpp.util
 
 
 @pytest.fixture(params=[11025, 22050])
