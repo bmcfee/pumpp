@@ -116,16 +116,16 @@ class LambdaTransformer(BaseTaskTransformer):
     '''
 
     def __init__(self, name, namespace, fields=(), query=None, reduce=None,
-                 multi=False, sample_index=-1, squeeze=True, **kw):
+                 multi=False, sample_index=-1, **kw):
         super().__init__(name, namespace, **kw)
         self.value_query = query
         self.multi = multi
-        self.squeeze = squeeze
 
         # infer missing fields / dtype for missing reducer
         fields, value_has_defined_keys = _check_fields(fields, namespace, multi)
 
         # get default reducer when none is specified
+        # allow subclasses to override reducer using self.reducer
         if not self.reducer and not reduce:
             reduce = _default_reducer(fields, value_has_defined_keys, multi)
 
@@ -137,12 +137,12 @@ class LambdaTransformer(BaseTaskTransformer):
         for name_, shape, dtype in fields:
             self.register(name_, shape, dtype)
 
-        # fills any missing values from self.reducer
+        # used to fill any missing values from self.reducer
         self.FILL_DICT = {
             name_: fill_value(dtype) for name_, shape, dtype in fields
         }
         # select which value in the event of multiple values in interval
-        self.SINGLE_INDEX = sample_index
+        self.SAMPLE_INDEX = sample_index
 
     # Either override by passing a function like `__init__(reduce=lambda x: ...)`
     # or by overriding with a subclass.
@@ -168,26 +168,20 @@ class LambdaTransformer(BaseTaskTransformer):
         if self.multi:
             target_vals = ([values[j] for j in i] for i in idxs)
         else:
-            target_vals = (values[i[self.SINGLE_INDEX]]
+            target_vals = (values[i[self.SAMPLE_INDEX]]
                            if len(i) else None for i in idxs)
 
         # reduce into a data dict for each interval
-        data = [dict(self.FILL_DICT, **self.reducer(e)) for e in target_vals]
+        data = [dict(self.FILL_DICT, **{
+            k: v for k, v in self.reducer(e).items()
+            if v is not None
+        }) for e in target_vals]
 
         # merge the list of dicts into a dict of lists/arrays
         return {
             key: np.array([np.asarray(d[key]) for d in data])
             for key in set().union(*data)
         }
-
-    def transform(self, jam, query=None):
-        results = super().transform(jam, query)
-        if self.squeeze:
-            results = {
-                k: d[0] if d.shape[0] == 1 else d
-                for k, d in results.items()
-            }
-        return results
 
     def inverse(self, x, duration=None):
         raise NotImplementedError('Lambda annotations cannot be inverted')
@@ -270,7 +264,7 @@ def fill_value(dtype):
         if np.issubdtype(dtype, dt)), 0))
 
 
-def _check_fields(fields, namespace, multi):
+def _check_fields(fields, namespace, multi=False):
     '''
     Validate the fields passed and try to infer fields from incomplete info.
 
@@ -310,7 +304,7 @@ def _check_fields(fields, namespace, multi):
     if multi:
         default_shape = (None, None)
     else:
-        default_shape = (None, 1)
+        default_shape = (None,)
 
     if dtypes:
         # set default fields as all object props
@@ -345,20 +339,35 @@ def _check_fields(fields, namespace, multi):
 
 def _default_reducer(fields, value_has_defined_keys, multi):
     '''
-    Validate the fields passed and try to infer fields from incomplete info.
+    Automatically infer a reducer based on the fields passed,
+    the jams namespace spec, and the passed arguments.
 
     see `LambdaTransformer.__init__` for argument descriptions.
 
     Arguments:
     ----------
     fields : list of tuples/str
+        the pump field definitions
 
-    value_type : dtype
-        the dtype of observation values
+    value_has_defined_keys : dtype
+        whether the value can be considered a dictionary
+
+        If True and `multi` is True, the function value will be a list.
+            It will return a dictionary of ``{field_name: [v[field] for v in values]}``
+        If True and `multi` is False, it will expect a single dictionary
+            and will select out ``fields`` from the dictionary.
+
+        If False, it will check if fields has only one field.
+            If True, it will assign the value as a single field.
+            Otherwise, it will throw a RuntimeError.
 
     multi : bool
         whether reduce should accept single or multiple values.
 
+    Returns
+    -------
+        reduce : callable
+            the annotation reducer
     '''
     fields = [f[0] for f in fields]
     if value_has_defined_keys:
