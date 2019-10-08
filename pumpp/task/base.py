@@ -49,7 +49,7 @@ class BaseTaskTransformer(Scope):
         The number of samples between frames
     '''
 
-    def __init__(self, name, namespace, sr=22050, hop_length=512):
+    def __init__(self, name, namespace, sr, hop_length):
         super(BaseTaskTransformer, self).__init__(name)
 
         # This will trigger an exception if the namespace is not found
@@ -130,13 +130,13 @@ class BaseTaskTransformer(Scope):
 
     def transform_annotation(self, ann, duration):
         '''Transform jams.Annotation to make data for a given task.
-
+        
         Parameters
         ----------
         ann : jams.Annotation
             The jams annotation containing the data
 
-        duration : number > 0
+        duration : number > 0 
            time in seconds of the output duration
 
         Returns

@@ -5,9 +5,7 @@
 import pytest
 import numpy as np
 
-import jams
 import pumpp
-from pumpp.util import match_query
 
 from pumpp import ParameterError
 
@@ -54,65 +52,3 @@ def test_fill_value(dtype, fill):
 
     assert isinstance(v, dtype)
     assert v == fill or np.isnan(v) and np.isnan(fill)
-
-
-@pytest.mark.parametrize(
-    "expected,data,query", [
-        (True,  5, None),
-        (True,  5, 5),
-        (True,  5, lambda x: x > 4),
-        (True,  {'a': 'abc', 'b': 'def'}, {'b': 'def'}),
-        (False, {'a': 'abc', 'b': 'def'}, {'b': 'abc'}),
-        (True,  {'a': 'abc', 'b': 'def'}, {'b': lambda x: 'd' in x}),
-        (False, {'a': 'abc', 'b': 'def'}, {'a': 'abc', 'b': 'deg'}),
-        (True,  [1, 2, 3, 4, 5], lambda x: 5 in x),
-        (True,  [1, 2, 3, 4, 5], [1, 2, 3, 4, lambda x: x in (5, 6, 7)]),
-        (True,  5, {5, 9, 10}),
-        (True,  'def', 'abc|def'),
-        (False, {'b': 'def'}, {'b': 'def', 'c': 'ghi'}), # has key outside
-        pytest.param(
-            False, 5, {'b': 'def', 'c': 'ghi'}, marks=xfail(raises=ValueError)),
-        pytest.param(
-            False, 5, ['def', 'ghi'], marks=xfail(raises=ValueError)),
-        pytest.param(
-            False, [5], ['def', 'ghi'], marks=xfail(raises=ValueError)),
-])
-def test_match_query(expected, data, query):
-    assert expected  == match_query(data, query)
-
-@pytest.mark.parametrize(
-    "expected,data,query",
-    [(True, {'b': 'def', 'c': 'ghi'}, {'b': 'def'}),
-    pytest.param(
-        False, {'b': 'def'}, {'b': 'def', 'c': 'ghi'}, marks=xfail(raises=ValueError)), ])
-def test_match_query_strict(expected, data, query):
-    assert expected  == match_query(data, query, strict_keys=True)
-
-
-def test_get_dtype_using_existing_namespaces():
-    for namespace in jams.schema.__NAMESPACE__:
-        schema = jams.schema.namespace(namespace)
-        pumpp.task.lambd._get_dtype(schema)
-
-        val = schema['properties']['value']
-        try:
-            value_has_defined_keys = (
-                val['type'] == 'object' and 'properties' in val)
-        except KeyError:
-            value_has_defined_keys = False
-
-        if value_has_defined_keys:
-            for name, spec in val['properties'].items():
-                pumpp.task.lambd._get_dtype(spec)
-
-@pytest.mark.parametrize(
-    "query,expected", [
-        ({'type': ['number', 'string']}, np.object_),
-        ({'enum': ['asdf', 5, 6]}, np.object_),
-        ({'oneOf': [{'type': 'number'}, {'type': 'null'}]}, np.float64),
-        ({'oneOf': [{'type': 'number'}, {'type': 'string'}]}, np.object_),
-        ({}, np.object_),
-])
-def test_get_dtype_unused(query, expected):
-    # others that aren't used in current namespaces:
-    assert pumpp.task.lambd._get_dtype(query) == expected
