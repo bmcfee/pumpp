@@ -94,7 +94,8 @@ class Pump(Slicer):
         self.opmap[operator.name] = operator
         self.ops.append(operator)
 
-    def transform(self, audio_f=None, jam=None, y=None, sr=None, crop=False):
+    def transform(self, audio_f=None, jam=None, y=None, sr=None, crop=False,
+                  data=None):
         '''Apply the transformations to an audio file, and optionally JAMS object.
 
         Parameters
@@ -115,6 +116,9 @@ class Pump(Slicer):
         crop : bool
             If `True`, then data are cropped to a common time index across all
             fields.  Otherwise, data may have different time extents.
+        data : None or dict
+            Optional data dict containing already computed features. Fields in
+            dict will be skipped unless ``refresh`` is True.
 
         Returns
         -------
@@ -127,34 +131,37 @@ class Pump(Slicer):
             At least one of `audio_f` or `(y, sr)` must be provided.
 
         '''
+        data = dict() if data is None else data
+        existing_keys = set(data)
+        ops = [op for op in self.ops if set(op.fields) - existing_keys]
 
-        if y is None:
-            if audio_f is None:
-                raise ParameterError('At least one of `y` or `audio_f` '
-                                     'must be provided')
+        if any(isinstance(op, FeatureExtractor) for op in ops):
+            if y is None:
+                if audio_f is None:
+                    raise ParameterError('At least one of `y` or `audio_f` '
+                                         'must be provided')
 
-            # Load the audio
-            y, sr = librosa.load(audio_f, sr=sr, mono=True)
+                # Load the audio
+                y, sr = librosa.load(audio_f, sr=sr, mono=True)
 
-        if sr is None:
-            raise ParameterError('If audio is provided as `y`, you must '
-                                 'specify the sampling rate as sr=')
+            if sr is None:
+                raise ParameterError('If audio is provided as `y`, you must '
+                                     'specify the sampling rate as sr=')
 
-        if jam is None:
-            jam = jams.JAMS()
-            jam.file_metadata.duration = librosa.get_duration(y=y, sr=sr)
+        if any(isinstance(op, BaseTaskTransformer) for op in ops):
+            if jam is None:
+                jam = jams.JAMS()
+                jam.file_metadata.duration = librosa.get_duration(y=y, sr=sr)
 
-        # Load the jams
-        if not isinstance(jam, jams.JAMS):
-            jam = jams.load(jam)
+            # Load the jams
+            if not isinstance(jam, jams.JAMS):
+                jam = jams.load(jam)
 
-        data = dict()
-
-        for operator in self.ops:
-            if isinstance(operator, BaseTaskTransformer):
-                data.update(operator.transform(jam))
-            elif isinstance(operator, FeatureExtractor):
-                data.update(operator.transform(y, sr))
+        for op in ops:
+            if isinstance(op, BaseTaskTransformer):
+                data.update(op.transform(jam))
+            elif isinstance(op, FeatureExtractor):
+                data.update(op.transform(y, sr))
         if crop:
             data = self.crop(data)
         return data
