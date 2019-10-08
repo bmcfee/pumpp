@@ -1057,7 +1057,6 @@ def test_task_beatpos_tail(SR, HOP_LENGTH, SPARSE):
 
 def test_task_key__encode_key_str(SPARSE):
     # Checks the helper function which does key string to encoding
-
     # Check A:minor
     pitch_profile, tonic = _encode_key_str('A:minor', SPARSE)
     assert np.all(pitch_profile == np.array([1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1]))
@@ -1323,7 +1322,6 @@ def test_task_key_tag_absent(SR, HOP_LENGTH, SPARSE):
         assert type_match(output[key].dtype, trans.fields[key].dtype)
 
 
-
 def _sampled_scaper_event(role, **kw):
     return dict(dict(
         role=role,
@@ -1486,3 +1484,4 @@ def test_task_lambda_arbitrary(SR, HOP_LENGTH):
         assert True
     else:
         assert False
+

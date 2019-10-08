@@ -136,7 +136,7 @@ class BaseTaskTransformer(Scope):
         ann : jams.Annotation
             The jams annotation containing the data
 
-        duration : number > 0
+        duration : number > 0 
            time in seconds of the output duration
 
         Returns
