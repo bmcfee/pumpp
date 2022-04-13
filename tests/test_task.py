@@ -68,7 +68,7 @@ def test_task_chord_fields(SPARSE):
                                             'mychord/bass'])
 
     assert trans.fields['mychord/pitch'].shape == (None, 12)
-    assert trans.fields['mychord/pitch'].dtype is np.bool
+    assert trans.fields['mychord/pitch'].dtype is bool
 
     if SPARSE:
         assert trans.fields['mychord/root'].shape == (None, 1)
@@ -77,9 +77,9 @@ def test_task_chord_fields(SPARSE):
         assert np.issubdtype(trans.fields['mychord/bass'].dtype, np.integer)
     else:
         assert trans.fields['mychord/root'].shape == (None, 13)
-        assert trans.fields['mychord/root'].dtype is np.bool
+        assert trans.fields['mychord/root'].dtype is bool
         assert trans.fields['mychord/bass'].shape == (None, 13)
-        assert trans.fields['mychord/bass'].dtype is np.bool
+        assert trans.fields['mychord/bass'].dtype is bool
 
 
 def test_task_chord_present(SR, HOP_LENGTH, SPARSE):
@@ -190,7 +190,7 @@ def test_task_simple_chord_fields():
 
     assert set(trans.fields.keys()) == set(['simple_chord/pitch'])
     assert trans.fields['simple_chord/pitch'].shape == (None, 12)
-    assert trans.fields['simple_chord/pitch'].dtype is np.bool
+    assert trans.fields['simple_chord/pitch'].dtype is bool
 
 
 def test_task_simple_chord_present(SR, HOP_LENGTH):
@@ -650,7 +650,7 @@ def test_task_structure_fields():
     assert set(trans.fields.keys()) == set(['struct/agree'])
 
     assert trans.fields['struct/agree'].shape == (None, None)
-    assert trans.fields['struct/agree'].dtype is np.bool
+    assert trans.fields['struct/agree'].dtype is bool
 
 
 def test_task_structure_present(SR, HOP_LENGTH):
@@ -809,7 +809,7 @@ def test_task_chord_tag_fields(vocab, vocab_size, SPARSE):
         assert np.issubdtype(trans.fields['mychord/chord'].dtype, np.integer)
     else:
         assert trans.fields['mychord/chord'].shape == (None, vocab_size)
-        assert trans.fields['mychord/chord'].dtype is np.bool
+        assert trans.fields['mychord/chord'].dtype is bool
 
 
 def test_task_chord_tag_present(SR, HOP_LENGTH, VOCAB, SPARSE):
@@ -944,7 +944,7 @@ def test_task_beatpos_fields(max_divisions, n_states, SPARSE):
         assert np.issubdtype(trans.fields['mybeat/position'].dtype, np.integer)
     else:
         assert trans.fields['mybeat/position'].shape == (None, n_states)
-        assert trans.fields['mybeat/position'].dtype is np.bool
+        assert trans.fields['mybeat/position'].dtype is bool
 
 
 def test_task_beatpos_absent(SR, HOP_LENGTH, MAX_DIVISIONS, SPARSE):
@@ -1091,7 +1091,7 @@ def test_task_key__encode_key_str(SPARSE):
 
     # Check 'N' for no key
     pitch_profile, tonic = _encode_key_str('N', SPARSE)
-    assert np.all(pitch_profile == np.array(np.zeros(12, dtype=np.bool)))
+    assert np.all(pitch_profile == np.array(np.zeros(12, dtype=bool)))
     if SPARSE:
         assert tonic == 12
     else:
@@ -1105,14 +1105,14 @@ def test_task_key_fields(SPARSE):
                                             'mykey/tonic'])
 
     assert trans.fields['mykey/pitch_profile'].shape == (None, 12)
-    assert trans.fields['mykey/pitch_profile'].dtype is np.bool
+    assert trans.fields['mykey/pitch_profile'].dtype is bool
 
     if SPARSE:
         assert trans.fields['mykey/tonic'].shape == (None, 1)
         assert np.issubdtype(trans.fields['mykey/tonic'].dtype, np.integer)
     else:
         assert trans.fields['mykey/tonic'].shape == (None, 13)
-        assert trans.fields['mykey/tonic'].dtype is np.bool
+        assert trans.fields['mykey/tonic'].dtype is bool
 
 
 def test_task_key_present(SR, HOP_LENGTH, SPARSE):
@@ -1229,7 +1229,7 @@ def test_task_key_tag_fields(SPARSE):
         assert np.issubdtype(trans.fields['mykeytag/tag'].dtype, np.integer)
     else:
         assert trans.fields['mykeytag/tag'].shape == (None, 12 * 9 + 1)
-        assert trans.fields['mykeytag/tag'].dtype is np.bool
+        assert trans.fields['mykeytag/tag'].dtype is bool
 
 
 def test_task_key_tag_present(SR, HOP_LENGTH, SPARSE):
@@ -1287,6 +1287,8 @@ def test_task_key_tag_present(SR, HOP_LENGTH, SPARSE):
 
     Y_expected = np.repeat(Y_true_out, (SR // HOP_LENGTH), axis=0)
 
+    print(Y_pred)
+    print(Y_expected)
     assert np.all(Y_pred == Y_expected)
 
 

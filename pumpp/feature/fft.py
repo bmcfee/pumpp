@@ -79,7 +79,7 @@ class STFT(FeatureExtractor):
         D = stft(y, hop_length=self.hop_length,
                  n_fft=self.n_fft)
 
-        D = fix_length(D, n_frames)
+        D = fix_length(D, size=n_frames)
 
         mag, phase = magphase(D)
         if self.log:
@@ -123,7 +123,7 @@ class STFTPhaseDiff(STFT):
         D = stft(y, hop_length=self.hop_length,
                  n_fft=self.n_fft)
 
-        D = fix_length(D, n_frames)
+        D = fix_length(D, size=n_frames)
 
         mag, phase = magphase(D)
         if self.log:

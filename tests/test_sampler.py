@@ -137,14 +137,14 @@ def test_sequential_sampler(data, ops, duration, stride, rng):
 
 def test_slicer():
     scope1 = pumpp.base.Scope('test1')
-    scope1.register('first', (None, 10), np.int)
-    scope1.register('second', (2, None), np.int)
-    scope1.register('none', (16, 16), np.int)
+    scope1.register('first', (None, 10), int)
+    scope1.register('second', (2, None), int)
+    scope1.register('none', (16, 16), int)
 
     scope2 = pumpp.base.Scope('test2')
-    scope2.register('first', (None, 5), np.int)
-    scope2.register('second', (20, None), np.int)
-    scope2.register('square', (None, None, 3), np.int)
+    scope2.register('first', (None, 5), int)
+    scope2.register('second', (20, None), int)
+    scope2.register('square', (None, None, 3), int)
 
     slicer = pumpp.base.Slicer(scope1, scope2)
 

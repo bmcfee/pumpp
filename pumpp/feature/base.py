@@ -96,7 +96,7 @@ class FeatureExtractor(Scope):
         transform_audio
         '''
         if sr != self.sr:
-            y = resample(y, sr, self.sr)
+            y = resample(y, orig_sr=sr, target_sr=self.sr)
 
         return self.merge([self.transform_audio(y)])
 

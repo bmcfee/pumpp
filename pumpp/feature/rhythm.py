@@ -65,7 +65,7 @@ class Tempogram(FeatureExtractor):
                           hop_length=self.hop_length,
                           win_length=self.win_length)
 
-        tgram = to_dtype(fix_length(tgram, n_frames), self.dtype)
+        tgram = to_dtype(fix_length(tgram, size=n_frames), self.dtype)
         return {'tempogram': tgram.T[self.idx]}
 
 

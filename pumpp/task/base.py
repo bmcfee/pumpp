@@ -146,7 +146,7 @@ class BaseTaskTransformer(Scope):
         '''
         raise NotImplementedError
 
-    def encode_events(self, duration, events, values, dtype=np.bool):
+    def encode_events(self, duration, events, values, dtype=bool):
         '''Encode labeled events as a time-series matrix.
 
         Parameters
@@ -187,7 +187,7 @@ class BaseTaskTransformer(Scope):
 
         return target[:n_total]
 
-    def encode_intervals(self, duration, intervals, values, dtype=np.bool,
+    def encode_intervals(self, duration, intervals, values, dtype=bool,
                          multi=True, fill=None):
         '''Encode labeled intervals as a time-series matrix.
 
