@@ -38,10 +38,10 @@ def _encode_key_str(key_str, sparse):
         Returns
         -------
         (pitch_profile, tonic) : tuple
-            pitch_profile : np.ndarray, shape = (1, 12), dtype = np.bool
+            pitch_profile : np.ndarray, shape = (1, 12), dtype = bool
                 a 12-D row vector that's encodes the membership of each pitch class for 
                 a given `key_str`.
-            tonic : int or np.ndarray, shape = (1, 13), dtype = np.bool
+            tonic : int or np.ndarray, shape = (1, 13), dtype = bool
                 a int in the range [0, 12] to indicate the pitch class of the tonic. 12
                 being atonal. The type will depend on the `sparse` parameter
         '''
@@ -62,7 +62,7 @@ def _encode_key_str(key_str, sparse):
 
         # When there is no tonal center, pitch profile is all zeros.
         if tonic == 12:
-            pitch_profile = np.zeros(12, dtype=np.bool)
+            pitch_profile = np.zeros(12, dtype=bool)
         else:
             # When there is no quality, major assumed.
             if len(key_str_split) == 1:
@@ -90,7 +90,7 @@ def _encode_key_str(key_str, sparse):
             pitch_profile = np.roll(mode_profile_in_c, tonic)
 
         if not sparse:
-            tonic_vec = np.zeros(13, dtype=np.bool)
+            tonic_vec = np.zeros(13, dtype=bool)
             tonic_vec[tonic] = 1
             tonic = tonic_vec
 
@@ -126,11 +126,11 @@ class KeyTransformer(BaseTaskTransformer):
                                              sr=sr, hop_length=hop_length)
         self.sparse = sparse
  
-        self.register('pitch_profile', [None, 12], np.bool)
+        self.register('pitch_profile', [None, 12], bool)
         if self.sparse:
-            self.register('tonic', [None, 1], np.int)
+            self.register('tonic', [None, 1], int)
         else:
-            self.register('tonic', [None, 13], np.bool)
+            self.register('tonic', [None, 13], bool)
 
     
     def empty(self, duration):
@@ -188,9 +188,9 @@ class KeyTransformer(BaseTaskTransformer):
 
         # Get the dtype for tonic
         if self.sparse:
-            dtype = np.int
+            dtype = int
         else:
-            dtype = np.bool
+            dtype = bool
 
         # If we don't have any labeled intervals, fill in a 'N'
         if not keys:
@@ -212,7 +212,7 @@ class KeyTransformer(BaseTaskTransformer):
             pitch_profiles.append(pitch_profile)
             tonics.append(tonic if isinstance(tonic, np.ndarray) else [tonic])
         
-        pitch_profiles = np.asarray(pitch_profiles, dtype=np.bool)
+        pitch_profiles = np.asarray(pitch_profiles, dtype=bool)
         tonics = np.asarray(tonics, dtype=dtype)
 
         target_pitch_profile = self.encode_intervals(duration, intervals, pitch_profiles)
@@ -293,9 +293,9 @@ class KeyTagTransformer(BaseTaskTransformer):
         self.p_state = p_state
 
         if self.sparse:
-            self.register('tag', [None, 1], np.int)
+            self.register('tag', [None, 1], int)
         else:
-            self.register('tag', [None, len(self._classes)], np.bool)
+            self.register('tag', [None, len(self._classes)], bool)
 
     def set_transition(self, p_self):
         '''Set the transition matrix according to self-loop probabilities.
@@ -340,7 +340,7 @@ class KeyTagTransformer(BaseTaskTransformer):
             list of string labels.
         '''
         qualities = MODES + list(QUALITY.keys())
-        tonics = midi_to_note(list(range(12)), octave=False)
+        tonics = midi_to_note(list(range(12)), octave=False, unicode=False)
         
         labels = ['N']
 
@@ -366,7 +366,7 @@ class KeyTagTransformer(BaseTaskTransformer):
         key_list = key_str.split(':')
         # spell the tonic enharmonically if necessary
         if key_list[0] != 'N':
-            key_list[0] = midi_to_note(note_to_midi(key_list[0]), octave=False)
+            key_list[0] = midi_to_note(note_to_midi(key_list[0]), octave=False, unicode=False)
             if len(key_list) == 1:
                 key_list.append('major')
 

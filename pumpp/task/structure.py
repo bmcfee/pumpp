@@ -37,7 +37,7 @@ class StructureTransformer(BaseTaskTransformer):
                                                    sr=sr,
                                                    hop_length=hop_length)
 
-        self.register('agree', [None, None], np.bool)
+        self.register('agree', [None, None], bool)
 
     def empty(self, duration):
         ann = super(StructureTransformer, self).empty(duration)

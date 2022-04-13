@@ -79,13 +79,13 @@ class ChordTransformer(BaseTaskTransformer):
         self._classes = set(self.encoder.classes_)
         self.sparse = sparse
 
-        self.register('pitch', [None, 12], np.bool)
+        self.register('pitch', [None, 12], bool)
         if self.sparse:
-            self.register('root', [None, 1], np.int)
-            self.register('bass', [None, 1], np.int)
+            self.register('root', [None, 1], int)
+            self.register('bass', [None, 1], int)
         else:
-            self.register('root', [None, 13], np.bool)
-            self.register('bass', [None, 13], np.bool)
+            self.register('root', [None, 13], bool)
+            self.register('bass', [None, 13], bool)
 
     def empty(self, duration):
         '''Empty chord annotations
@@ -147,9 +147,9 @@ class ChordTransformer(BaseTaskTransformer):
 
         # Get the dtype for root/bass
         if self.sparse:
-            dtype = np.int
+            dtype = int
         else:
-            dtype = np.bool
+            dtype = bool
 
         # If we don't have any labeled intervals, fill in a no-chord
         if not chords:
@@ -187,7 +187,7 @@ class ChordTransformer(BaseTaskTransformer):
                     roots.extend(self.encoder.transform([[]]))
                     basses.extend(self.encoder.transform([[]]))
 
-        pitches = np.asarray(pitches, dtype=np.bool)
+        pitches = np.asarray(pitches, dtype=bool)
         roots = np.asarray(roots, dtype=dtype)
         basses = np.asarray(basses, dtype=dtype)
 
@@ -410,9 +410,9 @@ class ChordTagTransformer(BaseTaskTransformer):
             self.mask_ |= 0b001001010000
 
         if self.sparse:
-            self.register('chord', [None, 1], np.int)
+            self.register('chord', [None, 1], int)
         else:
-            self.register('chord', [None, len(self._classes)], np.bool)
+            self.register('chord', [None, len(self._classes)], bool)
 
     def set_transition(self, p_self):
         '''Set the transition matrix according to self-loop probabilities.

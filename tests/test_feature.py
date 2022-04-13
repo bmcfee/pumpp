@@ -15,7 +15,7 @@ xfail = pytest.mark.xfail
 
 @pytest.fixture(params=[None, 22050, 16000], scope='module')
 def audio(request):
-    y, sr_out = librosa.load(librosa.util.example_audio_file(),
+    y, sr_out = librosa.load(librosa.ex('trumpet'),
                              sr=request.param,
                              duration=2)
     return {'y': y, 'sr': sr_out}
