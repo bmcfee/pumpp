@@ -226,7 +226,7 @@ class Pump(Slicer):
         return layermap
 
     def __getitem__(self, key):
-        return self.opmap.get(key)
+        return self.opmap[key]
 
     def __call__(self, *args, **kwargs):
         return self.transform(*args, **kwargs)
