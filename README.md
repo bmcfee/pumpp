@@ -1,6 +1,7 @@
 # pumpp
 [![GitHub license](https://img.shields.io/badge/license-ISC-blue.svg)](https://raw.githubusercontent.com/bmcfee/pumpp/master/LICENSE)
 [![CI](https://github.com/bmcfee/pumpp/actions/workflows/ci.yml/badge.svg)](https://github.com/bmcfee/pumpp/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/bmcfee/pumpp/branch/main/graph/badge.svg?token=i7YxIwweBQ)](https://codecov.io/gh/bmcfee/pumpp)
 [![Documentation Status](http://readthedocs.org/projects/pumpp/badge/?version=latest)](http://pumpp.readthedocs.io/en/latest/?badge=latest)
 
 
