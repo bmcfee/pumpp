@@ -80,7 +80,7 @@ class Mel(FeatureExtractor):
                                      n_mels=self.n_mels,
                                      fmax=self.fmax))
 
-        mel = fix_length(mel, n_frames)
+        mel = fix_length(mel, size=n_frames)
 
         if self.log:
             mel = amplitude_to_db(mel, ref=np.max)
