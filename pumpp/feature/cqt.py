@@ -83,7 +83,7 @@ class CQT(FeatureExtractor):
                 n_bins=(self.n_octaves * self.over_sample * 12),
                 bins_per_octave=(self.over_sample * 12))
 
-        C = fix_length(C, n_frames)
+        C = fix_length(C, size=n_frames)
 
         cqtm, phase = magphase(C)
         if self.log:
@@ -163,7 +163,7 @@ class CQTPhaseDiff(CQT):
                 n_bins=(self.n_octaves * self.over_sample * 12),
                 bins_per_octave=(self.over_sample * 12))
 
-        C = fix_length(C, n_frames)
+        C = fix_length(C, size=n_frames)
 
         cqtm, phase = magphase(C)
         if self.log:
@@ -275,7 +275,7 @@ class HCQT(FeatureExtractor):
                     n_bins=(self.n_octaves * self.over_sample * 12),
                     bins_per_octave=(self.over_sample * 12))
 
-            C = fix_length(C, n_frames)
+            C = fix_length(C, size=n_frames)
 
             C, P = magphase(C)
             if self.log:
@@ -376,7 +376,7 @@ class HCQTPhaseDiff(HCQT):
                     n_bins=(self.n_octaves * self.over_sample * 12),
                     bins_per_octave=(self.over_sample * 12))
 
-            C = fix_length(C, n_frames)
+            C = fix_length(C, size=n_frames)
 
             C, P = magphase(C)
             if self.log:
