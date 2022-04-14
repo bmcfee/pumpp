@@ -1,6 +1,26 @@
 Changes
 -------
 
+0.6.0
+=====
+- `#136`_ Fixed a bug in serialization of objects with randomstate
+- `#135`_ Fixed deprecation warnings for numpy 1.20 and librosa 0.9
+- `#134`_ Added tensorflow-keras layer constructors
+- `#133`_ Fixed a bug in operator maps with missing keys
+- `#131`_ Update to modern dependencies (tensorflow 2, librosa 0.8+).  Dropped support for python <
+  3.6.
+- `#128`_ Avoid redundant computation of features
+- `#117`_ Added default names for transformations
+
+.. _#136: https://github.com/bmcfee/pumpp/pull/136
+.. _#135: https://github.com/bmcfee/pumpp/pull/135
+.. _#134: https://github.com/bmcfee/pumpp/pull/134
+.. _#133: https://github.com/bmcfee/pumpp/pull/133
+.. _#131: https://github.com/bmcfee/pumpp/pull/131
+.. _#128: https://github.com/bmcfee/pumpp/pull/128
+.. _#117: https://github.com/bmcfee/pumpp/pull/117
+
+
 0.5.0
 =====
 - `#105`_ Expanding API for layer construction to eventually support alternative frameworks.
@@ -8,6 +28,10 @@ Changes
 - `#103`_ Added quantization support for feature modules.
 - `#106`_ Dropped support for python 2.7.
 
+.. _#106: https://github.com/bmcfee/pumpp/pull/106
+.. _#103: https://github.com/bmcfee/pumpp/pull/103
+.. _#104: https://github.com/bmcfee/pumpp/pull/104
+.. _#105: https://github.com/bmcfee/pumpp/pull/105
 
 0.4.0
 =====
