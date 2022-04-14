@@ -73,10 +73,7 @@ class Sampler(Slicer):
         self.duration = duration
 
         random_state = kwargs.pop('random_state', None)
-
-        if random_state is None:
-            self.rng = np.random
-        elif isinstance(random_state, int):
+        if random_state is None or isinstance(random_state, int):
             self.rng = np.random.RandomState(seed=random_state)
         elif isinstance(random_state, np.random.RandomState):
             self.rng = random_state
