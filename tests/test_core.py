@@ -213,6 +213,10 @@ def test_pump_layers(sr, hop_length):
         for d1, d2 in zip(L1[k].shape, L2[k].shape):
             assert str(d1) == str(d2)
 
+    # test other input layers
+    P.layers('tf.keras')
+    P.layers('tf')
+
 
 def test_pump_str(sr, hop_length):
 

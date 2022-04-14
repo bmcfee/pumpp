@@ -108,33 +108,53 @@ class FeatureExtractor(Scope):
 
         Parameters
         ----------
+        api : string
+            One of 'k', 'keras' (for Keras mode)
+            'tf.keras', 'tensorflow.keras', 'tfk' for tensorflow.keras mode
+            'tf', 'tensorflow' for tensorflow (v1 compatible)
+
+            Note that 'tensorflow' mode uses v1 compatibility, and disables eager execution.
 
         Returns
         -------
-        layers : {field: keras.layers.Input}
-            A dictionary of keras input layers, keyed by the corresponding
+        layers : {field: layer object}
+            A dictionary of keras or tensorflow input layers, keyed by the corresponding
             field keys.
         '''
 
-        if api == 'keras':
+        if api in ('k', 'keras'):
             return self.layers_keras()
+        elif api in ('tf.keras', 'tensorflow.keras', 'tfk'):
+            return self.layers_tfkeras()
         elif api in ('tf', 'tensorflow'):
             return self.layers_tensorflow()
         else:
             raise ParameterError('Unsupported layer api={}'.format(api))
 
     def layers_tensorflow(self):
-        from tensorflow import placeholder
+        import tensorflow.compat.v1 as tf
+        tf.disable_v2_behavior()
 
         L = dict()
         for key in self.fields:
             shape = tuple([None] + list(self.fields[key].shape))
-            L[key] = placeholder(self.fields[key].dtype,
+            L[key] = tf.placeholder(self.fields[key].dtype,
                                  shape=shape, name=key)
         return L
 
     def layers_keras(self):
         from keras.layers import Input
+
+        L = dict()
+        for key in self.fields:
+            L[key] = Input(name=key,
+                           shape=self.fields[key].shape,
+                           dtype=np.dtype(self.fields[key].dtype).name)
+
+        return L
+
+    def layers_tfkeras(self):
+        from tensorflow.keras.layers import Input
 
         L = dict()
         for key in self.fields:
