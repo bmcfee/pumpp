@@ -108,11 +108,17 @@ class FeatureExtractor(Scope):
 
         Parameters
         ----------
+        api : string
+            One of 'k', 'keras' (for Keras mode)
+            'tf.keras', 'tensorflow.keras', 'tfk' for tensorflow.keras mode
+            'tf', 'tensorflow' for tensorflow (v1 compatible)
+
+            Note that 'tensorflow' mode uses v1 compatibility, and disables eager execution.
 
         Returns
         -------
-        layers : {field: keras.layers.Input}
-            A dictionary of keras input layers, keyed by the corresponding
+        layers : {field: layer object}
+            A dictionary of keras or tensorflow input layers, keyed by the corresponding
             field keys.
         '''
 
