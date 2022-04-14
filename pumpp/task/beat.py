@@ -85,9 +85,9 @@ class BeatTransformer(BaseTaskTransformer):
 
         self.down_p_state = p_state_down
 
-        self.register('beat', [None], np.bool)
-        self.register('downbeat', [None], np.bool)
-        self.register('mask_downbeat', [1], np.bool)
+        self.register('beat', [None], bool)
+        self.register('downbeat', [None], bool)
+        self.register('mask_downbeat', [1], bool)
 
     def set_transition_beat(self, p_self):
         '''Set the beat-tracking transition matrix according to
@@ -251,9 +251,9 @@ class BeatPositionTransformer(BaseTaskTransformer):
         #   X -> **/01 s
 
         if self.sparse:
-            self.register('position', [None, 1], np.int)
+            self.register('position', [None, 1], int)
         else:
-            self.register('position', [None, len(self._classes)], np.bool)
+            self.register('position', [None, len(self._classes)], bool)
 
     def vocabulary(self):
         states = ['X']

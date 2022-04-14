@@ -38,7 +38,8 @@ class Tempogram(FeatureExtractor):
 
         Setting to `uint8` will produce quantized features.
     '''
-    def __init__(self, name, sr, hop_length, win_length, conv=None, dtype='float32'):
+    def __init__(self, name='tempogram', sr=22050, hop_length=512, win_length=384,
+                 conv=None, dtype='float32'):
         super(Tempogram, self).__init__(name, sr, hop_length, conv=conv, dtype=dtype)
 
         self.win_length = win_length
@@ -65,7 +66,7 @@ class Tempogram(FeatureExtractor):
                           hop_length=self.hop_length,
                           win_length=self.win_length)
 
-        tgram = to_dtype(fix_length(tgram, n_frames), self.dtype)
+        tgram = to_dtype(fix_length(tgram, size=n_frames), self.dtype)
         return {'tempogram': tgram.T[self.idx]}
 
 

@@ -47,8 +47,8 @@ class Mel(FeatureExtractor):
 
         Setting to `uint8` will produce quantized features.
     '''
-    def __init__(self, name, sr, hop_length, n_fft, n_mels, fmax=None,
-                 log=False, conv=None, dtype='float32'):
+    def __init__(self, name='mel', sr=22050, hop_length=512, n_fft=2048, n_mels=128,
+                 fmax=None, log=False, conv=None, dtype='float32'):
         super(Mel, self).__init__(name, sr, hop_length, conv=conv, dtype=dtype)
 
         self.n_fft = n_fft
@@ -80,7 +80,7 @@ class Mel(FeatureExtractor):
                                      n_mels=self.n_mels,
                                      fmax=self.fmax))
 
-        mel = fix_length(mel, n_frames)
+        mel = fix_length(mel, size=n_frames)
 
         if self.log:
             mel = amplitude_to_db(mel, ref=np.max)

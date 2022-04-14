@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 '''Miscellaneous utility tests'''
-
 import pytest
 import numpy as np
 
@@ -213,6 +212,10 @@ def test_pump_layers(sr, hop_length):
         for d1, d2 in zip(L1[k].shape, L2[k].shape):
             assert str(d1) == str(d2)
 
+    # test other input layers
+    P.layers('tf.keras')
+    P.layers('tf')
+
 
 def test_pump_str(sr, hop_length):
 
@@ -254,3 +257,48 @@ def test_pump_repr_html(sr, hop_length):
     pump = pumpp.Pump(*ops)
 
     assert isinstance(pump._repr_html_(), str)
+
+
+def test_pump_skip(sr, hop_length, tmp_path):
+    ops = [pumpp.feature.STFT(name='stft', sr=sr,
+                              hop_length=hop_length,
+                              n_fft=2*hop_length),
+
+           pumpp.feature.Tempogram(name='tempo', sr=sr,
+                                   win_length=384,
+                                   hop_length=hop_length),
+
+           pumpp.task.BeatTransformer(name='beat', sr=sr,
+                                      hop_length=hop_length)]
+
+    audio_f = 'tests/data/test.ogg'
+    jam_f = 'tests/data/test.jams'
+    KEY = 'tempo/tempogram'
+    SENTINEL = (None,)
+    data = {KEY: SENTINEL}
+
+    P = pumpp.Pump(*ops)
+    fields = set(P.fields)
+
+    get_valid_fields = lambda x: {f for f in set(x) if not f.endswith('_valid')}
+
+    # see if existing keys are skipped
+    X = P.transform(audio_f, data=dict(data))
+    assert X[KEY] is SENTINEL, 'field was overwritten'
+    assert get_valid_fields(X) == fields
+
+    # make sure fields are computed normally
+    X = P.transform(audio_f)
+    assert X[KEY] is not SENTINEL, 'field was not computed'
+    assert get_valid_fields(X) == fields
+
+    # see if loading audio is skipped if we don't need it
+
+    feature_ops = [op for op in P.ops if isinstance(op, pumpp.FeatureExtractor)]
+    data = {k: SENTINEL for op in feature_ops for k in op.fields}
+
+    X = P.transform(None, jam_f, data=data)
+    assert all(X[k] is SENTINEL
+               for op in feature_ops
+               for k in op.fields), 'field should not have been computed'
+    assert get_valid_fields(X) == fields
