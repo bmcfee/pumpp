@@ -126,12 +126,13 @@ class FeatureExtractor(Scope):
             raise ParameterError('Unsupported layer api={}'.format(api))
 
     def layers_tensorflow(self):
-        from tensorflow import placeholder
+        import tensorflow.compat.v1 as tf
+        tf.disable_v2_behavior()
 
         L = dict()
         for key in self.fields:
             shape = tuple([None] + list(self.fields[key].shape))
-            L[key] = placeholder(self.fields[key].dtype,
+            L[key] = tf.placeholder(self.fields[key].dtype,
                                  shape=shape, name=key)
         return L
 
