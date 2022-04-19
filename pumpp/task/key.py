@@ -9,7 +9,7 @@ import numpy as np
 import mir_eval
 import jams
 
-from librosa import note_to_midi, midi_to_note, time_to_frames
+from librosa import note_to_midi, midi_to_note, time_to_frames, key_to_degrees
 from librosa.sequence import transition_loop
 
 from .base import BaseTaskTransformer
@@ -18,8 +18,7 @@ from ..labels import LabelBinarizer, LabelEncoder, MultiLabelBinarizer
 
 __all__ = ['KeyTransformer', 'KeyTagTransformer']
 
-C_MAJOR = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
-C_MAJOR_PITCHES = note_to_midi(C_MAJOR) % 12
+C_MAJOR_PITCHES = key_to_degrees('C:maj')
 MODES = ['ionian', 'dorian', 'phrygian', 'lydian', 'mixolydian', 'aeolian', 'locrian']
 QUALITY = {'major' : 0, 'minor' : -3}
 

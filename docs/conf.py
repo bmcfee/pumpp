@@ -56,14 +56,16 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'pumpp'
-copyright = '2016-2017, Brian McFee'
+copyright = '2016-2022, Brian McFee'
 author = 'Brian McFee'
 
 import mock
 MOCK_MODULES = ['numpy', 'scipy', 'scipy.sparse',
-                'sklearn', 'sklearn.preprocessing',
+                'sklearn', 'sklearn.preprocessing', 'sklearn.utils', 'sklearn.utils.sparsefuncs',
+                'sklearn.utils.validation', 'sklearn.utils.multiclass',
                 'mir_eval', 'mir_eval.util',
-                'jams', 'librosa', 'librosa.util', 'librosa.feature', 'librosa.sequence']
+                'jams', 'librosa', 'librosa.util', 'librosa.feature', 'librosa.sequence',
+                'librosa.note_to_midi', 'librosa.midi_to_note', 'librosa.time_to_frames',]
 sys.modules.update((mod_name, mock.Mock()) for mod_name in MOCK_MODULES)
 
 # The version info for the project you're documenting, acts as replacement for
@@ -156,7 +158,7 @@ html_theme = 'default'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+# html_static_path = ['_static']
 
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied
@@ -308,7 +310,7 @@ texinfo_documents = [
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {'python': ('https://docs.python.org/3', None),
                        'numpy': ('https://docs.scipy.org/doc/numpy/', None),
-                       'librosa': ('https://librosa.github.io/librosa/', None),
+                       'librosa': ('https://librosa.org/doc/latest/', None),
                        'jams': ('https://jams.readthedocs.io/en/latest/', None)}
 
 numpydoc_show_class_members = False
