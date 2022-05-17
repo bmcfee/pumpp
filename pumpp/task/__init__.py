@@ -16,6 +16,7 @@ Task transformations
     DynamicLabelTransformer
     StaticLabelTransformer
     StructureTransformer
+    LambdaTransformer
 '''
 
 from .base import *
@@ -25,3 +26,5 @@ from .regression import *
 from .tags import *
 from .structure import *
 from .key import *
+from .lambd import *
+
